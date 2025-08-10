@@ -176,6 +176,17 @@
 </div>
 
 <!-- Gestore Salvataggi (Modal) -->
+<!-- Conferma Ricomincia -->
+<div class="overlay" id="restartConfirm" aria-hidden="true">
+  <div class="dialog">
+    <h2>Ricominciare il livello?</h2>
+    <p style="margin-top:4px; color:var(--muted)">Perderai lo stato del quadro corrente.</p>
+    <div style="display:flex; gap:10px; justify-content:center; margin-top:8px">
+      <button class="primary" id="restart-yes">Sì, ricomincia</button>
+      <button class="primary" id="restart-no" style="background:var(--bad); color:#fff">Annulla</button>
+    </div>
+  </div>
+</div>
 <div class="overlay" id="saveModal" aria-hidden="true">
   <div class="dialog" style="text-align:left">
     <h2 style="text-align:center">Salvataggi</h2>
@@ -246,7 +257,9 @@
   const levelChip = document.getElementById('levelChip');
   const statusChip = document.getElementById('statusChip');
   const scoreChip = document.getElementById('score');
-
+const restartConfirm = document.getElementById('restartConfirm');
+const restartYes = document.getElementById('restart-yes');
+const restartNo = document.getElementById('restart-no');
   // Save modal refs
   const saveModal = document.getElementById('saveModal');
   const saveList = document.getElementById('saveList');
@@ -601,7 +614,21 @@ if (tapBuffer.length) {
 
   function showOverlay(title, sub){ ovTitle.textContent = title; ovSub.innerHTML = sub; overlay.classList.add('show'); updateSaveButton(); }
   function hideOverlay(){ overlay.classList.remove('show'); updateSaveButton(); }
+function openRestartConfirm(){
+  // opzionale: metti in pausa mentre chiedi conferma
+  // if (state && state.running && !state.paused) togglePause();
 
+  restartConfirm.classList.add('show');
+  restartConfirm.setAttribute('aria-hidden','false');
+}
+
+function closeRestartConfirm(){
+  restartConfirm.classList.remove('show');
+  restartConfirm.setAttribute('aria-hidden','true');
+
+  // opzionale: se avevi messo in pausa automaticamente, puoi riavviare
+  // if (state && state.paused && state.pauseLeftMs > 0) togglePause();
+}
   function flashMessage(text){
     const msg = document.createElement('div');
     msg.className = 'flash-msg';
@@ -730,7 +757,23 @@ if (tapBuffer.length) {
 
   // ===== Event Listeners =====
   if(introBtn){ introBtn.addEventListener('click', () => { hideIntro(); }); }
-  restartBtn.addEventListener('click', () => { hideOverlay(); init(currentLevelIdx); });
+  restartBtn.addEventListener('click', () => {
+  openRestartConfirm();
+});
+if (restartYes) {
+  restartYes.addEventListener('click', () => {
+    closeRestartConfirm();
+    hideOverlay();            // nasconde l’eventuale overlay “fine quadro”
+    init(currentLevelIdx);    // ricomincia lo stesso livello
+  });
+}
+
+if (restartNo) {
+  restartNo.addEventListener('click', () => {
+    closeRestartConfirm();    // annulla e chiudi
+  });
+}
+
   pauseBtn.addEventListener('click', togglePause);
   if(saveBtn){ saveBtn.addEventListener('click', openSaveManager); }
   if (doSaveBtn) {
