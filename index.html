@@ -107,14 +107,26 @@
   .card[data-symbol="⚡"] .front .symbol{ text-shadow: 0 0 10px rgba(255,213,79,.6) }
   .card[data-symbol="⚡"][data-state="revealed"] .front{ outline:3px solid #ffd54f; box-shadow:0 0 22px rgba(255,213,79,.4) inset }
 
-  .flash-msg{
-    position:fixed; top:20%; left:50%; transform:translateX(-50%);
-    background:rgba(0,0,0,.8); color:#fff; padding:8px 14px; border-radius:10px; font-weight:700;
-    z-index:9999; animation:flashUp .9s ease forwards; pointer-events:none
-  }
-  @keyframes flashUp{
-    0%{opacity:0; transform:translate(-50%, 8px)} 15%{opacity:1; transform:translate(-50%, 0)} 100%{opacity:0; transform:translate(-50%, -8px)}
-  }
+.flash-msg{
+  position:fixed;
+  top:20%;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(0,0,0,.8);
+  color:#fff;
+  padding:12px 20px;          /* più grande */
+  border-radius:12px;         /* un filo più morbido */
+  font-weight:700;
+  font-size:1.3em;            /* testo più grande */
+  z-index:9999;
+  pointer-events:none;        /* NON blocca i clic sotto */
+  animation:flashUp 1.5s ease forwards; /* durata 1.5s */
+}
+@keyframes flashUp{
+  0%{opacity:0; transform:translate(-50%, 8px)}
+  15%{opacity:1; transform:translate(-50%, 0)}
+  100%{opacity:0; transform:translate(-50%, -8px)}
+}
   .overlay{ position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.5); z-index:1000 }
   .overlay.show{ display:grid }
   .overlay.hide{ display:none !important }
@@ -126,6 +138,21 @@
     .wrap{ width:min(520px, 96vw) }
     .top, .grid{ width:100% }
   }
+/* Pulsanti Pausa, Salva, Ricomincia in versione outline */
+.outline-btn {
+  background: transparent !important;      /* sfondo trasparente */
+  color: var(--accent) !important;          /* colore icona/testo = colore tema */
+  border: 2px solid var(--accent) !important; /* bordo a tema */
+}
+
+.outline-btn:hover {
+  background: rgba(255, 255, 255, 0.05);    /* leggero highlight al passaggio */
+}
+
+.outline-btn:active {
+  background: rgba(255, 255, 255, 0.12);    /* feedback al click/tap */
+}
+
 </style>
 </head>
 <body class="theme-1">
@@ -133,9 +160,9 @@
   <div class="top">
     <div class="brand">SKULLORY</div>
     <div>
-      <button class="primary" id="pause">⏸️</button>
-      <button class="primary" id="save" title="Salva (solo a fine quadro)">💾</button>
-      <button class="primary" id="restart">🔄</button>
+      <button class="primary outline-btn" id="pause">⏸️</button>
+      <button class="primary outline-btn" id="save" title="Salva (solo a fine quadro)">💾</button>
+      <button class="primary outline-btn" id="restart">🔄</button>
     </div>
   </div>
 
@@ -192,7 +219,10 @@
     <h2 style="text-align:center">Salvataggi</h2>
     <div id="saveList" style="max-height:46vh; overflow:auto; margin:8px 0 12px"></div>
     <div style="display:flex; gap:8px; align-items:center; margin-top:6px">
-      <input id="saveName" placeholder="Nome partita…" style="flex:1; padding:10px 12px; border-radius:10px; border:1px solid var(--panel-border); background:var(--panel-2); color:var(--text)"/>
+<input id="saveName" placeholder="Nome partita…" 
+  style="width:150px; padding:10px 12px; border-radius:10px; 
+         border:1px solid var(--panel-border); background:var(--panel-2); 
+         color:var(--text)"/>
       <button class="primary" id="doSave">Salva</button>
       <button class="primary" id="closeSave">Chiudi</button>
     </div>
@@ -634,7 +664,7 @@ function closeRestartConfirm(){
     msg.className = 'flash-msg';
     msg.textContent = text;
     document.body.appendChild(msg);
-    setTimeout(() => msg.remove(), 900);
+   setTimeout(() => msg.remove(), 1500);
   }
 
   // ===== Multi-slot Saves (solo meta, niente stato del quadro) =====
