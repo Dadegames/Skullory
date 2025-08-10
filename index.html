@@ -55,6 +55,12 @@
   display: flex; /* pulsanti in riga */
   gap: 6px;      /* spazio tra pulsanti */
 }
+/* Riduci la larghezza SOLO dei tre bottoni in alto a destra */
+.controls .outline-btn {
+  padding: 8px 8px;   /* meno padding orizzontale = più stretti */
+  min-width: 40px;    /* resta comodo da cliccare su mobile */
+}
+
   button.primary{background:var(--accent); color:#0b0f1e; border:none; padding:10px 16px; border-radius:12px; font-weight:700; cursor:pointer}
   button.primary:active{transform:translateY(1px)}
   .stats-container{ display:flex; justify-content:center; margin:12px 0 8px; gap:12px; flex-wrap:wrap }
