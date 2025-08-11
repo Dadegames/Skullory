@@ -668,13 +668,23 @@ Punteggio parziale: <b>${totalScore}</b>`;
         ovBtn.textContent = 'Gioca ancora';
         ovBtn.onclick = () => { totalScore=0; progress = LEVELS.map(L => ({ streak:0, unlocked:false, baseTimeMs:L.unlockMs[0], postUnlockWins:0 })); hideOverlay(); init(0); updateScoreChip(); };
       }
-    } else {
-      p.streak = 0;
-      p.baseTimeMs = L.unlockMs[0];
-      showOverlay(title || 'Hai perso', (sub || 'Ritenta!') + `<br><small>Sblocco: ${p.streak}/3 – tempo base ripristinato a ${Math.floor(p.baseTimeMs/1000)}s</small>`);
-      ovBtn.textContent = 'Riprova questo livello';
-      ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
-    }
+} else {
+  // ❌ hai perso PRIMA dello sblocco → azzera tentativi e punteggio
+  p.streak = 0;
+  p.baseTimeMs = L.unlockMs[0];
+
+  totalScore = 0;         // ← azzera punteggio
+  updateScoreChip();      // ← aggiorna lo “chip” Punti:
+
+  showOverlay(
+    title || 'Hai perso',
+    (sub || 'Ritenta!') +
+    `<br><small>Sblocco: ${p.streak}/3 – tempo base ripristinato a ${Math.floor(p.baseTimeMs/1000)}s</small>`
+  );
+  ovBtn.textContent = 'Riprova questo livello';
+  ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
+}
+
     updateSaveButton();
   }
 
@@ -829,8 +839,16 @@ function closeRestartConfirm(){
 if (restartYes) {
   restartYes.addEventListener('click', () => {
     closeRestartConfirm();
-    hideOverlay();            // nasconde l’eventuale overlay “fine quadro”
-    init(currentLevelIdx);    // ricomincia lo stesso livello
+    hideOverlay();
+
+    // 🔁 Nuova partita da zero
+    totalScore = 0;                           // azzera punteggio
+    progress = LEVELS.map(L => ({             // azzera progressi/sblocchi
+      streak: 0, unlocked: false, baseTimeMs: L.unlockMs[0], postUnlockWins: 0
+    }));
+    updateScoreChip();
+
+    init(0);                                  // riparti dal livello 0
   });
 }
 
