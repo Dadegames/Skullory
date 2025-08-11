@@ -42,28 +42,40 @@ body{
   min-height:100dvh;
 }
   .wrap{ width:min(1100px, 98vw); margin: 30px auto 0; /* 12px sopra, centrato orizzontalmente, 0 sotto */ }
- .top {
-  display: flex;                 /* layout orizzontale */
-  justify-content: space-between; /* logo a sinistra, pulsanti a destra */
-  align-items: center;           /* centra verticalmente */
-  padding: 6px 10px;             /* un po' di respiro */
+.top{
+  display:block;          /* non serve più il flex: c’è solo il logo */
+  padding: 0;             /* niente padding per far aderire il logo */
 }
 
-.brand img {
-  display: block;
-  height: 28px;  /* stessa altezza visiva della scritta originale */
-  width: auto;   /* mantiene proporzioni */
+.brand{ width:100%; }
+
+.brand img{
+  display:block;
+  width:100%;             /* il logo si estende su tutta la larghezza del banner */
+  height:auto;            /* scala proporzionalmente */
+  /* opzionale: sblocca il vecchio vincolo di altezza e imposta un massimo */
+  max-height: 70px;       /* cambia a tuo gusto (60–90px sono comuni) */
 }
 
 .controls {
   display: flex; /* pulsanti in riga */
   gap: 6px;      /* spazio tra pulsanti */
 }
-/* Riduci la larghezza SOLO dei tre bottoni in alto a destra */
-.controls .outline-btn {
-  padding: 8px 8px;   /* meno padding orizzontale = più stretti */
-  min-width: 40px;    /* resta comodo da cliccare su mobile */
+.controls-bottom{
+  display: flex;            /* riga orizzontale */
+  justify-content: center;  /* centrati in orizzontale */
+  align-items: center;      /* centrati in verticale */
+  gap: 8px;                 /* spazio tra pulsanti */
+  width: 100%;              /* occupa tutta la riga del wrap */
+  margin-top: 14px;         /* spazio sotto la griglia (regolabile) */
 }
+
+/* Riduci la larghezza SOLO dei tre bottoni in alto a destra */
+.controls-bottom .outline-btn{
+  padding: 8px 8px;
+  min-width: 40px;
+}
+
 
   button.primary{background:var(--accent); color:#0b0f1e; border:none; padding:10px 16px; border-radius:12px; font-weight:700; cursor:pointer}
   button.primary:active{transform:translateY(1px)}
@@ -183,16 +195,7 @@ body{
   <div class="brand">
     <img src="skullory-logo.svg" alt="Skullory">
   </div>
-
-  <!-- Pulsanti a destra -->
-  <div class="controls">
-    <button class="primary outline-btn" id="pause">⏸️</button>
-    <button class="primary outline-btn" id="save">💾</button>
-    <button class="primary outline-btn" id="restart">🔄</button>
-  </div>
-</div>
-
-  <div class="stats-container">
+ <div class="stats-container">
     <div class="stats">
       <span class="level-chip" id="levelChip">Livello: —</span>
       <span class="level-chip" id="statusChip">Stato: —</span>
@@ -203,6 +206,11 @@ body{
   </div>
 
   <div class="grid" id="grid" aria-label="Griglia Slapmory"></div>
+<!-- Pulsanti centrati sotto la griglia -->
+<div class="controls controls-bottom">
+  <button class="primary outline-btn" id="pause">⏸️</button>
+  <button class="primary outline-btn" id="save">💾</button>
+  <button class="primary outline-btn" id="restart">🔄</button>
 </div>
 
 <!-- Intro / Tutorial -->
@@ -951,5 +959,6 @@ tapBuffer = []; // pulisci eventuali tocchi in coda
 </script>
 </body>
 </html>
+
 
 
