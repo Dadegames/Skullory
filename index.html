@@ -222,6 +222,70 @@ body{
   font-size: 14px;
   user-select: none;
 }
+/* Tutorial a slide */
+.tutorial-dialog{ position:relative; overflow:hidden; }
+.tutorial-carousel{ position:relative; min-height: 140px; }
+.tutorial-slide[hidden]{ display:none !important; }
+
+.tutorial-arrow{
+  position:absolute;
+  top:50%; transform:translateY(-50%);
+  width:38px; height:38px;
+  display:grid; place-items:center;
+  border-radius:999px;
+  border:1px solid var(--panel-border);
+  background:linear-gradient(180deg, var(--panel-1), var(--panel-2));
+  color:var(--text);
+  cursor:pointer;
+  box-shadow: var(--shadow);
+  user-select:none;
+}
+.tutorial-arrow.prev{ left:10px; }
+.tutorial-arrow.next{ right:10px; }
+.tutorial-arrow:disabled{ opacity:.5; cursor:default; }
+
+.tutorial-dots{
+  display:flex; gap:8px; justify-content:center; align-items:center;
+  margin-top:12px;
+}
+.tutorial-dots button{
+  width:8px; height:8px; border-radius:999px; border:none;
+  background:#3a4168; cursor:pointer;
+}
+.tutorial-dots button[aria-current="true"]{
+  width:22px; height:8px; border-radius:999px; background:var(--accent);
+}
+
+.big-symbol{
+  font-size: clamp(42px, 10vw, 72px);
+  line-height: 1;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,.35));
+}
+
+/* X in alto a destra */
+.tutorial-close{
+  position:absolute; top:10px; right:10px;
+  width:34px; height:34px; display:grid; place-items:center;
+  border-radius:10px;
+  border:1px solid var(--panel-border);
+  background:linear-gradient(180deg, var(--panel-1), var(--panel-2));
+  color:var(--muted);
+  cursor:pointer;
+}
+/* --- Testo centrato e niente pallini nelle slide del tutorial --- */
+#intro .tutorial-slide { text-align: center; }
+#intro .tutorial-slide ul { 
+  list-style: none; 
+  padding: 0; 
+  margin: 10px 0 0; 
+}
+#intro .tutorial-slide li { 
+  margin: 8px 0; 
+}
+#intro .tutorial-slide h3{
+  margin: 6px 0 10px; 
+  font-size: 22px;
+}
 
 </style>
 </head>
@@ -250,28 +314,66 @@ body{
   <button class="primary outline-btn" id="restart">🔄</button>
 </div>
 
-<!-- Intro / Tutorial -->
+<!-- Intro / Tutorial (carousel a 3 slide) -->
 <div class="overlay hide" id="intro">
-  <div class="dialog">
-    <h2>Come si gioca</h2>
-    <div class="tutorial" style="text-align:left; margin-top:10px; color:var(--muted)">
-      <ul style="margin:10px 0 0 18px; padding:0">
-        <li>Trova tutte le coppie ribaltando le carte, ma occhio al tempo!</li>
-        <li><b>Sblocco livello</b>: completa lo stesso livello <b>3 volte di fila</b> per sbloccare il passaggio al livello successivo.</li>
-        <li>Dopo lo sblocco resti sul livello: a ogni quadro riuscito il tempo base cala. <br>Al primo errore, sali al livello successivo.</li>
-        <li>⚡ rimescola subito tutte le carte coperte (tranne 💀 e ⚡).</li>
-        <li>💀 se rivelato due volte: <b>sconfitta!</b></li>
-        <li><b>Bonus 1</b>: Ogni coppia trovata = +1 secondo.</li>
-        <li><b>Bonus 2</b>: 2 coppie di fila entro 5 secondi = +5 secondi.</li>
-        <li><b>Penalità</b>: ogni errore −1 secondo".</li>
-        <li><b>Punteggio</b>: somma dei <b>secondi rimasti</b> a fine quadro, <b>moltiplicati</b> per l’efficienza mosse (meno mosse = più punti).</li>
-      </ul>
+  <div class="dialog tutorial-dialog">
+    <!-- X in alto a destra -->
+    <button class="tutorial-close" id="intro-close" aria-label="Chiudi tutorial">✕</button>
+
+    <h2 id="intro-title" style="margin-bottom:8px">Come si gioca</h2>
+
+    <!-- Contenitore slide -->
+    <div class="tutorial-carousel" aria-live="polite">
+      <!-- Slide 1 -->
+<div class="tutorial-slide" data-slide="0">
+  <h3>Obiettivo</h3>
+  <ul>
+    <li>Trova tutte le coppie ribaltando le carte, ma occhio al tempo!</li>
+    <li><b>Sblocco livello</b>: completa lo stesso livello <b>3 volte di fila</b> per sbloccare il passaggio al livello successivo.</li>
+    <li>Dopo lo sblocco resti sul livello: a ogni quadro riuscito il tempo base cala. Al primo errore, sali al livello successivo.</li>
+  </ul>
+</div>
+
+<!-- Slide 2 (simboli grandi) -->
+<div class="tutorial-slide" data-slide="1" hidden>
+  <h3>Carte speciali</h3>
+  <div style="display:flex; gap:18px; align-items:center; justify-content:center; margin:10px 0 6px">
+    <div class="big-symbol" aria-hidden="true">⚡</div>
+    <div class="big-symbol" aria-hidden="true">💀</div>
+  </div>
+  <ul>
+    <li>⚡ rimescola subito tutte le carte coperte (tranne 💀 e ⚡).</li>
+    <li>💀 se rivelato due volte: <b>sconfitta!</b></li>
+  </ul>
+</div>
+
+<!-- Slide 3 -->
+<div class="tutorial-slide" data-slide="2" hidden>
+  <h3>Bonus, penalità e punteggio</h3>
+  <ul>
+    <li><b>Bonus 1</b>: ogni coppia trovata = +1 secondo.</li>
+    <li><b>Bonus 2</b>: 2 coppie di fila entro 5 secondi = +5 secondi.</li>
+    <li><b>Penalità</b>: ogni errore −1 secondo.</li>
+    <li><b>Punteggio</b>: somma dei <b>secondi rimasti</b> a fine quadro, <b>moltiplicati</b> per l’efficienza mosse.</li>
+  </ul>
+</div>
+
     </div>
-    <div class="actions" style="margin-top:16px; display:flex; justify-content:center; gap:10px">
+
+    <!-- Frecce laterali -->
+    <button class="tutorial-arrow prev" id="intro-prev" aria-label="Slide precedente">‹</button>
+    <button class="tutorial-arrow next" id="intro-next" aria-label="Slide successiva">›</button>
+
+    <!-- Pallini -->
+    <div class="tutorial-dots" id="intro-dots" role="tablist" aria-label="Pagine tutorial"></div>
+
+    <!-- CTA: manteniamo l'id intro-play per compatibilità col tuo JS -->
+    <div class="actions" style="margin-top:14px; display:flex; justify-content:center; gap:10px">
       <button class="primary" id="intro-play">Gioca</button>
     </div>
   </div>
 </div>
+
 
 <!-- Gestore Salvataggi (Modal) -->
 <!-- Conferma Ricomincia -->
@@ -446,6 +548,69 @@ const restartNo = document.getElementById('restart-no');
 
   const intro = document.getElementById('intro');
   const introBtn = document.getElementById('intro-play');
+// ===== Tutorial a 3 slide =====
+let currentSlide = 0;
+const slides = [];   // verrà riempito dopo il DOM build
+let dotsWrap, prevBtn, nextBtn, closeBtn;
+
+function buildTutorialRefs(){
+  // prendi riferimenti dopo che l'HTML è nel DOM
+  dotsWrap = document.getElementById('intro-dots');
+  prevBtn  = document.getElementById('intro-prev');
+  nextBtn  = document.getElementById('intro-next');
+  closeBtn = document.getElementById('intro-close');
+
+  // colleziona le slide
+  document.querySelectorAll('#intro .tutorial-slide').forEach(s => slides.push(s));
+
+  // crea i pallini
+  dotsWrap.innerHTML = '';
+  slides.forEach((_, i) => {
+    const d = document.createElement('button');
+    d.setAttribute('aria-label', `Vai alla slide ${i+1}`);
+    d.addEventListener('click', () => goToSlide(i));
+    dotsWrap.appendChild(d);
+  });
+
+  // frecce
+  prevBtn.addEventListener('click', () => goToSlide(currentSlide - 1));
+  nextBtn.addEventListener('click', () => goToSlide(currentSlide + 1));
+
+  // chiudi (nasconde solo il tutorial; il gioco parte quando clicchi "Gioca" o inizi a giocare)
+  closeBtn.addEventListener('click', () => hideIntro());
+
+  // tastiera: frecce ← → per cambiare slide
+  document.addEventListener('keydown', (e) => {
+    if (intro.classList.contains('hide')) return; // attivo solo quando il tutorial è visibile
+    if (e.key === 'ArrowLeft')  goToSlide(currentSlide - 1);
+    if (e.key === 'ArrowRight') goToSlide(currentSlide + 1);
+  });
+}
+
+function goToSlide(i){
+  currentSlide = Math.max(0, Math.min(slides.length - 1, i));
+  slides.forEach((el, idx) => {
+    if (idx === currentSlide) el.removeAttribute('hidden');
+    else el.setAttribute('hidden', '');
+  });
+
+  // aggiorna pallini
+  Array.from(dotsWrap.children).forEach((dot, idx) => {
+    dot.setAttribute('aria-current', idx === currentSlide ? 'true' : 'false');
+  });
+
+  // disabilita frecce agli estremi
+  prevBtn.disabled = (currentSlide === 0);
+  nextBtn.disabled = (currentSlide === slides.length - 1);
+}
+
+// all'apertura del tutorial riparti sempre dalla prima slide
+const _origShowIntro = showIntro;
+showIntro = function(){
+  _origShowIntro();
+  if (slides.length === 0) buildTutorialRefs();
+  goToSlide(0);
+};
 
   function showIntro(){ intro.classList.remove('hide'); intro.classList.add('show'); }
   function hideIntro(){ intro.classList.add('hide'); intro.classList.remove('show'); }
@@ -1142,7 +1307,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
-
 
 
 
