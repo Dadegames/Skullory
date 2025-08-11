@@ -28,15 +28,19 @@
 
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{
-    margin:0; color:var(--text); font:16px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial;
-    background:
-      radial-gradient(1200px 800px at 20% -10%, var(--bg-3), transparent),
-      radial-gradient(900px 600px at 110% 20%, var(--bg-4), transparent),
-      linear-gradient(180deg, var(--bg-1), var(--bg-2));
-    display:flex; align-items:center; justify-content:center; padding:18px;
-    -webkit-font-smoothing: antialiased; min-height:100dvh;
-  }
+body{
+  margin:0; color:var(--text); font:16px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial;
+  background:
+    radial-gradient(1200px 800px at 20% -10%, var(--bg-3), transparent),
+    radial-gradient(900px 600px at 110% 20%, var(--bg-4), transparent),
+    linear-gradient(180deg, var(--bg-1), var(--bg-2));
+  display:flex; 
+  align-items:flex-start;      /* ← da center a flex-start */
+  justify-content:center; 
+  padding:10px 18px 18px;      /* ← prima era 18px uniformi */
+  -webkit-font-smoothing: antialiased; 
+  min-height:100dvh;
+}
   .wrap{ width:min(1100px, 98vw); margin:0 auto }
  .top {
   display: flex;                 /* layout orizzontale */
@@ -947,3 +951,4 @@ tapBuffer = []; // pulisci eventuali tocchi in coda
 </script>
 </body>
 </html>
+
