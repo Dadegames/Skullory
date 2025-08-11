@@ -624,28 +624,30 @@ if (tapBuffer.length) {
     const L = LEVELS[currentLevelIdx];
     const p = progress[currentLevelIdx];
 
-    const multTxt = `×${mult.toFixed(2)}`;
-    const detailRow = `Tempo: ${secondsLeft}s · Mosse: ${state.moves} (gratis ${free}) · Efficienza: <b>${multTxt}</b><br>Punti quadro: <b>${secondsLeft} × ${multTxt} = ${frameScore}</b><br>Punteggio parziale: <b>${totalScore}</b>`;
+const detailRow = `Tempo: ${secondsLeft}s · Mosse: ${state.moves}<br>
+Punti quadro = <b>${frameScore}</b><br>
+Punteggio parziale: <b>${totalScore}</b>`;
+
 
     if(!p.unlocked){
       p.streak += 1;
       if(p.streak < 3){
         p.baseTimeMs = L.unlockMs[p.streak];
         showOverlay('Quadro completato ✔️', `Sblocco: ${p.streak}/3<br>${detailRow}<br><small>Prossimo tentativo: tempo base ${Math.floor(p.baseTimeMs/1000)}s</small>`);
-        ovBtn.textContent = 'Riprova questo livello';
+        ovBtn.textContent = 'Continua a giocare';
         ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
       } else {
         p.unlocked = true;
         p.postUnlockWins = 0;
         showOverlay('Sblocco conquistato! 🏆', `Hai completato 3 quadri di fila.<br>Ora resta su questo livello e fai punti!<br>${detailRow}`);
-        ovBtn.textContent = 'Continua su questo livello';
+        ovBtn.textContent = 'Continua a giocare';
         ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
       }
     } else {
       p.postUnlockWins += 1;
       p.baseTimeMs = Math.max(0, p.baseTimeMs - L.postDeltaSec*1000);
       showOverlay('Quadro completato ✔️', `Post-sblocco: ${p.postUnlockWins} completati<br>${detailRow}<br><small>Prossimo tentativo: tempo base ${Math.floor(p.baseTimeMs/1000)}s</small>`);
-      ovBtn.textContent = 'Continua su questo livello';
+      ovBtn.textContent = 'Continua a giocare';
       ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
     }
     updateSaveButton();
