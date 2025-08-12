@@ -161,6 +161,38 @@ container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghez
   pointer-events:none;        /* NON blocca i clic sotto */
   animation:flashUp 1.5s ease forwards; /* durata 1.5s */
 }
+/* Stelline match */
+.match-stars { 
+  position: absolute; inset: 0; pointer-events: none; 
+  display: grid; place-items: center; 
+}
+.match-stars .star {
+  position: absolute;
+  font-size: 18px;
+  opacity: 0;
+  animation: starPop 600ms ease-out forwards;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+}
+@keyframes starPop {
+  0%   { transform: translate(0,0) scale(.4) rotate(0deg);   opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1.2) rotate(35deg); opacity: 0; }
+}
+/* Anellino “pulse” sulla carta matched (delicatissimo) */
+.card[data-state="matched"] .front {
+  animation: ringPulse 420ms ease-out;
+}
+@keyframes ringPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(82,206,137,.45) inset; }
+  100% { box-shadow: 0 0 18px rgba(82,206,137,.45) inset; }
+}
+
+/* Accessibilità: niente animazioni se l’utente le riduce */
+@media (prefers-reduced-motion: reduce){
+  .match-stars .star, .card[data-state="matched"] .front { animation: none !important; }
+}
+
 @keyframes flashUp{
   0%{opacity:0; transform:translate(-50%, 8px)}
   15%{opacity:1; transform:translate(-50%, 0)}
@@ -866,6 +898,8 @@ if (tapBuffer.length) {
 
         a.setAttribute('data-state','matched');
         b.setAttribute('data-state','matched');
+spawnMatchStars(a);
+spawnMatchStars(b);
         state.matched++;
         if(state.matched >= state.level.pairs){ win(); }
       } else {
@@ -895,6 +929,31 @@ if (tapBuffer.length) {
     });
     flashMessage('🔀 Rimescolo!');
   }
+function spawnMatchStars(card){
+  // Contenitore
+  const wrap = document.createElement('div');
+  wrap.className = 'match-stars';
+  card.appendChild(wrap);
+
+  // Crea 6 stelline con direzioni diverse
+  const N = 6;
+  for(let i=0;i<N;i++){
+    const s = document.createElement('span');
+    s.className = 'star';
+    s.textContent = '✨';
+    // offset casuali (px) verso fuori
+    const r = 26 + Math.random()*18;                 // raggio
+    const ang = (Math.PI*2/N)*i + Math.random()*0.7; // angolo
+    const dx = Math.cos(ang)*r;
+    const dy = Math.sin(ang)*r;
+    s.style.setProperty('--dx', `${dx}px`);
+    s.style.setProperty('--dy', `${dy}px`);
+    wrap.appendChild(s);
+  }
+
+  // Ripulisci dopo l’animazione
+  setTimeout(() => wrap.remove(), 650);
+}
 
   function win(){
     state.running = false;
@@ -1313,9 +1372,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
-
-
-
 
 
 
