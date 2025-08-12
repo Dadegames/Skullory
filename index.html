@@ -363,9 +363,9 @@ container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghez
     <div class="stats">
       <span class="level-chip" id="levelChip">Livello: —</span>
       <span class="level-chip" id="statusChip">Stato: —</span>
-      <span class="chip" id="moves" aria-live="polite">Mosse: 0</span>
+      <span class="level-chip" id="moves" aria-live="polite">Mosse: 0</span>
       <span class="chip timer" id="timer" aria-live="polite">0:30</span>
-      <span class="chip" id="score" aria-live="polite">Punti: 0</span>
+      <span class="chip" id="score" aria-live="polite" style="color:#FFF44F">Punti: 0</span>
     </div>
   </div>
 
@@ -759,7 +759,7 @@ const TAP_BUFFER_MAX = 2; // massimo 2 tocchi accodati
     const L = LEVELS[levelIdx];
     currentLevelIdx = levelIdx;
     setCols(L.side);
-    levelChip.textContent = `Livello: ${L.name} (${levelIdx+1}/${LEVELS.length})`;
+    levelChip.textContent = `Livello: ${levelIdx+1}/${LEVELS.length}`;
     updateStatusChip();
 
     if (pendingCheck) { clearTimeout(pendingCheck); pendingCheck = null; }
@@ -1406,7 +1406,7 @@ document.addEventListener('DOMContentLoaded', () => {
   splashTimer = setTimeout(() => {
     hideSplash();
     showIntro();
-  }, 2000);
+  }, 3000);
 });
 
   // Migrazione legacy (se presente) → slot "Ultimo"
