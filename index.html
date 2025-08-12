@@ -690,6 +690,8 @@ showIntro = function(){
   let currentLevelIdx = 0;
   let totalScore = 0;
   let themeIndex = 1;
+let frameBaseScore = 0;  // punteggio di partenza del quadro corrente
+
   let pendingCheck = null; // id timeout per checkPair
 let tapBuffer = [];
 const TAP_BUFFER_MAX = 2; // massimo 2 tocchi accodati
@@ -826,6 +828,7 @@ tapBuffer = [];
     if(state.paused) return;
     if(state.running) return;
     state.running = true;
+frameBaseScore = totalScore;  // snapshot del totale prima di iniziare il quadro
     const now = performance.now();
     state.startTs = now;
     const base = Math.max(0, progress[currentLevelIdx].baseTimeMs);
@@ -994,10 +997,10 @@ function spawnMatchStars(card){
     const secondsLeft = Math.floor(state.leftMs/1000);
     const free = freeMovesFor(state.level);
     const mult = efficiencyMultiplier(state.moves, free);
-    const frameScore = roundNearest(secondsLeft * mult);
-    totalScore += frameScore;
-    updateScoreChip();
-
+const frameScore = roundNearest(secondsLeft * mult);
+// totale robusto: base all'inizio del quadro + punti del quadro
+totalScore = frameBaseScore + frameScore;
+updateScoreChip();
     const L = LEVELS[currentLevelIdx];
     const p = progress[currentLevelIdx];
 
@@ -1050,9 +1053,9 @@ Punteggio parziale: <b>${totalScore}</b>`;
   p.streak = 0;
   p.baseTimeMs = L.unlockMs[0];
 
-  totalScore = 0;         // ← azzera punteggio
-  updateScoreChip();      // ← aggiorna lo “chip” Punti:
-
+totalScore = 0;         // ← azzera punteggio
+frameBaseScore = 0;     // ← allinea la base
+updateScoreChip();
   showOverlay(
     title || 'Hai perso',
     (sub || 'Ritenta!') +
@@ -1124,6 +1127,7 @@ function closeRestartConfirm(){
 
     // Avvia sempre un QUADRO NUOVO non in pausa
     init(currentLevelIdx);
+frameBaseScore = totalScore;   // la prossima vittoria partirà da questo totale
     const b = document.body;
     b.className = (b.className || '').split(' ').filter(c => !c.startsWith('theme-')).join(' ');
     b.classList.add('theme-' + themeIndex);
@@ -1253,6 +1257,7 @@ if (restartYes) {
 
     // 🔁 Nuova partita da zero
     totalScore = 0;                           // azzera punteggio
+frameBaseScore = 0;            // allinea la base quando riparti da zero
     progress = LEVELS.map(L => ({             // azzera progressi/sblocchi
       streak: 0, unlocked: false, baseTimeMs: L.unlockMs[0], postUnlockWins: 0
     }));
