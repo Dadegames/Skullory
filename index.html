@@ -324,6 +324,31 @@ container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghez
   margin: 6px 0 10px; 
   font-size: 22px;
 }
+/* Close del popup Salvataggi (stile coerente col tutorial) */
+.save-close{
+  position:absolute; top:10px; right:10px;
+  width:34px; height:34px; display:grid; place-items:center;
+  border-radius:10px;
+  border:1px solid var(--panel-border);
+  background:linear-gradient(180deg,var(--panel-1),var(--panel-2));
+  color:var(--muted);
+  cursor:pointer;
+}
+
+/* Bottoni icona (Upload, Cestino) */
+.icon-btn{
+  width:36px; height:36px;
+  display:grid; place-items:center;
+  border-radius:10px;
+  border:1px solid var(--panel-border);
+  background:linear-gradient(180deg,var(--panel-1),var(--panel-2));
+  color:var(--text);
+  cursor:pointer;
+  box-shadow:var(--shadow);
+  font-size:18px; line-height:1;
+}
+.icon-btn:hover{ filter:brightness(1.05) }
+.icon-btn:active{ transform:translateY(1px) }
 
 </style>
 </head>
@@ -426,20 +451,28 @@ container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghez
   </div>
 </div>
 <div class="overlay" id="saveModal" aria-hidden="true">
-  <div class="dialog" style="text-align:left">
-    <h2 style="text-align:center">Salvataggi</h2>
+  <div class="dialog" style="text-align:left; position:relative">
+    <!-- X in alto a destra -->
+    <button class="save-close" id="save-close" aria-label="Chiudi salvataggi">✕</button>
+
+    <h2 style="text-align:center; margin-top:2px">Salvataggi</h2>
+
     <div id="saveList" style="max-height:46vh; overflow:auto; margin:8px 0 12px"></div>
-    <div style="display:flex; gap:8px; align-items:center; margin-top:6px">
-<input id="saveName" placeholder="Nome partita…" 
-  style="width:150px; padding:10px 12px; border-radius:10px; 
-         border:1px solid var(--panel-border); background:var(--panel-2); 
-         color:var(--text)"/>
-      <button class="primary" id="doSave">Salva</button>
-      <button class="primary" id="closeSave">Chiudi</button>
-    </div>
-    <p style="color:var(--muted); margin-top:10px">I salvataggi sono consentiti <b>solo a fine quadro</b> o <b>prima di iniziare</b> il prossimo.</p>
+
+<div id="saveControls" style="display:flex; gap:8px; align-items:center; margin-top:6px">
+  <input id="saveName" placeholder="Nome partita…"
+    style="width:150px; padding:10px 12px; border-radius:10px;
+           border:1px solid var(--panel-border); background:var(--panel-2);
+           color:var(--text)"/>
+  <button class="primary" id="doSave">Salva</button>
+</div>
+
+    <p style="color:var(--muted); margin-top:10px">
+      I salvataggi sono consentiti <b>solo a fine quadro</b> o <b>prima di iniziare</b> il prossimo.
+    </p>
   </div>
 </div>
+
 
 <!-- Overlay di fine quadro -->
 <div class="overlay" id="overlay">
@@ -581,8 +614,8 @@ const restartNo = document.getElementById('restart-no');
   const saveModal = document.getElementById('saveModal');
   const saveList = document.getElementById('saveList');
   const saveNameInput = document.getElementById('saveName');
-  const doSaveBtn = document.getElementById('doSave');
-  const closeSaveBtn = document.getElementById('closeSave');
+const doSaveBtn = document.getElementById('doSave');
+const saveClose = document.getElementById('save-close');
 
   const intro = document.getElementById('intro');
   const introBtn = document.getElementById('intro-play');
@@ -1110,6 +1143,9 @@ function closeRestartConfirm(){
       return;
     }
     renderSaveList();
+const sc = document.getElementById('saveControls');
+if (sc) sc.style.display = '';
+
     saveModal.classList.add('show');
     saveModal.setAttribute('aria-hidden','false');
     saveNameInput.value = '';
@@ -1125,6 +1161,7 @@ function closeRestartConfirm(){
     saveList.innerHTML = '';
     list.forEach(entry => {
       const row = document.createElement('div');
+row.className = 'save-row';
       row.style.display = 'grid';
       row.style.gridTemplateColumns = '1fr auto auto';
       row.style.gap = '8px';
@@ -1133,42 +1170,71 @@ function closeRestartConfirm(){
       const name = document.createElement('div');
       const d = new Date(entry.when||Date.now());
       name.innerHTML = `<b>${entry.name}</b><br><small>${d.toLocaleString()}</small>`;
-      const loadBtn = document.createElement('button'); loadBtn.className='primary'; loadBtn.textContent='Carica';
-      const delBtn = document.createElement('button'); delBtn.className='primary'; delBtn.textContent='Elimina';
+const loadBtn = document.createElement('button');
+loadBtn.className = 'icon-btn';
+loadBtn.innerHTML = '📤';           // Upload
+loadBtn.title = 'Carica questo salvataggio';
+loadBtn.setAttribute('aria-label','Carica questo salvataggio');
+
+const delBtn = document.createElement('button');
+delBtn.className = 'icon-btn';
+delBtn.innerHTML = '🗑️';          // Cestino
+delBtn.title = 'Elimina questo salvataggio';
+delBtn.setAttribute('aria-label','Elimina questo salvataggio');
+
       loadBtn.onclick = () => { loadPayload(entry.data); closeSaveManager(); flashMessage('📂 Caricato: '+entry.name); };
-      delBtn.onclick = () => {
-        document.querySelectorAll('.inline-confirm').forEach(el => el.remove());
-        const wrap = document.createElement('div');
-        wrap.className = 'inline-confirm';
-        wrap.style.display = 'flex';
-        wrap.style.gap = '8px';
-        wrap.style.alignItems = 'center';
-        wrap.style.gridColumn = '1 / -1';
-        wrap.style.marginTop = '6px';
-        wrap.style.padding = '8px 10px';
-        wrap.style.border = '1px solid var(--panel-border)';
-        wrap.style.borderRadius = '10px';
-        wrap.style.background = 'linear-gradient(180deg,var(--panel-1),var(--panel-2))';
+delBtn.onclick = () => {
+  // Pulisci eventuali conferme aperte
+  document.querySelectorAll('.inline-confirm').forEach(el => el.remove());
 
-        const msg = document.createElement('span');
-        msg.innerHTML = `Eliminare <b>${entry.name}</b>?`;
+  // Nascondi tutte le altre righe tranne questa
+  const rows = saveList.querySelectorAll('.save-row');
+  rows.forEach(r => { if (r !== row) r.style.display = 'none'; });
 
-        const yes = document.createElement('button');
-        yes.className = 'primary';
-        yes.textContent = 'Sì, elimina';
-        yes.onclick = () => {
-          deleteSave(entry.name);
-          renderSaveList();
-        };
+  // Nascondi temporaneamente la toolbar "Nome + Salva + Chiudi"
+  const toolbar = doSaveBtn ? doSaveBtn.parentElement : null;
+  const restoreToolbar = () => { if (toolbar) toolbar.style.display = ''; };
+  if (toolbar) toolbar.style.display = 'none';
 
-        const no = document.createElement('button');
-        no.className = 'primary';
-        no.textContent = 'Annulla';
-        no.onclick = () => wrap.remove();
+  // Conferma inline
+  const wrap = document.createElement('div');
+  wrap.className = 'inline-confirm';
+  wrap.style.display = 'flex';
+  wrap.style.gap = '8px';
+  wrap.style.alignItems = 'center';
+  wrap.style.gridColumn = '1 / -1';
+  wrap.style.marginTop = '6px';
+  wrap.style.padding = '8px 10px';
+  wrap.style.border = '1px solid var(--panel-border)';
+  wrap.style.borderRadius = '10px';
+  wrap.style.background = 'linear-gradient(180deg,var(--panel-1),var(--panel-2))';
+  wrap.innerHTML = `
+    <span>Eliminare <b>${entry.name}</b>?</span>
+    <div style="margin-left:auto; display:flex; gap:8px">
+      <button class="primary" id="c-yes">Sì, elimina</button>
+      <button class="primary" id="c-no" style="background:var(--bad); color:#fff">Annulla</button>
+    </div>
+  `;
 
-        wrap.append(msg, yes, no);
-        row.after(wrap);
-      };
+  row.after(wrap);
+
+  // Conferma
+  wrap.querySelector('#c-yes').onclick = () => {
+    deleteSave(entry.name);
+    // Ripristina vista completa e toolbar ricaricando la lista
+    renderSaveList();
+    restoreToolbar();
+  };
+
+  // Annulla
+  wrap.querySelector('#c-no').onclick = () => {
+    wrap.remove();
+    // Ri-mostra tutte le righe
+    rows.forEach(r => { r.style.display = ''; });
+    restoreToolbar();
+  };
+};
+
 
       row.append(name, loadBtn, delBtn);
       saveList.appendChild(row);
@@ -1271,7 +1337,7 @@ if (restartNo) {
     });
   }
 
-  if(closeSaveBtn){ closeSaveBtn.addEventListener('click', closeSaveManager); }
+ if (saveClose){ saveClose.addEventListener('click', closeSaveManager); }
 
   // scorciatoia Ctrl/⌘+S
   window.addEventListener('keydown', (e)=>{
