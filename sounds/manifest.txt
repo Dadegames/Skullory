@@ -1,0 +1,22 @@
+Skullory – SFX Placeholder Manifest
+
+tap_card.wav
+  - Tap su carta (feedback UI minimale)
+flip_card.wav
+  - Flip carta (breve whoosh)
+pair_ok.wav
+  - Coppia corretta (bip bip ascendente)
+pair_fail.wav
+  - Coppia errata (basso discendente)
+bonus_tick.wav
+  - Bonus +1s (tick sottile)
+bonus_streak.wav
+  - +5s streak (mini arpeggio brillante)
+reshuffle.wav
+  - Rimescolo (soffio breve)
+skull_reveal.wav
+  - Rivelazione teschio (blip cupo)
+win.wav
+  - Vittoria quadro (trillo breve)
+lose.wav
+  - Sconfitta (triade discendente)
