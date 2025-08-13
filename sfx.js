@@ -79,8 +79,8 @@ function ensureAudio() {
   audio.preload = 'auto';
 
   // default molto basso + tetto massimo
-  const maxDefault = 0.05;
-  const fallback   = 0.01;
+  const maxDefault = 0.1;
+  const fallback   = 0.1;
   const saved = parseFloat(localStorage.getItem('skullory_bgm_vol') || String(fallback));
   const initial = isNaN(saved) ? fallback : Math.min(saved, maxDefault);
   audio.volume = initial;
@@ -162,5 +162,6 @@ window.BGM = BGM;
 // Integra col tuo SFX.init() (se esiste):
 // - chiama BGM.start() al primo gesto utente
 // - richiama BGM.duck() quando suoni un effetto forte
+
 
 
