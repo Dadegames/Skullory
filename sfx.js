@@ -2,6 +2,10 @@
 const SFX = (() => {
   const AC = window.AudioContext || window.webkitAudioContext;
   const ctx = new AC();
+const sfxMaster = ctx.createGain();
+sfxMaster.gain.value = 3.0;     // 👈 +40% volume globale degli effetti
+sfxMaster.connect(ctx.destination);
+
   const buffers = {};
   const base = 'sounds/';
 
@@ -46,7 +50,7 @@ function play(name, { rate=1.0, volume=1.0 } = {}){
   const gain = ctx.createGain();
   gain.gain.value = volume;
 
-  src.connect(gain).connect(ctx.destination);
+ src.connect(gain).connect(sfxMaster);
 
   try { src.start(); } catch(e){}
 
@@ -68,14 +72,34 @@ const BGM = (() => {
   let enabled = JSON.parse(localStorage.getItem('skullory_bgm_enabled') || 'true'); // di default ON
   let userHasInteracted = false;
 
-  function ensureAudio() {
+function ensureAudio() {
   if (audio) return;
   audio = new Audio('./sounds/bgm.mp3');
   audio.loop = true;
   audio.preload = 'auto';
-  const saved = parseFloat(localStorage.getItem('skullory_bgm_vol') || '0.16');
-  audio.volume = isNaN(saved) ? 0.16 : saved; // usa il salvato se c'è
+
+  // default molto basso + tetto massimo
+  const maxDefault = 0.05;
+  const fallback   = 0.01;
+  const saved = parseFloat(localStorage.getItem('skullory_bgm_vol') || String(fallback));
+  const initial = isNaN(saved) ? fallback : Math.min(saved, maxDefault);
+  audio.volume = initial;
+
+  // migrazione: se c'era un volume salvato troppo alto, abbassalo una volta
+  try {
+    if (!isNaN(saved) && saved > maxDefault) {
+      localStorage.setItem('skullory_bgm_vol', String(maxDefault));
+    }
+  } catch(_) {}
 }
+
+
+async function start() {
+  ensureAudio();
+  if (!enabled) return;
+  try { await audio.play(); } catch (e) {}
+}
+
 
 
   async function start() {
@@ -107,11 +131,14 @@ function setVolume(v) {
 
 function duck() {
   if (!audio || audio.paused) return;
-  const base = audio.volume;       // ✅ usa il volume REALE correntemente impostato
-  audio.volume = Math.max(0, base - 0.06);
+  const base = audio.volume;
+  const drop = Math.min(0.06, Math.max(0.03, base * 0.9)); // abbassa di più (min 0.03, max 0.06)
+  audio.volume = Math.max(0, base - drop);
   clearTimeout(duck._t);
-  duck._t = setTimeout(() => { audio.volume = base; }, 220);
+  duck._t = setTimeout(() => { audio.volume = base; }, 360); // resta abbassata un filo più a lungo
 }
+
+
 
 
   // UI helper (aggiorna icona se presente)
