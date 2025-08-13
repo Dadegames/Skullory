@@ -604,16 +604,17 @@ const LEVELS = [
 function ensureSfx(){
   if (window.__sfxReady) return;
   window.__sfxReady = true;
-  try {
-    SFX.init();
-
-    // Avvia la musica una volta sola, in loop, volume basso
-    if (!window.__bgmStarted) {
-      window.__bgmStarted = true;
-      if (SFX && typeof SFX.play === 'function') {
-        __bgmHandle = SFX.play('bgm', { loop: true, volume: musicMuted ? 0 : 0.18 });
-      }
+  try { 
+    SFX.init(); 
+    // 👇 segna “utente ha interagito” e prova a partire con la musica
+    if (window.BGM){
+      BGM._markInteracted();
+      BGM.start();
     }
+  } catch(e){
+    window.__sfxReady = false;
+  }
+}
 
     // Se la libreria non ha gruppi/“mute per categoria”, avvolgo SFX.play
     if (SFX && !SFX.__wrapped){
