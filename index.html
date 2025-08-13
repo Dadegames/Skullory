@@ -354,7 +354,7 @@ container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghez
 </head>
 <body class="theme-1">
 <!-- ⬇️ AGGIUNGI QUESTA RIGA PRIMA DEL TUO <script> PRINCIPALE -->
-<script src="sfx.js"></script>
+<script src="sfx.js?v=5"></script>
 <div class="wrap">
 <div class="top">
   <!-- Logo a sinistra -->
@@ -398,8 +398,9 @@ container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghez
   <h3 style="color:#FFF44F">Obiettivo</h3>
   <ul>
     <li>Trova tutte le <b>coppie</b> ribaltando le carte, ma <b>occhio al tempo!</b></li>
-    <li><b>Sblocco livello</b>: completa lo stesso livello <b>3 volte di fila</b>!</li>
-    <li>Dopo lo sblocco resti sul livello <b>per fare punti</b>.<li><b>Al primo errore</b>, sali al livello successivo.</li>
+<li><b>Sblocco livello</b>: completa lo stesso livello <b>3 volte di fila</b>!</li>
+<li>Dopo lo sblocco resti sul livello <b>per fare punti</b>.</li>
+<li><b>Al primo errore</b>, sali al livello successivo.</li>
   </ul>
 </div>
 
@@ -601,26 +602,29 @@ const LEVELS = [
   const EMOJI = ['🐶','🐱','🦊','🐼','🐵','🐯','🦁','🐸','🐨','🦄','🐷','🐹','🐙','🦉','🦋','🐝','🐢','🐠','🍎','🍉','🍇','🍒','🍓','🍑','🥑','🌽','🥕','🍩','🍪','🍰','🍔','🍕','🍣','🍤','🍜','🍿','🐋','🦭','🦀','🐞','🐍','🦜','🦢','🐎','🐫','🦒','🐿','🦔','🦩','🐬','🐳','🦦','🐡','🐌','🍋','🍊','🫐','🥥','🥭','🥒','🫑','🥔','🌶','🍄','🧄','🧅','🧀','🥨','🥯','🥞','🥪','🥙','🥗','🥘','🥟','🍮','🍫','🍹','🧋','🍺','☕','🥛','🍷','🍵'];
 
  // --- SFX: inizializza al primo gesto utente ---
+// --- SFX: inizializza al primo gesto utente ---
 function ensureSfx(){
   if (window.__sfxReady) return;
   window.__sfxReady = true;
-  try { 
-    SFX.init(); 
-    // 👇 segna “utente ha interagito” e prova a partire con la musica
+
+  try {
+    // inizializza effetti
+    SFX.init();
+
+    // segna interazione utente e prova a far partire la musica
     if (window.BGM){
       BGM._markInteracted();
       BGM.start();
+BGM.setVolume(0.004); // forza la musica bassa all'avvio (~0.4%)
+      BGM.updateUi?.(); // se esiste, aggiorna icona
     }
-  } catch(e){
-    window.__sfxReady = false;
-  }
-}
 
-    // Se la libreria non ha gruppi/“mute per categoria”, avvolgo SFX.play
-    if (SFX && !SFX.__wrapped){
+    // Avvolgi SFX.play una sola volta per rispettare i mute
+    if (!SFX.__wrapped){
       const origPlay = SFX.play.bind(SFX);
       SFX.play = (name, opts = {}) => {
         if (name === 'bgm') {
+          // (se mai userai SFX per la musica)
           if (musicMuted) return null;
           if (opts.volume == null) opts.volume = 0.18;
           opts.loop = (opts.loop !== false);
@@ -632,33 +636,36 @@ function ensureSfx(){
       SFX.__wrapped = true;
     }
 
-    // Porta lo stato attuale nei bottoni e nell’audio
+    // Applica stato iniziale mute ai controlli/UI
     setMusicMuted(musicMuted);
     setSfxMuted(sfxMuted);
     refreshAudioButtons();
 
   } catch(e){
     window.__sfxReady = false;
+    // opzionale: console.error(e);
   }
 }
+
 function setMusicMuted(v){
   musicMuted = !!v;
   localStorage.setItem('skullory.musicMuted', JSON.stringify(musicMuted));
 
-  // Se la tua SFX ha un'API dedicata, usala
-  if (window.SFX && SFX.setMusicMuted) SFX.setMusicMuted(musicMuted);
-
-  // Fallback: se ho un handle della musica, metto volume 0 / 0.18
-  if (__bgmHandle){
-    if (typeof __bgmHandle.setVolume === 'function') {
-      __bgmHandle.setVolume(musicMuted ? 0 : 0.18);
-    } else if (__bgmHandle.gain) {
-      __bgmHandle.gain.value = musicMuted ? 0 : 0.18;
+  if (window.BGM) {
+    if (musicMuted) {
+      // Muto musica = disabilita e ferma
+      try { BGM.setEnabled(false); } catch(_) {}
+      try { BGM.stop(); } catch(_) {}
+    } else {
+      // Riattiva musica
+      try { BGM.setEnabled(true); } catch(_) {}
+      try { BGM.start(); } catch(_) {}
     }
   }
 
   refreshAudioButtons();
 }
+
 
 function setSfxMuted(v){
   sfxMuted = !!v;
@@ -685,6 +692,12 @@ const grid = document.getElementById('grid');
   const scoreChip = document.getElementById('score');
 const muteMusicBtn = document.getElementById('muteMusic');
 const muteSfxBtn   = document.getElementById('muteSfx');
+if (muteMusicBtn) muteMusicBtn.addEventListener('click', () => setMusicMuted(!musicMuted));
+if (muteSfxBtn)   muteSfxBtn.addEventListener('click',   () => setSfxMuted(!sfxMuted));
+
+let musicMuted = JSON.parse(localStorage.getItem('skullory.musicMuted') || 'false');
+let sfxMuted   = JSON.parse(localStorage.getItem('skullory.sfxMuted')   || 'false');
+refreshAudioButtons();
 
 const restartConfirm = document.getElementById('restartConfirm');
 const restartYes = document.getElementById('restart-yes');
@@ -755,15 +768,17 @@ function goToSlide(i){
   nextBtn.disabled = (currentSlide === slides.length - 1);
 }
 
-// all'apertura del tutorial riparti sempre dalla prima slide
-const _origShowIntro = showIntro;
-showIntro = function(){
-  _origShowIntro();
-  if (slides.length === 0) buildTutorialRefs();
-  goToSlide(0);
-};
+ function showIntro(){
+  // mostra l’overlay
+  intro.classList.remove('hide');
+  intro.classList.add('show');
 
-  function showIntro(){ intro.classList.remove('hide'); intro.classList.add('show'); }
+  // inizializza i riferimenti del tutorial SOLO la prima volta
+  if (slides.length === 0) buildTutorialRefs();
+  // vai sempre alla prima slide quando si apre
+  goToSlide(0);
+}
+
   function hideIntro(){ intro.classList.add('hide'); intro.classList.remove('show'); }
 
   let state;
@@ -771,8 +786,7 @@ showIntro = function(){
   let totalScore = 0;
   let themeIndex = 1;
 let frameBaseScore = 0;  // punteggio di partenza del quadro corrente
-let musicMuted = JSON.parse(localStorage.getItem('skullory.musicMuted') || 'false');
-let sfxMuted   = JSON.parse(localStorage.getItem('skullory.sfxMuted')   || 'false');
+
 
 let __bgmHandle = null;  // terrà l’handle della musica (se SFX.play lo restituisce)
 
@@ -1373,9 +1387,7 @@ if (restartYes) {
   restartYes.addEventListener('click', () => {
     closeRestartConfirm();
     hideOverlay();
-if (muteMusicBtn) muteMusicBtn.addEventListener('click', () => setMusicMuted(!musicMuted));
-if (muteSfxBtn)   muteSfxBtn.addEventListener('click',   () => setSfxMuted(!sfxMuted));
-refreshAudioButtons();
+
     // 🔁 Nuova partita da zero
     totalScore = 0;                           // azzera punteggio
 frameBaseScore = 0;            // allinea la base quando riparti da zero
