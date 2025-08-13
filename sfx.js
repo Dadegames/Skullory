@@ -3,7 +3,7 @@ const SFX = (() => {
   const AC = window.AudioContext || window.webkitAudioContext;
   const ctx = new AC();
 const sfxMaster = ctx.createGain();
-sfxMaster.gain.value = 1.0;     // 👈 +40% volume globale degli effetti
+sfxMaster.gain.value = 0.3;     // 👈 +40% volume globale degli effetti
 sfxMaster.connect(ctx.destination);
 
   const buffers = {};
@@ -162,4 +162,5 @@ window.BGM = BGM;
 // Integra col tuo SFX.init() (se esiste):
 // - chiama BGM.start() al primo gesto utente
 // - richiama BGM.duck() quando suoni un effetto forte
+
 
