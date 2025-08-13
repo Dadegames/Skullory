@@ -354,7 +354,7 @@ container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghez
 </head>
 <body class="theme-1">
 <!-- ⬇️ AGGIUNGI QUESTA RIGA PRIMA DEL TUO <script> PRINCIPALE -->
-<script src="sfx.js?v=5"></script>
+<script src="sfx.js?v=6"></script>
 <div class="wrap">
 <div class="top">
   <!-- Logo a sinistra -->
@@ -610,9 +610,6 @@ function ensureSfx(){
   try {
     // inizializza effetti
     SFX.init();
-SFX.setMasterVolume(parseFloat(localStorage.getItem('skullory_sfx_vol') || '1'));
-BGM.setVolume(parseFloat(localStorage.getItem('skullory_bgm_vol') || '0.2'));
-
 
     // segna interazione utente e prova a far partire la musica
     if (window.BGM){
@@ -1579,12 +1576,6 @@ ensureSfx();
 
 </body>
 </html>
-
-
-
-
-
-
 
 
 
