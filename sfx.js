@@ -3,8 +3,17 @@ const SFX = (() => {
   const AC = window.AudioContext || window.webkitAudioContext;
   const ctx = new AC();
 const sfxMaster = ctx.createGain();
-sfxMaster.gain.value = 0.3;     // 👈 +40% volume globale degli effetti
+// volume master SFX (persistente). Default 1.0 (puoi alzare fino a 4x)
+const savedSfxVol = parseFloat(localStorage.getItem('skullory_sfx_vol') || '2.5');
+sfxMaster.gain.value = isNaN(savedSfxVol) ? 1 : Math.max(0, Math.min(4, savedSfxVol));
 sfxMaster.connect(ctx.destination);
+
+function setMasterVolume(v){
+  const val = Math.max(0, Math.min(4, Number(v)));
+  sfxMaster.gain.value = val;
+  try { localStorage.setItem('skullory_sfx_vol', String(val)); } catch(_) {}
+}
+function getMasterVolume(){ return sfxMaster.gain.value; }
 
   const buffers = {};
   const base = 'sounds/';
@@ -64,7 +73,7 @@ function play(name, { rate=1.0, volume=1.0 } = {}){
 }
 
 
-  return { init, play };
+  return { init, play, setMasterVolume, getMasterVolume };
 })();
 // ====== BGM (musica di fondo) ======
 const BGM = (() => {
@@ -72,35 +81,18 @@ const BGM = (() => {
   let enabled = JSON.parse(localStorage.getItem('skullory_bgm_enabled') || 'true'); // di default ON
   let userHasInteracted = false;
 
-function ensureAudio() {
-  if (audio) return;
-  audio = new Audio('./sounds/bgm.mp3');
-  audio.loop = true;
-  audio.preload = 'auto';
+  function ensureAudio() {
+    if (audio) return;
+    audio = new Audio('./sounds/bgm.mp3');
+    audio.loop = true;
+    audio.preload = 'auto';
 
-  // default molto basso + tetto massimo
-  const maxDefault = 0.1;
-  const fallback   = 0.1;
-  const saved = parseFloat(localStorage.getItem('skullory_bgm_vol') || String(fallback));
-  const initial = isNaN(saved) ? fallback : Math.min(saved, maxDefault);
-  audio.volume = initial;
-
-  // migrazione: se c'era un volume salvato troppo alto, abbassalo una volta
-  try {
-    if (!isNaN(saved) && saved > maxDefault) {
-      localStorage.setItem('skullory_bgm_vol', String(maxDefault));
-    }
-  } catch(_) {}
-}
-
-
-async function start() {
-  ensureAudio();
-  if (!enabled) return;
-  try { await audio.play(); } catch (e) {}
-}
-
-
+    // volume iniziale (persistente)
+    const fallback = 0.08;
+    const saved = parseFloat(localStorage.getItem('skullory_bgm_vol') || '');
+    const initial = isNaN(saved) ? fallback : Math.max(0, Math.min(1, saved));
+    audio.volume = initial;
+  } // <-- ✅ CHIUDE ensureAudio()
 
   async function start() {
     ensureAudio();
@@ -111,37 +103,45 @@ async function start() {
       // Autoplay bloccato: riproveremo al prossimo gesto
     }
   }
-  function stop() {
-    if (audio) audio.pause();
-  }
+
+  function stop() { if (audio) audio.pause(); }
+
   function setEnabled(v) {
     enabled = !!v;
     localStorage.setItem('skullory_bgm_enabled', JSON.stringify(enabled));
     if (enabled) start(); else stop();
     updateUi();
   }
+
   function toggle() { setEnabled(!enabled); }
 
-function setVolume(v) {
-  ensureAudio();
-  const clamped = Math.max(0, Math.min(1, v));
-  audio.volume = clamped;
-  localStorage.setItem('skullory_bgm_vol', String(clamped)); // ✅ salva
-}
+  function setVolume(v) {
+    ensureAudio();
+    const clamped = Math.max(0, Math.min(1, v));
+    audio.volume = clamped;
+    localStorage.setItem('skullory_bgm_vol', String(clamped));
+  }
 
-function duck() {
-  if (!audio || audio.paused) return;
-  const base = audio.volume;
-  const drop = Math.min(0.06, Math.max(0.03, base * 0.9)); // abbassa di più (min 0.03, max 0.06)
-  audio.volume = Math.max(0, base - drop);
-  clearTimeout(duck._t);
-  duck._t = setTimeout(() => { audio.volume = base; }, 360); // resta abbassata un filo più a lungo
-}
+  // Ducking sugli SFX forti
+  let _duckTimer = null;
+  let _duckBase = null;
+  function duck() {
+    ensureAudio();
+    if (!audio || audio.paused) return;
+    if (_duckBase == null) _duckBase = audio.volume;
 
+    const base = _duckBase;
+    const drop = Math.min(0.06, Math.max(0.03, base * 0.9));
+    const minVol = Math.max(0.01, base * 0.5);
+    audio.volume = Math.max(minVol, base - drop);
 
+    clearTimeout(_duckTimer);
+    _duckTimer = setTimeout(() => {
+      audio.volume = _duckBase;
+      _duckBase = null;
+    }, 360);
+  }
 
-
-  // UI helper (aggiorna icona se presente)
   function updateUi() {
     const btn = document.getElementById('bgm-toggle');
     if (!btn) return;
@@ -149,19 +149,17 @@ function duck() {
     btn.title = enabled ? 'Disattiva musica' : 'Attiva musica';
   }
 
-  // riparti/ferma in base alla visibilità pagina
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) stop(); else if (enabled && userHasInteracted) start();
   });
 
-  // esponi API
-  return { start, stop, toggle, setEnabled, setVolume, duck, updateUi, _markInteracted(){ userHasInteracted=true; } };
+  return {
+    start, stop, toggle, setEnabled, setVolume, duck, updateUi,
+    _markInteracted(){ userHasInteracted = true; }
+  };
 })();
 window.BGM = BGM;
 
 // Integra col tuo SFX.init() (se esiste):
 // - chiama BGM.start() al primo gesto utente
 // - richiama BGM.duck() quando suoni un effetto forte
-
-
-
