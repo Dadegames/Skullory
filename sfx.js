@@ -4,7 +4,7 @@ const SFX = (() => {
   const ctx = new AC();
 const sfxMaster = ctx.createGain();
 // volume master SFX (persistente). Default 1.0 (puoi alzare fino a 4x)
-const savedSfxVol = parseFloat(localStorage.getItem('skullory_sfx_vol') || '2.5');
+const savedSfxVol = parseFloat(localStorage.getItem('skullory_sfx_vol') || '1');
 sfxMaster.gain.value = isNaN(savedSfxVol) ? 1 : Math.max(0, Math.min(4, savedSfxVol));
 sfxMaster.connect(ctx.destination);
 
@@ -163,3 +163,4 @@ window.BGM = BGM;
 // Integra col tuo SFX.init() (se esiste):
 // - chiama BGM.start() al primo gesto utente
 // - richiama BGM.duck() quando suoni un effetto forte
+
