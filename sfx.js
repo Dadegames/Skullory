@@ -1,3 +1,7 @@
+// === VOLUMI FISSI: modifica solo questi due numeri ===
+const FIXED_SFX_VOLUME = 0.90; // 0..4  (master effetti)
+const FIXED_BGM_VOLUME = 0.06; // 0..1  (musica)
+
 // sfx.js — gestione suoni (.wav) per Skullory
 const SFX = (() => {
   const AC = window.AudioContext || window.webkitAudioContext;
@@ -152,5 +156,6 @@ window.BGM = BGM;
 // Integra col tuo SFX.init() (se esiste):
 // - chiama BGM.start() al primo gesto utente
 // - richiama BGM.duck() quando suoni un effetto forte
+
 
 
