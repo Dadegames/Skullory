@@ -353,6 +353,8 @@ container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghez
 </style>
 </head>
 <body class="theme-1">
+<!-- ⬇️ AGGIUNGI QUESTA RIGA PRIMA DEL TUO <script> PRINCIPALE -->
+<script src="sfx.js"></script>
 <div class="wrap">
 <div class="top">
   <!-- Logo a sinistra -->
@@ -594,7 +596,13 @@ const LEVELS = [
 
   const EMOJI = ['🐶','🐱','🦊','🐼','🐵','🐯','🦁','🐸','🐨','🦄','🐷','🐹','🐙','🦉','🦋','🐝','🐢','🐠','🍎','🍉','🍇','🍒','🍓','🍑','🥑','🌽','🥕','🍩','🍪','🍰','🍔','🍕','🍣','🍤','🍜','🍿','🐋','🦭','🦀','🐞','🐍','🦜','🦢','🐎','🐫','🦒','🐿','🦔','🦩','🐬','🐳','🦦','🐡','🐌','🍋','🍊','🫐','🥥','🥭','🥒','🫑','🥔','🌶','🍄','🧄','🧅','🧀','🥨','🥯','🥞','🥪','🥙','🥗','🥘','🥟','🍮','🍫','🍹','🧋','🍺','☕','🥛','🍷','🍵'];
 
-  const grid = document.getElementById('grid');
+ // --- SFX: inizializza al primo gesto utente ---
+function ensureSfx(){
+  if (window.__sfxReady) return;
+  window.__sfxReady = true;
+  try { SFX.init(); } catch(e){ window.__sfxReady = false; }
+} 
+const grid = document.getElementById('grid');
   const movesEl = document.getElementById('moves');
   const timerEl = document.getElementById('timer');
   const restartBtn = document.getElementById('restart');
@@ -855,6 +863,8 @@ frameBaseScore = totalScore;  // snapshot del totale prima di iniziare il quadro
   }
 
   function onCardClick(card){
+ensureSfx(); // sblocca audio al primo tocco
+SFX.play('tap', { volume:.5, rate: 0.98 + Math.random()*0.04 });
     if (state.paused) { flashMessage('In pausa ▶️'); return; }
   if (state.lock) {
   // Accoda il tap, se sensato, così lo eseguiamo appena si sblocca
@@ -869,10 +879,14 @@ frameBaseScore = totalScore;  // snapshot del totale prima di iniziare il quadro
     startTimer();
 
     flip(card, true);
+SFX.play('flip', { volume:.75, rate: 0.96 + Math.random()*0.08 });
+
     state.flipped.push(card);
 
     if(card.dataset.symbol === RED){
       state.redFlips++;
+SFX.play('skull', { volume:.9, rate: 0.98 });
+
       if(state.redFlips >= 2){
         setTimeout(() => lose('Oh no! 💀', 'Hai rivelato il teschio due volte.'), 220);
         return;
@@ -881,6 +895,8 @@ frameBaseScore = totalScore;  // snapshot del totale prima di iniziare il quadro
     if(card.dataset.symbol === YELLOW){
       state.yellowFlips++;
       flashMessage('Shuffle!');
+SFX.play('reshuffle', { volume:.9 });
+
       reshuffleHiddenNonSpecial();
     }
 
@@ -922,6 +938,8 @@ if (tapBuffer.length) {
         state.leftMs = Math.max(0, state.deadlineTs - now);
         updateTime();
         flashMessage('+1s');
+SFX.play('bonus1', { volume:.85, rate: 1.02 });
+
 
         if(state.streak >= 2 && (now - state.lastMatchTime) < 5000){
           const now2 = performance.now();
@@ -929,6 +947,8 @@ if (tapBuffer.length) {
           state.leftMs = Math.max(0, state.deadlineTs - now2);
           updateTime();
           flashMessage('+5s Bonus!');
+SFX.play('bonus5', { volume:1 });
+
         }
         state.lastMatchTime = now;
 
@@ -936,6 +956,8 @@ if (tapBuffer.length) {
         b.setAttribute('data-state','matched');
 spawnMatchStars(a);
 spawnMatchStars(b);
+SFX.play('ok', { volume:.9, rate: 0.98 });
+
         state.matched++;
         if(state.matched >= state.level.pairs){ win(); }
       } else {
@@ -945,6 +967,8 @@ spawnMatchStars(b);
         state.leftMs = Math.max(0, state.deadlineTs - now);
         updateTime();
         flashMessage('-1s');
+SFX.play('fail', { volume:.9 });
+
         flip(a,false); flip(b,false);
       }
       state.flipped.length = 0;
@@ -964,6 +988,8 @@ spawnMatchStars(b);
       c.querySelector('.symbol').textContent = symbols[i];
     });
     flashMessage('🔀 Rimescolo!');
+SFX.play('reshuffle', { volume:.9 });
+
   }
 function spawnMatchStars(card){
   // Contenitore
@@ -993,6 +1019,8 @@ function spawnMatchStars(card){
 
   function win(){
     state.running = false;
+// in win()
+SFX.play('win', { volume:1.0 });
 
     const secondsLeft = Math.floor(state.leftMs/1000);
     const free = freeMovesFor(state.level);
@@ -1037,6 +1065,7 @@ Punteggio parziale: <b>${totalScore}</b>`;
     const L = LEVELS[currentLevelIdx];
     const p = progress[currentLevelIdx];
     state.running = false;
+SFX.play('lose', { volume:1.0 });
     if(p.unlocked){
       const next = currentLevelIdx + 1;
       if(next < LEVELS.length){
@@ -1246,7 +1275,8 @@ delBtn.onclick = () => {
   }
 
   // ===== Event Listeners =====
-  if(introBtn){ introBtn.addEventListener('click', () => { hideIntro(); }); }
+  if(introBtn){ introBtn.addEventListener('click', () => { ensureSfx();
+hideIntro(); }); }
   restartBtn.addEventListener('click', () => {
   openRestartConfirm();
 });
@@ -1392,6 +1422,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function skipSplash(){
     if (splashTimer) { clearTimeout(splashTimer); splashTimer = null; }
+ensureSfx();
+
     hideSplash();
     showIntro(); // apre il tutorial
   }
@@ -1443,6 +1475,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
+
 
 
 
