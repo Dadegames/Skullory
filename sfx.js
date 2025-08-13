@@ -3,15 +3,11 @@ const SFX = (() => {
   const AC = window.AudioContext || window.webkitAudioContext;
   const ctx = new AC();
 const sfxMaster = ctx.createGain();
-// volume master SFX (persistente). Default 1.0 (puoi alzare fino a 4x)
-const savedSfxVol = parseFloat(localStorage.getItem('skullory_sfx_vol') || '1');
-sfxMaster.gain.value = isNaN(savedSfxVol) ? 1 : Math.max(0, Math.min(4, savedSfxVol));
+sfxMaster.gain.value = FIXED_SFX_VOLUME;
 sfxMaster.connect(ctx.destination);
 
 function setMasterVolume(v){
-  const val = Math.max(0, Math.min(4, Number(v)));
-  sfxMaster.gain.value = val;
-  try { localStorage.setItem('skullory_sfx_vol', String(val)); } catch(_) {}
+  sfxMaster.gain.value = Math.max(0, Math.min(4, Number(v)));
 }
 function getMasterVolume(){ return sfxMaster.gain.value; }
 
@@ -81,18 +77,13 @@ const BGM = (() => {
   let enabled = JSON.parse(localStorage.getItem('skullory_bgm_enabled') || 'true'); // di default ON
   let userHasInteracted = false;
 
-  function ensureAudio() {
-    if (audio) return;
-    audio = new Audio('./sounds/bgm.mp3');
-    audio.loop = true;
-    audio.preload = 'auto';
-
-    // volume iniziale (persistente)
-    const fallback = 0.08;
-    const saved = parseFloat(localStorage.getItem('skullory_bgm_vol') || '');
-    const initial = isNaN(saved) ? fallback : Math.max(0, Math.min(1, saved));
-    audio.volume = initial;
-  } // <-- ✅ CHIUDE ensureAudio()
+function ensureAudio() {
+  if (audio) return;
+  audio = new Audio('./sounds/bgm.mp3');
+  audio.loop = true;
+  audio.preload = 'auto';
+  audio.volume = FIXED_BGM_VOLUME; // sempre lo stesso
+}
 
   async function start() {
     ensureAudio();
@@ -115,12 +106,10 @@ const BGM = (() => {
 
   function toggle() { setEnabled(!enabled); }
 
-  function setVolume(v) {
-    ensureAudio();
-    const clamped = Math.max(0, Math.min(1, v));
-    audio.volume = clamped;
-    localStorage.setItem('skullory_bgm_vol', String(clamped));
-  }
+function setVolume(v) {
+  ensureAudio();
+  audio.volume = Math.max(0, Math.min(1, v));
+}
 
   // Ducking sugli SFX forti
   let _duckTimer = null;
@@ -163,4 +152,5 @@ window.BGM = BGM;
 // Integra col tuo SFX.init() (se esiste):
 // - chiama BGM.start() al primo gesto utente
 // - richiama BGM.duck() quando suoni un effetto forte
+
 
