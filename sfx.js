@@ -35,17 +35,30 @@ const SFX = (() => {
     play('tap', { volume: 0.0001 });
   }
 
-  function play(name, { rate=1.0, volume=1.0 } = {}){
-    const buf = buffers[name];
-    if(!buf) return;
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.playbackRate.value = rate;
-    const gain = ctx.createGain();
-    gain.gain.value = volume;
-    src.connect(gain).connect(ctx.destination);
-    try { src.start(); } catch(e){}
-  }
+function play(name, { rate=1.0, volume=1.0 } = {}){
+  const buf = buffers[name];
+  if(!buf) return;
+
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.playbackRate.value = rate;
+
+  const gain = ctx.createGain();
+  gain.gain.value = volume;
+
+  src.connect(gain).connect(ctx.destination);
+
+  try { src.start(); } catch(e){}
+
+  // ⬇️ Ducking musica: abbassa leggermente la BGM per ~220ms sui colpi "forti"
+  try {
+    if (window.BGM) {
+      const loud = new Set(['ok','fail','win','lose','skull','reshuffle','bonus5']);
+      if (loud.has(name)) BGM.duck();
+    }
+  } catch(_) {}
+}
+
 
   return { init, play };
 })();
@@ -56,12 +69,14 @@ const BGM = (() => {
   let userHasInteracted = false;
 
   function ensureAudio() {
-    if (audio) return;
-    audio = new Audio('./sounds/bgm.mp3'); // <-- cambia se usi .wav
-    audio.loop = true;          // loop continuo
-    audio.volume = 0.16;        // volume basso
-    audio.preload = 'auto';
-  }
+  if (audio) return;
+  audio = new Audio('./sounds/bgm.mp3');
+  audio.loop = true;
+  audio.preload = 'auto';
+  const saved = parseFloat(localStorage.getItem('skullory_bgm_vol') || '0.16');
+  audio.volume = isNaN(saved) ? 0.16 : saved; // usa il salvato se c'è
+}
+
 
   async function start() {
     ensureAudio();
@@ -83,19 +98,21 @@ const BGM = (() => {
   }
   function toggle() { setEnabled(!enabled); }
 
-  function setVolume(v) {
-    ensureAudio();
-    audio.volume = Math.max(0, Math.min(1, v));
-  }
+function setVolume(v) {
+  ensureAudio();
+  const clamped = Math.max(0, Math.min(1, v));
+  audio.volume = clamped;
+  localStorage.setItem('skullory_bgm_vol', String(clamped)); // ✅ salva
+}
 
-  // Riduci leggermente la musica quando suonano gli SFX (ducking leggero)
-  function duck() {
-    if (!audio || audio.paused) return;
-    const base = parseFloat(localStorage.getItem('skullory_bgm_vol') || '0.16');
-    audio.volume = Math.max(0, base - 0.06);
-    clearTimeout(duck._t);
-    duck._t = setTimeout(() => { audio.volume = base; }, 220);
-  }
+function duck() {
+  if (!audio || audio.paused) return;
+  const base = audio.volume;       // ✅ usa il volume REALE correntemente impostato
+  audio.volume = Math.max(0, base - 0.06);
+  clearTimeout(duck._t);
+  duck._t = setTimeout(() => { audio.volume = base; }, 220);
+}
+
 
   // UI helper (aggiorna icona se presente)
   function updateUi() {
