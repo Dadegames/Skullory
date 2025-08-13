@@ -610,12 +610,14 @@ function ensureSfx(){
   try {
     // inizializza effetti
     SFX.init();
+SFX.setMasterVolume(parseFloat(localStorage.getItem('skullory_sfx_vol') || '2.5'));
+BGM.setVolume(parseFloat(localStorage.getItem('skullory_bgm_vol') || '0.10'));
+
 
     // segna interazione utente e prova a far partire la musica
     if (window.BGM){
       BGM._markInteracted();
       BGM.start();
-BGM.setVolume(0.008); // forza la musica bassa all'avvio (~0.4%)
       BGM.updateUi?.(); // se esiste, aggiorna icona
     }
 
@@ -995,13 +997,12 @@ SFX.play('skull', { volume:.9, rate: 0.98 });
         return;
       }
     }
-    if(card.dataset.symbol === YELLOW){
-      state.yellowFlips++;
-      flashMessage('Shuffle!');
-SFX.play('reshuffle', { volume:.9 });
+if(card.dataset.symbol === YELLOW){
+  state.yellowFlips++;
+  flashMessage('Shuffle!');
+  reshuffleHiddenNonSpecial(); 
+}
 
-      reshuffleHiddenNonSpecial();
-    }
 
     if(state.flipped.length === 2){
       state.moves++;
@@ -1578,8 +1579,6 @@ ensureSfx();
 
 </body>
 </html>
-
-
 
 
 
