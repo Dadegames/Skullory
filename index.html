@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Skullory – 7 livelli</title>
+<title>Skullory</title>
 <style>
   :root{
     --bg-1:#141724; --bg-2:#232a46; --bg-3:#2b335c; --bg-4:#28315a;
@@ -371,7 +371,7 @@ container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghez
     </div>
   </div>
 
-  <div class="grid" id="grid" aria-label="Griglia Slapmory"></div>
+  <div class="grid" id="grid" aria-label="Griglia Skullory"></div>
 <!-- Pulsanti centrati sotto la griglia -->
 <div class="controls controls-bottom">
   <button class="primary outline-btn" id="pause">⏸️</button>
@@ -558,7 +558,7 @@ const LEVELS = [
     timeMs: 70000, unlockMs: [70000, 65000, 60000], postDeltaSec: 3 },
 
   // 5×5 base
-  { name: '5×5', side: 5, disabled: [], pairs: 12, red: 1, yellow: 2,
+  { name: '5×5', side: 5, disabled: [], pairs: 11, red: 1, yellow: 2,
     timeMs: 80000, unlockMs: [80000, 75000, 70000], postDeltaSec: 3 },
 
   // 6×6 (croce) — NUOVO
@@ -594,7 +594,7 @@ const LEVELS = [
     timeMs: 95000, unlockMs: [95000, 90000, 85000], postDeltaSec: 3 },
 
   // 6×6 base
-  { name: '6×6', side: 6, disabled: [], pairs: 17, red: 1, yellow: 3,
+  { name: '6×6', side: 6, disabled: [], pairs: 16, red: 1, yellow: 3,
     timeMs: 100000, unlockMs: [100000, 95000, 90000], postDeltaSec: 3 }
 ];
 
@@ -785,7 +785,16 @@ function goToSlide(i){
   let totalScore = 0;
   let themeIndex = 1;
 let frameBaseScore = 0;  // punteggio di partenza del quadro corrente
+// Slot di salvataggio "attivo": se valorizzato, abilita l'autosalvataggio
+let activeSaveName = localStorage.getItem('skullory_active_save') || '';
 
+function setActiveSaveName(name){
+  activeSaveName = name || '';
+  try {
+    if (activeSaveName) localStorage.setItem('skullory_active_save', activeSaveName);
+    else localStorage.removeItem('skullory_active_save');
+  } catch(_) {}
+}
 
 let __bgmHandle = null;  // terrà l’handle della musica (se SFX.play lo restituisce)
 
@@ -1159,6 +1168,11 @@ Punteggio parziale: <b>${totalScore}</b>`;
       ovBtn.textContent = 'Continua a giocare';
       ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
     }
+// Autosalvataggio se c'è uno slot attivo
+if (activeSaveName) {
+  upsertSave(activeSaveName, buildPayload());
+  flashMessage('💾 Autosalvato: ' + activeSaveName);
+}
     updateSaveButton();
   }
 
@@ -1303,7 +1317,9 @@ row.className = 'save-row';
       row.style.padding = '6px 0';
       const name = document.createElement('div');
       const d = new Date(entry.when||Date.now());
-      name.innerHTML = `<b>${entry.name}</b><br><small>${d.toLocaleString()}</small>`;
+      const title = document.createElement('b');  title.textContent = entry.name;
+const small = document.createElement('small'); small.textContent = d.toLocaleString();
+name.append(title, document.createElement('br'), small);
 const loadBtn = document.createElement('button');
 loadBtn.className = 'icon-btn';
 loadBtn.innerHTML = '📤';           // Upload
@@ -1316,7 +1332,12 @@ delBtn.innerHTML = '🗑️';          // Cestino
 delBtn.title = 'Elimina questo salvataggio';
 delBtn.setAttribute('aria-label','Elimina questo salvataggio');
 
-      loadBtn.onclick = () => { loadPayload(entry.data); closeSaveManager(); flashMessage('📂 Caricato: '+entry.name); };
+loadBtn.onclick = () => {
+  loadPayload(entry.data);
+  setActiveSaveName(entry.name);                 // ⬅️ aggiunta
+  closeSaveManager();
+  flashMessage('📂 Caricato: ' + entry.name);
+};
 delBtn.onclick = () => {
   // Pulisci eventuali conferme aperte
   document.querySelectorAll('.inline-confirm').forEach(el => el.remove());
@@ -1442,14 +1463,15 @@ if (restartNo) {
 
         requestAnimationFrame(() => yesBtn && yesBtn.focus());
 
-        yesBtn.onclick = () => {
-          upsertSave(nm, buildPayload());
-          flashMessage('💾 Sovrascritto: ' + nm);
-          renderSaveList();
-          saveNameInput.value = '';
-          overwritePrompt.remove();
-          overwritePrompt = null;
-        };
+yesBtn.onclick = () => {
+  upsertSave(nm, buildPayload());
+  setActiveSaveName(nm);                          // ⬅️ AGGIUNTA
+  flashMessage('💾 Sovrascritto: ' + nm);
+  renderSaveList();
+  saveNameInput.value = '';
+  overwritePrompt.remove();
+  overwritePrompt = null;
+};
 
         noBtn.onclick = () => {
           overwritePrompt.remove();
@@ -1466,10 +1488,11 @@ if (restartNo) {
         return;
       }
 
-      upsertSave(nm, buildPayload());
-      flashMessage('💾 Salvato: ' + nm);
-      renderSaveList();
-      saveNameInput.value = '';
+upsertSave(nm, buildPayload());
+setActiveSaveName(nm);                            // ⬅️ AGGIUNTA
+flashMessage('💾 Salvato: ' + nm);
+renderSaveList();
+saveNameInput.value = '';
     });
   }
 
@@ -1576,6 +1599,7 @@ ensureSfx();
 
 </body>
 </html>
+
 
 
 
