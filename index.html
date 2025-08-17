@@ -349,6 +349,26 @@ container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghez
 }
 .icon-btn:hover{ filter:brightness(1.05) }
 .icon-btn:active{ transform:translateY(1px) }
+/* --- SIMON (flash del fantasmino) --- */
+.simon-ghost{
+  position:absolute; inset:0;
+  display:grid; place-items:center;
+  font-size: clamp(36px, 50cqi, 90px);
+  border:2px solid var(--accent);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.05);
+  animation: simonFlash .55s ease-out;
+  filter: drop-shadow(0 10px 24px rgba(0,0,0,.35));
+  pointer-events: none;            /* non cattura click */
+  backface-visibility: hidden;     /* niente doppio paint col 3D */
+  transform: translateZ(0);        /* promuovi a layer GPU */
+  will-change: transform, opacity; /* anticipa l'animazione */
+}
+@keyframes simonFlash{
+  0%{ opacity:.15; transform:scale(.92) }
+  50%{ opacity:1; transform:scale(1.02) }
+  100%{ opacity:0; transform:scale(1) }
+}
 
 </style>
 </head>
@@ -486,14 +506,32 @@ container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghez
   <div class="dialog">
     <h2 id="ov-title">Hai vinto!</h2>
     <p id="ov-sub">Tempo rimasto: —</p>
-    <button class="primary" id="ov-btn">Continua</button>
+
+    <div class="ov-actions" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="primary" id="ov-btn">Continua</button>
+      <button class="primary outline-btn" id="ov-btn-skip" style="display:none">Salta</button>
+    </div>
   </div>
 </div>
+
 
 <script>
 (() => {
   const RED = '💀';
   const YELLOW = '⚡';
+// --- SIMON: manopole per le durate ---
+const SIMON_CFG = {
+  previewMs: 700,     // 👻 durante la demo automatica
+  gapMs: 140,         // pausa tra i flash
+  inputRevealMs: 520, // quanto resta aperta la carta toccata
+  wrongHoldMs: 850,   // quanto resta aperta la carta con 💀 quando sbagli
+  startLen: 3         // primo giro del Simon lungo 3
+};
+
+const GHOST = '👻';            // icona unica per il Simon
+let sim = null;                // stato dell’intermezzo Simon
+let pendingStartBonusMs = 0;   // bonus “una tantum” da applicare al prossimo livello
+
   const STORAGE_KEY = 'skullory_save_v1'; // legacy single-save (migrazione)
   const SAVES_KEY = 'skullory_saves_v2';   // multi-slot (v2: solo meta, niente stato carte)
 
@@ -684,6 +722,8 @@ const grid = document.getElementById('grid');
   const ovTitle = document.getElementById('ov-title');
   const ovSub = document.getElementById('ov-sub');
   const ovBtn = document.getElementById('ov-btn');
+const ovBtnSkip = document.getElementById('ov-btn-skip'); // ⬅️ nuovo
+function showSkip(v){ if (ovBtnSkip) ovBtnSkip.style.display = v ? '' : 'none'; }
   const pauseBtn = document.getElementById('pause');
   const saveBtn = document.getElementById('save');
   const levelChip = document.getElementById('levelChip');
@@ -814,7 +854,14 @@ function refreshAudioButtons(){
   let pendingCheck = null; // id timeout per checkPair
 let tapBuffer = [];
 const TAP_BUFFER_MAX = 2; // massimo 2 tocchi accodati
-  let progress = LEVELS.map(L => ({ streak: 0, unlocked: false, baseTimeMs: L.unlockMs[0], postUnlockWins: 0 }));
+let progress = LEVELS.map(L => ({
+  streak: 0,
+  unlocked: false,
+  baseTimeMs: L.unlockMs[0],
+  postUnlockWins: 0,
+  carryBonusMs: 0      // ← bonus cumulativo da Simon per questo livello (vale finché non è sbloccato)
+}));
+
 
   function setCols(n){ document.documentElement.style.setProperty('--cols', n); }
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
@@ -829,7 +876,8 @@ const TAP_BUFFER_MAX = 2; // massimo 2 tocchi accodati
 
   function updateStatusChip(){
     const p = progress[currentLevelIdx];
-    const baseSec = Math.max(0, p.baseTimeMs) / 1000 | 0;
+const extra = !p.unlocked ? (p.carryBonusMs || 0) : 0;
+const baseSec = Math.max(0, p.baseTimeMs + extra) / 1000 | 0;
     if(!p.unlocked){
       statusChip.textContent = `Sbloc ${p.streak}/3 · ${baseSec}s`;
     } else {
@@ -845,6 +893,13 @@ const TAP_BUFFER_MAX = 2; // massimo 2 tocchi accodati
     const deck = pairs.concat(specials);
     return shuffle(deck);
   }
+function getActiveCards(){
+  return Array.from(grid.querySelectorAll('.card'))
+    .filter(c => !c.classList.contains('placeholder'));
+}
+function getCardByIndex(idx){
+  return grid.querySelector(`.card[data-index="${idx}"]`);
+}
 
   // --- MOSSE & PUNTEGGIO: funzioni helper ---
   function freeMovesFor(level){ return level.side * level.side; }
@@ -885,18 +940,23 @@ const TAP_BUFFER_MAX = 2; // massimo 2 tocchi accodati
 
     if (pendingCheck) { clearTimeout(pendingCheck); pendingCheck = null; }
 
-    state = {
-      level: L,
-      deck: buildDeck(L),
-      flipped: [], matched: 0, moves: 0,
-      running: false, startTs: 0,
-      leftMs: Math.max(0, progress[levelIdx].baseTimeMs),
-      lock: false,
-      redFlips: 0, yellowFlips: 0,
-      paused: false, streak: 0, lastMatchTime: 0, totalBonusMs: 0,
-      deadlineTs: 0,
-      pauseLeftMs: 0
-    };
+state = {
+  level: L,
+  deck: buildDeck(L),
+  flipped: [], matched: 0, moves: 0,
+  running: false, startTs: 0,
+leftMs: Math.max(0, progress[levelIdx].baseTimeMs + (!progress[levelIdx].unlocked ? (progress[levelIdx].carryBonusMs || 0) : 0)),
+
+  lock: false,
+  redFlips: 0, yellowFlips: 0,
+  paused: false, streak: 0, lastMatchTime: 0, totalBonusMs: 0,
+  deadlineTs: 0,
+  pauseLeftMs: 0,
+
+  // nuovi flag per gestire il bonus del Simon
+  preAppliedBonusMs: 0,  // bonus già mostrato nel timer
+  startBonusMs: 0        // bonus “ritardato” (fallback)
+};
 
     grid.innerHTML = '';
     const frag = document.createDocumentFragment();
@@ -946,12 +1006,22 @@ tapBuffer = [];
   function startTimer(){
     if(state.paused) return;
     if(state.running) return;
-    state.running = true;
-frameBaseScore = totalScore;  // snapshot del totale prima di iniziare il quadro
-    const now = performance.now();
-    state.startTs = now;
-    const base = Math.max(0, progress[currentLevelIdx].baseTimeMs);
-    state.deadlineTs = now + base;
+state.running = true;
+frameBaseScore = totalScore;
+const now = performance.now();
+state.startTs = now;
+
+// base del livello + bonus cumulativo (vale finché il livello non è sbloccato)
+const p = progress[currentLevelIdx];
+const carry = !p.unlocked ? (p.carryBonusMs || 0) : 0;
+const base = Math.max(0, p.baseTimeMs + carry);
+
+
+// deadline reale del timer
+state.deadlineTs = now + base;
+tick();
+updateSaveButton();
+
     tick();
     updateSaveButton(); // durante il quadro il salvataggio non è consentito
   }
@@ -975,6 +1045,10 @@ frameBaseScore = totalScore;  // snapshot del totale prima di iniziare il quadro
 
   function onCardClick(card){
 ensureSfx(); // sblocca audio al primo tocco
+if (sim && sim.active){
+  simonOnTap(card);
+  return;
+}
 SFX.play('tap', { volume:.5, rate: 0.98 + Math.random()*0.04 });
     if (state.paused) { flashMessage('In pausa ▶️'); return; }
   if (state.lock) {
@@ -1101,6 +1175,172 @@ SFX.play('fail', { volume:.9 });
 SFX.play('reshuffle', { volume:.9 });
 
   }
+function startSimonIntermezzo(){
+  ensureSfx();
+
+  // copri tutto
+  getActiveCards().forEach(c => c.setAttribute('data-state', 'hidden'));
+
+  const activeIdx = getActiveCards().map(c => +c.dataset.index);
+  const order = shuffle(activeIdx.slice());   // sequenza senza ripetizioni
+
+  const maxLen   = order.length;
+  const startLen = Math.min(SIMON_CFG.startLen, maxLen); // sicurezza
+
+  sim = {
+    active: true,
+    busy: false,
+    order,
+    round: startLen - 1,   // ⬅️ così il primo simNextRound() diventa 3
+    pos: 0,
+    maxLen
+  };
+
+  if (pauseBtn) pauseBtn.disabled = true;
+  flashMessage('👻 Simon: ripeti la sequenza');
+  simNextRound();
+}
+
+
+function simNextRound(){
+  if (!sim || !sim.active) return;
+  if (sim.round >= sim.maxLen){
+    endSimon(sim.round);       // hai visto tutte le caselle
+    return;
+  }
+  sim.round++;                 // la sequenza diventa: order[0..round-1]
+  simShowSequence();
+}
+
+
+async function simShowSequence(){
+  sim.pos = 0;
+  sim.busy = true;
+
+  await new Promise(r => setTimeout(r, 350));      // micro pausa
+
+  for (let i = 0; i < sim.round; i++){
+    await simFlash(sim.order[i]);                  // 👻 durata = SIMON_CFG.previewMs
+    await new Promise(r => setTimeout(r, SIMON_CFG.gapMs));
+  }
+
+  sim.busy = false;
+}
+
+function simFlash(idx){
+  return new Promise(res => {
+    const card = getCardByIndex(idx);
+    if (!card){ res(); return; }
+
+    const ghost = document.createElement('div');
+    ghost.className = 'simon-ghost';
+    ghost.textContent = GHOST;
+    ghost.style.animationDuration = SIMON_CFG.previewMs + 'ms';
+
+    // 👇 TORNA QUI: sovrapponi il ghost alla carta intera
+    card.appendChild(ghost);
+
+    SFX.play?.('tap', { volume:.6, rate: 1.05 });
+    setTimeout(() => { ghost.remove(); res(); }, SIMON_CFG.previewMs);
+  });
+}
+
+// attesa semplice
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+// Mostra un simbolo TEMPORANEO su una carta, la apre, poi la richiude
+async function simonRevealTemp(card, symbol, holdMs){
+  const symEl = card.querySelector('.symbol');
+  const prev  = card.dataset.symbol;
+
+  // sostituisci simbolo e apri
+  card.dataset.symbol = symbol;
+  symEl.textContent   = symbol;
+  card.setAttribute('data-state','revealed');
+  SFX.play?.('flip', { volume:.75 });
+
+  await sleep(holdMs);
+
+  // richiudi e ripristina
+  card.setAttribute('data-state','hidden');
+  card.dataset.symbol = prev;
+  symEl.textContent   = prev;
+}
+
+// Mostra il teschio per un po' (errore), poi richiude
+async function simonRevealSkull(card, holdMs){
+  const symEl = card.querySelector('.symbol');
+  const prev  = card.dataset.symbol;
+
+  card.dataset.symbol = '💀';
+  symEl.textContent   = '💀';
+  card.setAttribute('data-state','revealed');
+  SFX.play?.('skull', { volume:.95 });
+
+  await sleep(holdMs);
+
+  card.setAttribute('data-state','hidden');
+  card.dataset.symbol = prev;
+  symEl.textContent   = prev;
+}
+
+
+async function simonOnTap(card){
+  if (!sim || !sim.active) return;
+  if (sim.busy) return;                     // blocca input se il Simon "suona" o sta rivelando
+
+  const idx = +card.dataset.index;
+  const expected = sim.order[sim.pos];
+
+  if (idx !== expected){
+    sim.busy = true;                         // blocca fino a fine animazione errore
+    await simonRevealSkull(card, SIMON_CFG.wrongHoldMs);
+    sim.busy = false;
+    endSimon(Math.max(0, sim.round - 1));
+    return;
+  }
+
+  // ✅ corretto: incrementa PRIMA dell'await per evitare la race sul secondo tap
+  sim.busy = true;                           // non accettare altri tap durante la rivelazione
+  sim.pos++;
+  SFX.play?.('ok', { volume:.8 });
+  await simonRevealTemp(card, GHOST, SIMON_CFG.inputRevealMs);
+  sim.busy = false;
+
+  if (sim.pos === sim.round){
+    flashMessage('✓');
+    setTimeout(() => simNextRound(), 350);
+  }
+}
+
+function endSimon(completedLen){
+  const bonusSec = Math.max(0, Math.min(completedLen, sim?.maxLen || 0));
+  sim.active = false;
+  sim = null;
+
+  if (pauseBtn) pauseBtn.disabled = false;
+
+const bonusMs = bonusSec * 1000;
+const next = currentLevelIdx + 1;
+
+// accumula il bonus nel livello successivo solo se esiste e non è già sbloccato
+if (next < LEVELS.length && !progress[next].unlocked) {
+  progress[next].carryBonusMs = (progress[next].carryBonusMs || 0) + bonusMs;
+}
+
+// non usiamo più il meccanismo one-shot
+pendingStartBonusMs = 0;
+
+  const finalMsg = bonusSec > 0
+    ? `Hai guadagnato <b>+${bonusSec}s</b> per il prossimo livello!`
+    : 'Nessun bonus ottenuto.';
+
+  // Vai al prossimo livello (quello già sbloccato) con overlay di cortesia
+  showOverlay('Intermezzo Simon concluso', `${finalMsg}`);
+  ovBtn.textContent = 'Vai al livello successivo';
+  ovBtn.onclick = () => { hideOverlay(); init(next); };
+}
+
 function spawnMatchStars(card){
   // Contenitore
   const wrap = document.createElement('div');
@@ -1154,13 +1394,23 @@ Punteggio parziale: <b>${totalScore}</b>`;
         showOverlay('Quadro completato ✔️', `Sblocco: ${p.streak}/3<br>${detailRow}<br><small>Prossimo tentativo: tempo base ${Math.floor(p.baseTimeMs/1000)}s</small>`);
         ovBtn.textContent = 'Continua a giocare';
         ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
-      } else {
-        p.unlocked = true;
-        p.postUnlockWins = 0;
-        showOverlay('Sblocco conquistato! 🏆', `Hai completato 3 quadri di fila.<br>Ora resta su questo livello e fai punti!<br>${detailRow}`);
-        ovBtn.textContent = 'Continua a giocare';
-        ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
-      }
+} else {
+  p.unlocked = true;
+  p.postUnlockWins = 0;
+  p.carryBonusMs = 0;   // azzera il bonus “carry” perché il livello è sbloccato
+
+  showOverlay(
+    'Sblocco conquistato! 🏆',
+    `Hai completato 3 quadri di fila.<br>
+     Ora resta su questo livello e fai punti!<br>
+     ${detailRow}`
+  );
+
+  ovBtn.textContent = 'Continua a giocare';
+  ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
+}
+
+
     } else {
       p.postUnlockWins += 1;
       p.baseTimeMs = Math.max(0, p.baseTimeMs - L.postDeltaSec*1000);
@@ -1177,42 +1427,73 @@ if (activeSaveName) {
   }
 
   function lose(title, sub){
-    const L = LEVELS[currentLevelIdx];
-    const p = progress[currentLevelIdx];
-    state.running = false;
-SFX.play('lose', { volume:1.0 });
-    if(p.unlocked){
-      const next = currentLevelIdx + 1;
-      if(next < LEVELS.length){
-        showOverlay('Passi al livello successivo ↗️', (sub || 'Hai perso questo quadro, ma il passaggio era già conquistato.') + `<br><small>Punteggio parziale: ${totalScore}</small>`);
-        ovBtn.textContent = 'Vai al prossimo livello';
-        ovBtn.onclick = () => { hideOverlay(); init(next); };
-      } else {
-        showOverlay('Fine partita', (sub || 'Hai terminato l’ultimo livello.') + `<br><b>Punteggio finale: ${totalScore} punti</b>`);
-        ovBtn.textContent = 'Gioca ancora';
-        ovBtn.onclick = () => { totalScore=0; progress = LEVELS.map(L => ({ streak:0, unlocked:false, baseTimeMs:L.unlockMs[0], postUnlockWins:0 })); hideOverlay(); init(0); updateScoreChip(); };
-      }
-} else {
-  // ❌ hai perso PRIMA dello sblocco → azzera tentativi e punteggio
-  p.streak = 0;
-  p.baseTimeMs = L.unlockMs[0];
+  const L = LEVELS[currentLevelIdx];
+  const p = progress[currentLevelIdx];
+  state.running = false;
+  SFX.play('lose', { volume:1.0 });
 
-totalScore = 0;         // ← azzera punteggio
-frameBaseScore = 0;     // ← allinea la base
-updateScoreChip();
+if (p.unlocked){
+  const next = currentLevelIdx + 1;
+
+  // Popup con doppia scelta: Simon o salto
   showOverlay(
-    title || 'Hai perso',
-    (sub || 'Ritenta!') +
-    `<br><small>Sblocco: ${p.streak}/3 – tempo base ripristinato a ${Math.floor(p.baseTimeMs/1000)}s</small>`
+    'Intermezzo bonus tempo 👻',
+    'Hai sbloccato il livello successivo: puoi provare a guadagnare <b>secondi bonus</b> con un mini-Simon.<br><br>' +
+    '<small>Ogni passo corretto = <b>+1s</b> al prossimo livello. Al primo errore il Simon termina.</small>'
   );
-  ovBtn.textContent = 'Riprova questo livello';
-  ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
-}
 
-    updateSaveButton();
+  // Bottone principale: fai il Simon
+  ovBtn.textContent = 'Prova il Simon';
+  ovBtn.onclick = () => {
+    hideOverlay();
+    startSimonIntermezzo();
+  };
+
+  // Secondo bottone: salta il Simon e vai subito al livello dopo (nessun bonus)
+  showSkip(true);                    // ← fa comparire il tasto "salta"
+  if (ovBtnSkip) {
+    ovBtnSkip.textContent = 'Prosegui senza Simon';
+    ovBtnSkip.onclick = () => {
+      hideOverlay();
+      if (next < LEVELS.length) {
+        init(next);                  // vai al prossimo livello, senza bonus
+      } else {
+        init(currentLevelIdx);       // se sei già all’ultimo, resta qui
+      }
+    };
   }
 
-  function showOverlay(title, sub){ ovTitle.textContent = title; ovSub.innerHTML = sub; overlay.classList.add('show'); updateSaveButton(); }
+  return; // importantissimo: non far proseguire lose() oltre questo punto
+} else {
+    // ⬇️ questo blocco resta identico al tuo
+    p.streak = 0;
+    p.baseTimeMs = L.unlockMs[0];
+
+    totalScore = 0;         // ← azzera punteggio
+    frameBaseScore = 0;     // ← allinea la base
+    updateScoreChip();
+
+    showOverlay(
+      title || 'Hai perso',
+      (sub || 'Ritenta!') +
+      `<br><small>Sblocco: ${p.streak}/3 – tempo base ripristinato a ${Math.floor(p.baseTimeMs/1000)}s</small>`
+    );
+    ovBtn.textContent = 'Riprova questo livello';
+    ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
+  }
+
+  updateSaveButton();
+}
+
+
+function showOverlay(title, sub){
+  ovTitle.textContent = title;
+  ovSub.innerHTML = sub;
+  overlay.classList.add('show');
+  showSkip(false);            // ⬅️ aggiunta
+  updateSaveButton();
+}
+
   function hideOverlay(){ overlay.classList.remove('show'); updateSaveButton(); }
 function openRestartConfirm(){
   // opzionale: metti in pausa mentre chiedi conferma
@@ -1599,6 +1880,7 @@ ensureSfx();
 
 </body>
 </html>
+
 
 
 
