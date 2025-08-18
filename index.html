@@ -209,6 +209,19 @@ container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghez
     .wrap{ width:min(520px, 96vw) }
     .top, .grid{ width:100% }
   }
+/* Disabilita il flip animato quando vogliamo richiudere le carte di colpo */
+.no-flip .inner { transition: none !important; }
+/* (consigliato) metti il ghost sopra a tutto, così copre bene la carta */
+.simon-ghost { z-index: 30; }
+/* Quando è attivo il Simon, impedisci ogni flip e nascondi la faccia front */
+body.mode-simon .card .inner{
+  transform: none !important;
+  transition: none !important;
+}
+body.mode-simon .card .front{
+  visibility: hidden !important;
+}
+
 /* Pulsanti Pausa, Salva, Ricomincia in versione outline */
 .outline-btn {
   background: transparent !important;      /* sfondo trasparente */
@@ -369,6 +382,7 @@ container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghez
   50%{ opacity:1; transform:scale(1.02) }
   100%{ opacity:0; transform:scale(1) }
 }
+.no-flip .card[data-state="hidden"] .front { visibility: hidden; }
 
 </style>
 </head>
@@ -1177,28 +1191,26 @@ SFX.play('reshuffle', { volume:.9 });
   }
 function startSimonIntermezzo(){
   ensureSfx();
-
-  // copri tutto
+document.body.classList.add('mode-simon');
+  // 1) niente animazione mentre chiudiamo tutte le carte
+  document.body.classList.add('no-flip');
   getActiveCards().forEach(c => c.setAttribute('data-state', 'hidden'));
 
-  const activeIdx = getActiveCards().map(c => +c.dataset.index);
-  const order = shuffle(activeIdx.slice());   // sequenza senza ripetizioni
+  // 2) dopo 1 frame rimuovi il blocco e avvia il Simon
+  requestAnimationFrame(() => {
+    document.body.classList.remove('no-flip');
 
-  const maxLen   = order.length;
-  const startLen = Math.min(SIMON_CFG.startLen, maxLen); // sicurezza
+    const activeIdx = getActiveCards().map(c => +c.dataset.index);
+    const order = shuffle(activeIdx.slice());
+    const maxLen   = order.length;
+    const startLen = Math.min(SIMON_CFG.startLen, maxLen);
 
-  sim = {
-    active: true,
-    busy: false,
-    order,
-    round: startLen - 1,   // ⬅️ così il primo simNextRound() diventa 3
-    pos: 0,
-    maxLen
-  };
+    sim = { active: true, busy: false, order, round: startLen - 1, pos: 0, maxLen };
 
-  if (pauseBtn) pauseBtn.disabled = true;
-  flashMessage('👻 Simon: ripeti la sequenza');
-  simNextRound();
+    if (pauseBtn) pauseBtn.disabled = true;
+    flashMessage('👻 Simon: ripeti la sequenza');
+    simNextRound();
+  });
 }
 
 
@@ -1248,40 +1260,28 @@ function simFlash(idx){
 // attesa semplice
 function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 
-// Mostra un simbolo TEMPORANEO su una carta, la apre, poi la richiude
+// Mostra un overlay temporaneo (👻 o 💀) sopra la carta, senza girarla davvero
 async function simonRevealTemp(card, symbol, holdMs){
-  const symEl = card.querySelector('.symbol');
-  const prev  = card.dataset.symbol;
+  const ghost = document.createElement('div');
+  ghost.className = 'simon-ghost';
+  ghost.style.animationDuration = holdMs + 'ms';
+  ghost.textContent = symbol;
 
-  // sostituisci simbolo e apri
-  card.dataset.symbol = symbol;
-  symEl.textContent   = symbol;
-  card.setAttribute('data-state','revealed');
-  SFX.play?.('flip', { volume:.75 });
+  card.appendChild(ghost);
+  // un suono "neutro" se è 👻, altrimenti teschio
+  if (symbol === '💀') {
+    SFX.play?.('skull', { volume:.95 });
+  } else {
+    SFX.play?.('flip', { volume:.75 });
+  }
 
   await sleep(holdMs);
-
-  // richiudi e ripristina
-  card.setAttribute('data-state','hidden');
-  card.dataset.symbol = prev;
-  symEl.textContent   = prev;
+  ghost.remove();
 }
 
-// Mostra il teschio per un po' (errore), poi richiude
+// Alias comodo: errore = overlay 💀
 async function simonRevealSkull(card, holdMs){
-  const symEl = card.querySelector('.symbol');
-  const prev  = card.dataset.symbol;
-
-  card.dataset.symbol = '💀';
-  symEl.textContent   = '💀';
-  card.setAttribute('data-state','revealed');
-  SFX.play?.('skull', { volume:.95 });
-
-  await sleep(holdMs);
-
-  card.setAttribute('data-state','hidden');
-  card.dataset.symbol = prev;
-  symEl.textContent   = prev;
+  return simonRevealTemp(card, '💀', holdMs);
 }
 
 
@@ -1314,6 +1314,7 @@ async function simonOnTap(card){
 }
 
 function endSimon(completedLen){
+document.body.classList.remove('mode-simon');
   const bonusSec = Math.max(0, Math.min(completedLen, sim?.maxLen || 0));
   sim.active = false;
   sim = null;
