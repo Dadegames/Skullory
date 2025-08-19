@@ -81,6 +81,18 @@ body{
   min-width: 40px;
 }
 
+/* Stato visivo disabilitato, ma cliccabile per mostrare l’help */
+.controls-right .power-btn[aria-disabled="true"]{
+  filter: grayscale(100%);
+  opacity: .35;
+  cursor: not-allowed;
+  box-shadow: none;
+  border-color: #3a4168;
+}
+.controls-right .power-btn[aria-disabled="true"]:hover{
+  transform: none;
+  box-shadow: none;
+}
 
   button.primary{background:var(--accent); color:#0b0f1e; border:none; padding:10px 16px; border-radius:12px; font-weight:700; cursor:pointer}
   button.primary:active{transform:translateY(1px)}
@@ -509,7 +521,7 @@ body.mode-simon .card .front{
     <div class="big-symbol" aria-hidden="true">💀</div>
   </div>
   <ul>
-    <li>⚡ rimescola subito tutte le carte coperte (tranne 💀 e ⚡).</li>
+    <li>⚡ rimescola tutte le carte coperte (tranne 💀 e ⚡).</li>
     <li>💀 se rivelato due volte: <b>sconfitta!</b></li>
   </ul>
 </div>
@@ -1009,6 +1021,10 @@ function getCardByIndex(idx){
     saveBtn.style.opacity = ok ? '1' : '0.6';
     saveBtn.title = ok ? 'Salva' : 'Salva disponibile solo a fine quadro o prima di iniziare';
   }
+function isPreFrame(){
+  return !!state && !state.running && state.moves === 0 && state.matched === 0;
+}
+
 function anyOverlayOpen(){
   // true se c’è qualsiasi overlay di blocco aperto
   return overlay.classList.contains('show')
@@ -1056,10 +1072,10 @@ function refreshPowersUI(){
 }
 
 function setPowerState(btn, enabled){
-  btn.disabled = !enabled;                   // abilita/disabilita davvero
-  btn.classList.toggle('ready', !!enabled);  // per il “pulse” e il bordo
-  // accessibilità: tieni allineato anche l’aria-pressed
-  btn.setAttribute('aria-pressed', enabled ? 'false' : 'true');
+  // Non usare il vero disabled: così possiamo intercettare i click per mostrare l’help
+  btn.classList.toggle('ready', !!enabled);
+  btn.setAttribute('aria-disabled', String(!enabled));
+  // niente aria-pressed qui (non è un toggle)
 }
 
 
@@ -1085,7 +1101,11 @@ function getMatchedPairs(){
   return Array.from(map.entries()).filter(([_, arr]) => arr.length === 2);
 }
 function usePowerReveal(){
-  if (!canUsePowersBase() || state.powerUsed.reveal || state.matched < 1) return;
+  const baseOk = canUsePowersBase();
+  if (!baseOk || state.powerUsed.reveal || state.matched < 1){
+    if (isPreFrame()) explainPower('reveal');
+    return;
+  }
 
   const cost = Math.max(4000, Math.floor(state.leftMs * 0.20));
   if ((state.leftMs - cost) < 3000) { refreshPowersUI(); return; }
@@ -1117,7 +1137,11 @@ function usePowerReveal(){
   }, 1000);
 }
 function usePowerPlus10(){
-  if (!canUsePowersBase() || state.powerUsed.plus10 || state.matched < 1) return;
+  const baseOk = canUsePowersBase();
+  if (!baseOk || state.powerUsed.plus10 || state.matched < 1){
+    if (isPreFrame()) explainPower('plus10');
+    return;
+  }
 
   const pairs = getMatchedPairs();
   if (!pairs.length){ refreshPowersUI(); return; }
@@ -1157,7 +1181,11 @@ function usePowerPlus10(){
   refreshPowersUI();
 }
 function usePowerShift(){
-  if (!canUsePowersBase() || state.powerUsed.shift || state.redFlips < 1) return;
+  const baseOk = canUsePowersBase();
+  if (!baseOk || state.powerUsed.shift || state.redFlips < 1){
+    if (isPreFrame()) explainPower('shift');
+    return;
+  }
 
   ensureSfx();
   state.powerUsed.shift = true;
@@ -1701,12 +1729,12 @@ if (p.unlocked){
   // Popup con doppia scelta: Simon o salto
   showOverlay(
     'Intermezzo bonus tempo 👻',
-    'Hai sbloccato il livello successivo: puoi provare a guadagnare <b>secondi bonus</b> con un mini-Simon.<br><br>' +
-    '<small>Ogni passo corretto = <b>+1s</b> al prossimo livello. Al primo errore il Simon termina.</small>'
+    '<b>Bravo!</b> Prima di accedere al livello successivo puoi provare a guadagnare <b>secondi bonus</b> con un mini-gioco cliccando i fantasmini nella giusta sequenza.<br><br>' +
+    '<small>Ogni passo corretto = <b>+1s</b> al prossimo livello. Se riveli il teschio il mini-gioco termina.</small>'
   );
 
   // Bottone principale: fai il Simon
-  ovBtn.textContent = 'Prova il Simon';
+  ovBtn.textContent = 'Prova il Bonus';
   ovBtn.onclick = () => {
     hideOverlay();
     startSimonIntermezzo();
@@ -1715,7 +1743,7 @@ if (p.unlocked){
   // Secondo bottone: salta il Simon e vai subito al livello dopo (nessun bonus)
   showSkip(true);                    // ← fa comparire il tasto "salta"
   if (ovBtnSkip) {
-    ovBtnSkip.textContent = 'Prosegui senza Simon';
+    ovBtnSkip.textContent = 'Prosegui senza Bonus';
     ovBtnSkip.onclick = () => {
       hideOverlay();
       if (next < LEVELS.length) {
@@ -1762,6 +1790,29 @@ function hideOverlay(){
   overlay.classList.remove('show');
   updateSaveButton();
   refreshPowersUI();    // <-- aggiunta
+}
+function explainPower(which){
+  let title = '', desc = '', avail = '';
+
+  if (which === 'reveal'){
+    title = '👁️ Sbirciatina!';
+    desc  = 'Svela tutte le carte per 1s ma costa il 20% del tempo rimanente.';
+    avail = 'Disponibile dopo aver fatto almeno 1 coppia.';
+  } else if (which === 'plus10'){
+    title = '🦇 Guadagna 10s!';
+    desc  = '+10 secondi, ma una coppia già trovata torna coperta e viene rilocalizzata.';
+    avail = 'Disponibile dopo aver fatto almeno 1 coppia.';
+  } else if (which === 'shift'){
+    title = '🌀 Guadagna 15s!';
+    desc  = '+15 secondi, ma rimescola tutto, anche 💀 e ⚡.';
+    avail = 'Disponibile dopo aver svelato almeno un 💀.';
+  }
+
+  const html = `${desc}<br><small>${avail}</small><br><small>Utilizzabile solo durante la manche.</small>`;
+  showOverlay(title, html);
+  ovBtn.textContent = 'Ok';
+  ovBtn.onclick = () => { hideOverlay(); };
+  showSkip(false);
 }
 
 function openRestartConfirm(){
