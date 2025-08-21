@@ -502,8 +502,23 @@ body.mode-simon .card .front{
 
     <!-- Contenitore slide -->
     <div class="tutorial-carousel" aria-live="polite">
+<!-- Slide 0 (scelta modalità) -->
+<div class="tutorial-slide" data-mode="root">
+
+  <h3 style="color:#FFF44F">Scegli modalità</h3>
+  <div style="display:flex; gap:12px; justify-content:center; margin-top:12px; flex-wrap:wrap">
+    <button class="primary" id="intro-arcade">🎮 Gioca (Arcade)</button>
+    <button class="primary outline-btn" id="intro-zen">🧘 Allenati (Zen 6×6)</button>
+  </div>
+  <p style="color:var(--muted); margin-top:10px">
+    Arcade: tempo, bonus, carte speciali e poteri.<br/>
+    Zen: nessun timer, solo te e la memoria. Riepilogo finale.
+  </p>
+</div>
+
       <!-- Slide 1 -->
-<div class="tutorial-slide" data-slide="0">
+<div class="tutorial-slide" data-mode="arcade">
+
   <h3 style="color:#FFF44F">Obiettivo</h3>
   <ul>
     <li>Trova tutte le <b>coppie</b> ribaltando le carte, ma <b>occhio al tempo!</b></li>
@@ -514,7 +529,8 @@ body.mode-simon .card .front{
 </div>
 
 <!-- Slide 2 (simboli grandi) -->
-<div class="tutorial-slide" data-slide="1" hidden>
+<div class="tutorial-slide" data-mode="arcade" hidden>
+
   <h3 style="color:#FFF44F">Carte speciali</h3>
   <div style="display:flex; gap:18px; align-items:center; justify-content:center; margin:10px 0 6px">
     <div class="big-symbol" aria-hidden="true">⚡</div>
@@ -527,7 +543,7 @@ body.mode-simon .card .front{
 </div>
 
 <!-- Slide 3 -->
-<div class="tutorial-slide" data-slide="2" hidden>
+<div class="tutorial-slide" data-mode="arcade" hidden>
   <h3 style="color:#FFF44F">Bonus, penalità e punteggio</h3>
   <ul>
     <li><b>Bonus 1</b>: ogni coppia trovata = <b>+1s</b></li>
@@ -536,7 +552,15 @@ body.mode-simon .card .front{
     <li><b>Punteggio</b>: secondi risparmiati <b>x</b> efficienza mosse.</li>
   </ul>
 </div>
-
+<!-- Slide Zen (mostrata solo se scegli Zen) -->
+<div class="tutorial-slide" data-mode="zen" hidden>
+  <h3 style="color:#FFF44F">Modalità Zen 🧘</h3>
+  <ul>
+    <li>Nessun timer, nessun punteggio a schermo.</li>
+    <li>Giochi tranquillo: niente poteri, niente carte speciali.</li>
+    <li>Alla fine vedi il report: <b>tempo impiegato</b>, <b>mosse</b>, <b>efficienza</b> e ⭐.</li>
+  </ul>
+</div>
     </div>
 
     <!-- Frecce laterali -->
@@ -558,7 +582,7 @@ body.mode-simon .card .front{
 <!-- Conferma Ricomincia -->
 <div class="overlay" id="restartConfirm" aria-hidden="true">
   <div class="dialog">
-    <h2>Ricominciare il livello?</h2>
+    <h2>Vuoi ricominciare ?</h2>
     <p style="margin-top:4px; color:var(--muted)">Perderai lo stato del quadro corrente.</p>
     <div style="display:flex; gap:10px; justify-content:center; margin-top:8px">
       <button class="primary" id="restart-yes">Sì, ricomincia</button>
@@ -620,6 +644,7 @@ const SIMON_CFG = {
 const GHOST = '👻';            // icona unica per il Simon
 let sim = null;                // stato dell’intermezzo Simon
 let pendingStartBonusMs = 0;   // bonus “una tantum” da applicare al prossimo livello
+ let modeZen = false; // 🧘 nuova modalità “senza tempo”
 
   const STORAGE_KEY = 'skullory_save_v1'; // legacy single-save (migrazione)
   const SAVES_KEY = 'skullory_saves_v2';   // multi-slot (v2: solo meta, niente stato carte)
@@ -826,6 +851,10 @@ const powerRevealBtn = document.getElementById('powerReveal'); // 👁️
 const powerPlus10Btn = document.getElementById('powerPlus10'); // 🦇
 const powerShiftBtn  = document.getElementById('powerShift');  // 🌀
 [powerRevealBtn, powerPlus10Btn, powerShiftBtn].forEach(b => b && b.classList.add('power-btn'));
+// ⬇️ RIFERIMENTI AI CONTENITORI DEI BOTTONI
+const controlsBottom = document.querySelector('.controls-bottom');
+const controlsLeft   = document.querySelector('.controls-left');
+const controlsRight  = document.querySelector('.controls-right');
 
 let musicMuted = JSON.parse(localStorage.getItem('skullory.musicMuted') || 'false');
 let sfxMuted   = JSON.parse(localStorage.getItem('skullory.sfxMuted')   || 'false');
@@ -844,23 +873,22 @@ const saveClose = document.getElementById('save-close');
   const intro = document.getElementById('intro');
   const introBtn = document.getElementById('intro-play');
 
-// ===== Tutorial a 3 slide =====
+// ===== TUTORIAL: variabili + funzioni (FIX) =====
 let currentSlide = 0;
-const slides = [];   // verrà riempito dopo il DOM build
+const slides = [];   // array delle slide attive (per la modalità corrente)
 let dotsWrap, prevBtn, nextBtn, closeBtn;
+let allSlides = [];           // tutte le slide nel DOM (#intro)
+let tutorialMode = 'root';    // 'root' | 'arcade' | 'zen'
 
-function buildTutorialRefs(){
-  // prendi riferimenti dopo che l'HTML è nel DOM
-  dotsWrap = document.getElementById('intro-dots');
-  prevBtn  = document.getElementById('intro-prev');
-  nextBtn  = document.getElementById('intro-next');
-  closeBtn = document.getElementById('intro-close');
-
-  // colleziona le slide
-  document.querySelectorAll('#intro .tutorial-slide').forEach(s => slides.push(s));
-
-  // crea i pallini
+function rebuildDots(){
   dotsWrap.innerHTML = '';
+  slides.length = 0;
+  const active = allSlides.filter(s => s.dataset.mode === tutorialMode);
+  active.forEach(s => slides.push(s));
+
+  allSlides.forEach(s => s.setAttribute('hidden',''));
+  slides.forEach(s => s.removeAttribute('hidden'));
+
   slides.forEach((_, i) => {
     const d = document.createElement('button');
     d.setAttribute('aria-label', `Vai alla slide ${i+1}`);
@@ -868,20 +896,70 @@ function buildTutorialRefs(){
     dotsWrap.appendChild(d);
   });
 
-  // frecce
+  const multi = slides.length > 1;
+  if (prevBtn)  prevBtn.style.display  = multi ? '' : 'none';
+  if (nextBtn)  nextBtn.style.display  = multi ? '' : 'none';
+  if (dotsWrap) dotsWrap.style.display = multi ? '' : 'none';
+}
+
+function setTutorialMode(mode){
+  tutorialMode = mode;
+  rebuildDots();
+  goToSlide(0);
+
+  const introTitle = document.getElementById('intro-title');
+  if (introTitle){
+    introTitle.textContent =
+      mode === 'arcade' ? 'Come si gioca (Arcade)' :
+      mode === 'zen'    ? 'Allenamento Zen' :
+                          'Come si gioca';
+  }
+
+  if (introBtn){
+    if (mode === 'arcade'){
+      introBtn.textContent = 'Gioca (Arcade)';
+introBtn.onclick = () => { ensureSfx(); modeZen = false; currentLevelIdx = 0; hideIntro(); startArcade(); };
+
+      introBtn.style.display = '';
+    } else if (mode === 'zen'){
+      introBtn.textContent = 'Allenati (Zen 6×6)';
+      introBtn.onclick = () => { ensureSfx(); modeZen = true; hideIntro(); startZen(); };
+      introBtn.style.display = '';
+    } else {
+      introBtn.textContent = 'Gioca';
+      introBtn.onclick = () => {};
+      introBtn.style.display = 'none';
+    }
+  }
+}
+
+function buildTutorialRefs(){
+  dotsWrap = document.getElementById('intro-dots');
+  prevBtn  = document.getElementById('intro-prev');
+  nextBtn  = document.getElementById('intro-next');
+  closeBtn = document.getElementById('intro-close');
+
+  allSlides = Array.from(document.querySelectorAll('#intro .tutorial-slide'));
+
   prevBtn.addEventListener('click', () => goToSlide(currentSlide - 1));
   nextBtn.addEventListener('click', () => goToSlide(currentSlide + 1));
 
-  // chiudi (nasconde solo il tutorial; il gioco parte quando clicchi "Gioca" o inizi a giocare)
   closeBtn.addEventListener('click', () => hideIntro());
 
-  // tastiera: frecce ← → per cambiare slide
   document.addEventListener('keydown', (e) => {
-    if (intro.classList.contains('hide')) return; // attivo solo quando il tutorial è visibile
+    if (intro.classList.contains('hide')) return;
     if (e.key === 'ArrowLeft')  goToSlide(currentSlide - 1);
     if (e.key === 'ArrowRight') goToSlide(currentSlide + 1);
   });
+
+  const btnArcade = document.getElementById('intro-arcade');
+  const btnZen    = document.getElementById('intro-zen');
+  if (btnArcade) btnArcade.addEventListener('click', () => setTutorialMode('arcade'));
+  if (btnZen)    btnZen.addEventListener('click',    () => setTutorialMode('zen'));
+
+  setTutorialMode('root');
 }
+
 
 function goToSlide(i){
   currentSlide = Math.max(0, Math.min(slides.length - 1, i));
@@ -900,16 +978,14 @@ function goToSlide(i){
   nextBtn.disabled = (currentSlide === slides.length - 1);
 }
 
- function showIntro(){
-  // mostra l’overlay
+function showIntro(){
   intro.classList.remove('hide');
   intro.classList.add('show');
 
-  // inizializza i riferimenti del tutorial SOLO la prima volta
   if (slides.length === 0) buildTutorialRefs();
-  // vai sempre alla prima slide quando si apre
-  goToSlide(0);
+  setTutorialMode('root');   // <-- torna sempre alla slide di scelta
 }
+
 
   function hideIntro(){ intro.classList.add('hide'); intro.classList.remove('show'); }
 
@@ -959,6 +1035,25 @@ let progress = LEVELS.map(L => ({
   function setCols(n){ document.documentElement.style.setProperty('--cols', n); }
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
   function fmt(ms){ const s = Math.max(0, Math.floor(ms/1000)); const mm = Math.floor(s/60), ss = s%60; return `${mm}:${ss.toString().padStart(2,'0')}`; }
+function calcElapsedMs(){
+  // calcola quanto è durato il quadro
+  const now = performance.now();
+  return Math.max(0, now - (state.frameStartTs || now));
+}
+
+function calcZenEfficiency(moves, level){
+  // Baseline semplice: più ti avvicini alle "mosse gratuite", meglio è
+  // freeMovesFor(level) ce l'hai già nel tuo codice (side*side)
+  const free = freeMovesFor(level);
+  if (moves <= free) return 100;
+  const over = moves - free;
+  // toglie ~1% per mossa extra, con minimo 50%
+  return Math.max(50, Math.round(100 - over));
+}
+
+function markFrameStart(){
+  state.frameStartTs = performance.now();
+}
 
   function rotateTheme(){
     themeIndex = themeIndex % 10 + 1; // 1..10
@@ -1034,6 +1129,9 @@ function anyOverlayOpen(){
 }
 
 function canUsePowersBase(){
+  // In Zen i poteri sono disattivati
+  if (state?.isZen) return false;
+
   return !!state
       && state.running
       && !state.paused
@@ -1044,16 +1142,28 @@ function canUsePowersBase(){
 }
 
 function addTimeMs(ms){
+  if (state?.isZen) return; // 🧘 in Zen il tempo non cambia
   const now = performance.now();
   state.deadlineTs += ms;
   state.leftMs = Math.max(0, state.deadlineTs - now);
   updateTime();
 }
 
+
 function takeTimeMs(ms){ addTimeMs(-Math.max(0, ms)); }
 
 function refreshPowersUI(){
   if (!powerRevealBtn || !powerPlus10Btn || !powerShiftBtn) return;
+
+  // In Zen: disattiva visivamente e basta
+  if (state?.isZen){
+    [powerRevealBtn, powerPlus10Btn, powerShiftBtn].forEach(b => {
+      if (!b) return;
+      b.classList.remove('ready');
+      b.setAttribute('aria-disabled','true');
+    });
+    return;
+  }
 
   const base = canUsePowersBase();
   const haveOnePair = state.matched >= 1;
@@ -1222,6 +1332,18 @@ function usePowerShift(){
 
   refreshPowersUI();
 }
+function startArcade(){
+  // avvia il gioco normale dal livello corrente (o 0)
+  init(currentLevelIdx || 0);
+}
+
+function startZen(){
+  // trova una 6×6 "base" (senza disabled) se c'è, altrimenti la prima 6×6 disponibile
+  const idx6base = LEVELS.findIndex(L => L.side === 6 && (!L.disabled || L.disabled.length === 0));
+  const idx6any  = LEVELS.findIndex(L => L.side === 6);
+  const target   = (idx6base >= 0) ? idx6base : (idx6any >= 0 ? idx6any : 0);
+  init(target);
+}
 
   function init(levelIdx = currentLevelIdx){
     rotateTheme();
@@ -1233,7 +1355,6 @@ function usePowerShift(){
     updateStatusChip();
 
     if (pendingCheck) { clearTimeout(pendingCheck); pendingCheck = null; }
-
 state = {
   level: L,
   deck: buildDeck(L),
@@ -1252,7 +1373,57 @@ leftMs: Math.max(0, progress[levelIdx].baseTimeMs + (!progress[levelIdx].unlocke
   preAppliedBonusMs: 0,  // bonus già mostrato nel timer
   startBonusMs: 0        // bonus “ritardato” (fallback)
 };
+// === UI: nascondi chip e poteri in Zen + CENTRA i 5 bottoni ===
+if (modeZen) {
+  // nascondi chip in alto
+  if (levelChip)  levelChip.style.display  = 'none';
+  if (statusChip) statusChip.style.display = 'none';
+  if (scoreChip)  scoreChip.style.display  = 'none';
+  if (movesEl)    movesEl.style.display    = 'none';  // ⬅️ NASCONDI MOSSE
+  if (timerEl)    timerEl.style.display    = 'none';  // ⬅️ NASCONDI TIMER
 
+  // nascondi i 3 poteri (colonna destra)
+  const cr = document.querySelector('.controls-right');
+  if (cr) cr.style.display = 'none';
+
+  // centra i 5 bottoni (pausa/salva/ricomincia/musica/sfx)
+  const cb = document.querySelector('.controls-bottom');
+  const cl = document.querySelector('.controls-left');
+  if (cb) cb.style.justifyContent = 'center';
+  if (cl) cl.style.margin = '0 auto';
+
+} else {
+  // ripristina in Arcade
+  if (levelChip)  levelChip.style.display  = '';
+  if (statusChip) statusChip.style.display = '';
+  if (scoreChip)  scoreChip.style.display  = '';
+  if (movesEl)    movesEl.style.display    = '';      // ⬅️ MOSTRA MOSSE
+  if (timerEl)    timerEl.style.display    = '';      // ⬅️ MOSTRA TIMER
+
+  const cr = document.querySelector('.controls-right');
+  if (cr) cr.style.display = '';
+
+  const cb = document.querySelector('.controls-bottom');
+  const cl = document.querySelector('.controls-left');
+  if (cb) cb.style.justifyContent = 'space-between';
+  if (cl) cl.style.margin = '';
+}
+
+
+// === Modalità Zen: setup UI / flag ===
+if (modeZen){
+  if (timerEl){
+    timerEl.textContent = '—';
+    timerEl.style.opacity = .65;
+  }
+  state.isZen = true;
+} else {
+  state.isZen = false;
+}
+
+updateSaveButton?.();
+refreshPowersUI?.();
+markFrameStart?.();
     grid.innerHTML = '';
     const frag = document.createDocumentFragment();
 
@@ -1299,30 +1470,38 @@ tapBuffer = [];
 refreshPowersUI();
   }
 
-  function startTimer(){
-    if(state.paused) return;
-    if(state.running) return;
-state.running = true;
-frameBaseScore = totalScore;
-const now = performance.now();
-state.startTs = now;
+function startTimer(){
+  if(state.paused) return;
+  if(state.running) return;
 
-// base del livello + bonus cumulativo (vale finché il livello non è sbloccato)
-const p = progress[currentLevelIdx];
-const carry = !p.unlocked ? (p.carryBonusMs || 0) : 0;
-const base = Math.max(0, p.baseTimeMs + carry);
-
-
-// deadline reale del timer
-state.deadlineTs = now + base;
-tick();
-updateSaveButton();
-
-    tick();
-    updateSaveButton(); // durante il quadro il salvataggio non è consentito
+  // 🧘 ZEN: niente countdown
+  if (state.isZen){
+    state.running = true;       // serve per far funzionare il gioco (input abilitati)
+    frameBaseScore = totalScore;
+    updateSaveButton();
+    return;                     // esci: non impostare deadline, niente tick()
   }
 
+  // 🎮 ARCADE: comportamento originale
+  state.running = true;
+  frameBaseScore = totalScore;
+  const now = performance.now();
+  state.startTs = now;
+
+  const p = progress[currentLevelIdx];
+  const carry = !p.unlocked ? (p.carryBonusMs || 0) : 0;
+  const base = Math.max(0, p.baseTimeMs + carry);
+
+  state.deadlineTs = now + base;
+  tick();
+  updateSaveButton();
+
+  tick();
+  updateSaveButton();
+}
+
   function tick(){
+if (state?.isZen) return;  // 🧘 in Zen niente countdown
     if(!state.running || state.paused) return;
     const now = performance.now();
     state.leftMs = Math.max(0, state.deadlineTs - now);
@@ -1331,13 +1510,21 @@ updateSaveButton();
     requestAnimationFrame(tick);
   }
 
-  function updateTime(){ timerEl.textContent = fmt(state.leftMs); }
-  function updateHud(){
+function updateTime() {
+  if (state?.isZen) return;   // In Zen non mostriamo il countdown
+  timerEl.textContent = fmt(state.leftMs);
+}
+
+function updateHud(){
+  // In Zen non aggiorniamo mosse/timer (sono nascosti)
+  if (!state?.isZen){
     movesEl.textContent = `Mosse: ${state.moves}`;
     timerEl.textContent = fmt(state.leftMs);
-    updateStatusChip();
-    updateScoreChip();
   }
+  updateStatusChip();   // ok anche se nascosto in Zen
+  updateScoreChip();    // ok anche se nascosto in Zen
+}
+
 
   function onCardClick(card){
 ensureSfx(); // sblocca audio al primo tocco
@@ -1419,7 +1606,7 @@ if (tapBuffer.length) {
         state.deadlineTs += 1000;
         state.leftMs = Math.max(0, state.deadlineTs - now);
         updateTime();
-        flashMessage('+1s');
+        if (!state.isZen) flashMessage('+1s');
 SFX.play('bonus1', { volume:.85, rate: 1.02 });
 
 
@@ -1428,7 +1615,7 @@ SFX.play('bonus1', { volume:.85, rate: 1.02 });
           state.deadlineTs += 5000;
           state.leftMs = Math.max(0, state.deadlineTs - now2);
           updateTime();
-          flashMessage('+5s Bonus!');
+          if (!state.isZen) flashMessage('+5s Bonus!');
 SFX.play('bonus5', { volume:1 });
 
         }
@@ -1449,7 +1636,7 @@ refreshPowersUI();
         state.deadlineTs = state.deadlineTs - 1000; // penalità di 1 secondo;
         state.leftMs = Math.max(0, state.deadlineTs - now);
         updateTime();
-        flashMessage('-1s');
+        if (!state.isZen) flashMessage('-1s');
 SFX.play('fail', { volume:.9 });
 
         flip(a,false); flip(b,false);
@@ -1657,8 +1844,36 @@ function spawnMatchStars(card){
   // Ripulisci dopo l’animazione
   setTimeout(() => wrap.remove(), 650);
 }
+function showZenEnd(){
+  const elapsedMs = calcElapsedMs();
+  const moves = state.moves || 0;
+  const eff = calcZenEfficiency(moves, LEVELS[currentLevelIdx]);
+
+  ovTitle.textContent = 'Griglia completata!';
+  ovSub.innerHTML =
+    `⏱️ Tempo impiegato: <b>${fmt(elapsedMs)}</b><br/>` +
+    `🎯 Mosse totali: <b>${moves}</b><br/>` +
+    `📊 Efficienza: <b>${eff}%</b>`;
+
+  const stars = eff >= 95 ? 3 : eff >= 85 ? 2 : 1;
+  ovSub.innerHTML += `<br/>${'⭐'.repeat(stars)}${
+    stars===3 ? '   Perfetto! (3/3 stelle)'
+  : stars===2 ? '   Ottimo! (2/3 stelle)'
+              : '   Bene! (1/3 stelle)'}`;
+
+  ovBtn.textContent = 'Gioca ancora';
+  ovBtn.onclick = () => { hideOverlay(); startZen(); };
+
+  showSkip(true);
+  ovBtnSkip.textContent = 'Torna al menu';
+  ovBtnSkip.onclick = () => { hideOverlay(); showIntro(); };
+
+  overlay.classList.add('show');
+  updateSaveButton();
+}
 
   function win(){
+  if (state?.isZen){ showZenEnd(); return; } // 🧘 schermata Zen e uscita
     state.running = false;
 // in win()
 SFX.play('win', { volume:1.0 });
@@ -1690,16 +1905,37 @@ Punteggio parziale: <b>${totalScore}</b>`;
   p.postUnlockWins = 0;
   p.carryBonusMs = 0;   // azzera il bonus “carry” perché il livello è sbloccato
 
+  const next = currentLevelIdx + 1;
+
+  // Ri-usa il popup di fine quadro, ma con due scelte:
   showOverlay(
     'Sblocco conquistato! 🏆',
     `Hai completato 3 quadri di fila.<br>
-     Ora resta su questo livello e fai punti!<br>
-     ${detailRow}`
+     ${detailRow}<br><br>
+     <b>Cosa vuoi fare adesso?</b>`
   );
 
-  ovBtn.textContent = 'Continua a giocare';
-  ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
+  // A) Continua qui (grind di punti)
+  ovBtn.textContent = 'Continua qui (fai punti)';
+  ovBtn.onclick = () => {
+    hideOverlay();
+    init(currentLevelIdx);
+  };
+
+  // B) Vai al livello successivo → mostra SUBITO il popup Simon/Salta
+  if (next < LEVELS.length){
+    showSkip(true);
+    ovBtnSkip.textContent = 'Livello successivo';
+    ovBtnSkip.onclick = () => {
+      // non serve nascondere: openSimonChoice riscrive il contenuto del popup
+      openSimonChoice(next);
+    };
+  } else {
+    // sei all’ultimo livello: niente "Livello successivo"
+    showSkip(false);
+  }
 }
+
 
 
     } else {
@@ -1717,46 +1953,19 @@ if (activeSaveName) {
     updateSaveButton();
   }
 
-  function lose(title, sub){
+ function lose(title, sub){
   const L = LEVELS[currentLevelIdx];
   const p = progress[currentLevelIdx];
   state.running = false;
   SFX.play('lose', { volume:1.0 });
 
-if (p.unlocked){
-  const next = currentLevelIdx + 1;
-
-  // Popup con doppia scelta: Simon o salto
-  showOverlay(
-    'Intermezzo bonus tempo 👻',
-    '<b>Bravo!</b> Prima di accedere al livello successivo puoi provare a guadagnare <b>secondi bonus</b> con un mini-gioco cliccando i fantasmini nella giusta sequenza.<br><br>' +
-    '<small>Ogni passo corretto = <b>+1s</b> al prossimo livello. Se riveli il teschio il mini-gioco termina.</small>'
-  );
-
-  // Bottone principale: fai il Simon
-  ovBtn.textContent = 'Prova il Bonus';
-  ovBtn.onclick = () => {
-    hideOverlay();
-    startSimonIntermezzo();
-  };
-
-  // Secondo bottone: salta il Simon e vai subito al livello dopo (nessun bonus)
-  showSkip(true);                    // ← fa comparire il tasto "salta"
-  if (ovBtnSkip) {
-    ovBtnSkip.textContent = 'Prosegui senza Bonus';
-    ovBtnSkip.onclick = () => {
-      hideOverlay();
-      if (next < LEVELS.length) {
-        init(next);                  // vai al prossimo livello, senza bonus
-      } else {
-        init(currentLevelIdx);       // se sei già all’ultimo, resta qui
-      }
-    };
-  }
-
-  return; // importantissimo: non far proseguire lose() oltre questo punto
-} else {
-    // ⬇️ questo blocco resta identico al tuo
+  // ⬇️ SE IL LIVELLO È GIÀ SBLOCCATO: usa SEMPRE il popup Simon/Salta tramite l'helper
+  if (p.unlocked){
+    const next = currentLevelIdx + 1;
+    openSimonChoice(next);   // ← mostra "Prova il Bonus" / "Prosegui senza Bonus"
+    return;                  // ← IMPORTANTISSIMO: non proseguire oltre
+  } else {
+    // ⬇️ COMPORTAMENTO INVARIATO (livello non sbloccato)
     p.streak = 0;
     p.baseTimeMs = L.unlockMs[0];
 
@@ -1776,7 +1985,6 @@ if (p.unlocked){
   updateSaveButton();
 }
 
-
 function showOverlay(title, sub){
   ovTitle.textContent = title;
   ovSub.innerHTML = sub;
@@ -1791,6 +1999,36 @@ function hideOverlay(){
   updateSaveButton();
   refreshPowersUI();    // <-- aggiunta
 }
+function openSimonChoice(next){
+  // stesso contenuto e stessi bottoni che usi in lose() quando il livello è già sbloccato
+  showOverlay(
+    'Intermezzo bonus tempo 👻',
+    '<b>Bravo!</b> Prima di accedere al livello successivo puoi provare a guadagnare <b>secondi bonus</b> con un mini-gioco cliccando i fantasmini nella giusta sequenza.<br><br>' +
+    '<small>Ogni passo corretto = <b>+1s</b> al prossimo livello. Se riveli il teschio il mini-gioco termina.</small>'
+  );
+
+  // Bottone principale: fai il Simon
+  ovBtn.textContent = 'Prova il Bonus';
+  ovBtn.onclick = () => {
+    hideOverlay();
+    startSimonIntermezzo();
+  };
+
+  // Secondo bottone: salta il Simon e vai subito al livello dopo (nessun bonus)
+  showSkip(true);
+  if (ovBtnSkip) {
+    ovBtnSkip.textContent = 'Prosegui senza Bonus';
+    ovBtnSkip.onclick = () => {
+      hideOverlay();
+      if (next < LEVELS.length) {
+        init(next);
+      } else {
+        init(currentLevelIdx); // se già all’ultimo, resta qui
+      }
+    };
+  }
+}
+
 function explainPower(which){
   let title = '', desc = '', avail = '';
 
@@ -2002,8 +2240,8 @@ delBtn.onclick = () => {
   }
 
   // ===== Event Listeners =====
-  if(introBtn){ introBtn.addEventListener('click', () => { ensureSfx();
-hideIntro(); }); }
+if (introBtn){ /* l'handler viene impostato dinamicamente da setTutorialMode() */ }
+
   restartBtn.addEventListener('click', () => {
   openRestartConfirm();
 });
@@ -2012,17 +2250,16 @@ if (restartYes) {
     closeRestartConfirm();
     hideOverlay();
 
-    // 🔁 Nuova partita da zero
-    totalScore = 0;                           // azzera punteggio
-frameBaseScore = 0;            // allinea la base quando riparti da zero
-    progress = LEVELS.map(L => ({             // azzera progressi/sblocchi
-      streak: 0, unlocked: false, baseTimeMs: L.unlockMs[0], postUnlockWins: 0
-    }));
-    updateScoreChip();
+    // Sempre menù iniziale (scelta Arcade / Zen)
+    currentLevelIdx = 0; // se poi scegli Arcade, parti dal primo livello
+    showIntro();         // apre il tutorial sulla slide "root"
 
-    init(0);                                  // riparti dal livello 0
+    // Nota: non azzero punteggio/sblocchi qui.
+    // "Ricomincia" = esco dalla manche corrente e torno al menu.
   });
 }
+
+
 
 if (restartNo) {
   restartNo.addEventListener('click', () => {
