@@ -448,7 +448,22 @@ body.mode-simon .card .front{
 #powerPlus10.ready { border-color: #60e8a8; }  /* 🦇 verdino */
 #powerShift.ready  { border-color: #ff7aa2; }  /* 🌀 rosato */
 
+/* Sfocato dell’intero sfondo quando un overlay è aperto */
+.overlay{
+  /* colore di oscuramento (resta trasparente per far vedere il blur) */
+  background: rgba(10,12,22,.45);
 
+  /* blur + un filo di saturazione per un effetto “glass” */
+  -webkit-backdrop-filter: blur(10px) saturate(110%);
+  backdrop-filter: blur(10px) saturate(110%);
+}
+
+/* opzionale: stesso effetto anche per l’intro/tutorial che usa .overlay */
+#intro.overlay{
+  background: rgba(10,12,22,.45);
+  -webkit-backdrop-filter: blur(10px) saturate(110%);
+  backdrop-filter: blur(10px) saturate(110%);
+}
 </style>
 </head>
 <body class="theme-1">
@@ -477,8 +492,7 @@ body.mode-simon .card .front{
     <button class="primary outline-btn" id="pause">⏸️</button>
     <button class="primary outline-btn" id="save">💾</button>
     <button class="primary outline-btn" id="restart">🔄</button>
-    <button class="primary outline-btn" id="muteMusic" title="Musica: on" aria-pressed="false">🎵</button>
-    <button class="primary outline-btn" id="muteSfx"   title="SFX: on"    aria-pressed="false">🔊</button>
+<button class="primary outline-btn" id="audioCycle" title="Audio">🎵</button>
   </div>
 
   <div class="controls-right">
@@ -508,7 +522,8 @@ body.mode-simon .card .front{
   <h3 style="color:#FFF44F">Scegli modalità</h3>
   <div style="display:flex; gap:12px; justify-content:center; margin-top:12px; flex-wrap:wrap">
     <button class="primary" id="intro-arcade">🎮 Gioca (Arcade)</button>
-    <button class="primary outline-btn" id="intro-zen">🧘 Allenati (Zen 6×6)</button>
+    <button class="primary outline-btn" id="intro-zen">🧘 Allenati (Zen 5×5)</button>
+
   </div>
   <p style="color:var(--muted); margin-top:10px">
     Arcade: tempo, bonus, carte speciali e poteri.<br/>
@@ -827,6 +842,35 @@ function setSfxMuted(v){
 
   refreshAudioButtons();
 }
+// 0 = musica+SFX, 1 = solo SFX, 2 = tutto OFF
+function getAudioMode(){
+  if (!musicMuted && !sfxMuted) return 0;      // tutto ON
+  if (musicMuted && !sfxMuted)  return 1;      // solo SFX
+  return 2;                                     // tutto OFF (o SFX OFF)
+}
+
+function setAudioMode(mode){
+  if (mode === 0){            // musica+SFX
+    setMusicMuted(false);
+    setSfxMuted(false);
+  } else if (mode === 1){     // solo SFX
+    setMusicMuted(true);
+    setSfxMuted(false);
+  } else {                    // tutto OFF
+    setMusicMuted(true);
+    setSfxMuted(true);
+  }
+}
+
+function cycleAudioMode(){
+  const next = (getAudioMode() + 1) % 3;
+  setAudioMode(next);
+  // feedback testuale (opzionale)
+  if (next === 0)      flashMessage('Audio: musica + effetti');
+  else if (next === 1) flashMessage('Audio: solo effetti');
+  else                 flashMessage('Audio: spento');
+  refreshAudioButtons();
+}
 
 const grid = document.getElementById('grid');
   const movesEl = document.getElementById('moves');
@@ -855,6 +899,15 @@ const powerShiftBtn  = document.getElementById('powerShift');  // 🌀
 const controlsBottom = document.querySelector('.controls-bottom');
 const controlsLeft   = document.querySelector('.controls-left');
 const controlsRight  = document.querySelector('.controls-right');
+// 🔊 Bottone unico audio (🎵 → 🔊 → 🔇)
+const audioBtn = document.getElementById('audioCycle');
+if (audioBtn) {
+  audioBtn.addEventListener('click', () => {
+    ensureSfx();       // sblocca audio al primo gesto utente
+    cycleAudioMode();  // cicla 0→1→2
+  });
+}
+
 
 let musicMuted = JSON.parse(localStorage.getItem('skullory.musicMuted') || 'false');
 let sfxMuted   = JSON.parse(localStorage.getItem('skullory.sfxMuted')   || 'false');
@@ -908,12 +961,17 @@ function setTutorialMode(mode){
   goToSlide(0);
 
   const introTitle = document.getElementById('intro-title');
-  if (introTitle){
+if (introTitle){
+  if (mode === 'root') {
+    introTitle.style.display = 'none';   // nasconde il titolo nella schermata di scelta
+  } else {
+    introTitle.style.display = '';
     introTitle.textContent =
       mode === 'arcade' ? 'Come si gioca (Arcade)' :
       mode === 'zen'    ? 'Allenamento Zen' :
-                          'Come si gioca';
+                          '';
   }
+}
 
   if (introBtn){
     if (mode === 'arcade'){
@@ -921,10 +979,10 @@ function setTutorialMode(mode){
 introBtn.onclick = () => { ensureSfx(); modeZen = false; currentLevelIdx = 0; hideIntro(); startArcade(); };
 
       introBtn.style.display = '';
-    } else if (mode === 'zen'){
-      introBtn.textContent = 'Allenati (Zen 6×6)';
-      introBtn.onclick = () => { ensureSfx(); modeZen = true; hideIntro(); startZen(); };
-      introBtn.style.display = '';
+   } else if (mode === 'zen'){
+  introBtn.textContent = 'Allenati (Zen 5×5)';
+  introBtn.onclick = () => { ensureSfx(); modeZen = true; hideIntro(); startZen(); };
+  introBtn.style.display = '';
     } else {
       introBtn.textContent = 'Gioca';
       introBtn.onclick = () => {};
@@ -1008,6 +1066,7 @@ function setActiveSaveName(name){
 let __bgmHandle = null;  // terrà l’handle della musica (se SFX.play lo restituisce)
 
 function refreshAudioButtons(){
+  // -- vecchi bottoni separati (se li hai rimossi dall’HTML, qui non succede nulla)
   if (muteMusicBtn){
     muteMusicBtn.textContent = musicMuted ? '🚫🎵' : '🎵';
     muteMusicBtn.title = musicMuted ? 'Musica: off' : 'Musica: on';
@@ -1017,6 +1076,25 @@ function refreshAudioButtons(){
     muteSfxBtn.textContent = sfxMuted ? '🔇' : '🔊';
     muteSfxBtn.title = sfxMuted ? 'SFX: off' : 'SFX: on';
     muteSfxBtn.setAttribute('aria-pressed', sfxMuted);
+  }
+
+  // -- NUOVO: bottone unico ciclico (🎵 → 🔊 → 🔇)
+  if (typeof getAudioMode === 'function' && audioBtn){
+    const mode = getAudioMode(); // 0=tutto ON, 1=solo SFX, 2=tutto OFF
+
+    if (mode === 0){
+      audioBtn.textContent = '🎵';
+      audioBtn.title = 'Audio: musica + effetti';
+      audioBtn.setAttribute('aria-label','Audio: musica + effetti');
+    } else if (mode === 1){
+      audioBtn.textContent = '🔊';
+      audioBtn.title = 'Audio: solo effetti (musica OFF)';
+      audioBtn.setAttribute('aria-label','Audio: solo effetti (musica OFF)');
+    } else {
+      audioBtn.textContent = '🔇';
+      audioBtn.title = 'Audio: spento';
+      audioBtn.setAttribute('aria-label','Audio: spento');
+    }
   }
 }
 
@@ -1338,12 +1416,13 @@ function startArcade(){
 }
 
 function startZen(){
-  // trova una 6×6 "base" (senza disabled) se c'è, altrimenti la prima 6×6 disponibile
-  const idx6base = LEVELS.findIndex(L => L.side === 6 && (!L.disabled || L.disabled.length === 0));
-  const idx6any  = LEVELS.findIndex(L => L.side === 6);
-  const target   = (idx6base >= 0) ? idx6base : (idx6any >= 0 ? idx6any : 0);
+  // trova una 5×5 "base" (senza disabled), altrimenti la prima 5×5 disponibile
+  const idx5base = LEVELS.findIndex(L => L.side === 5 && (!L.disabled || L.disabled.length === 0));
+  const idx5any  = LEVELS.findIndex(L => L.side === 5);
+  const target   = (idx5base >= 0) ? idx5base : (idx5any >= 0 ? idx5any : 0);
   init(target);
 }
+
 
   function init(levelIdx = currentLevelIdx){
     rotateTheme();
