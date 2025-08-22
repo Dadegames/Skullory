@@ -1672,24 +1672,24 @@ if (saveBtn) saveBtn.style.display = '';
   }
 // ===== Condivisione testuale Zen =====
 function buildZenShareText(){
-  const elapsedMs = calcElapsedMs();
+ const elapsedMs = state?.finalElapsedMs ?? calcElapsedMs();  // preferisci il tempo congelato
   const moves = state?.moves || 0;
   const eff = calcZenEfficiency(moves, LEVELS[currentLevelIdx]);
   const stars = effToStars(eff);
 
   // Messaggio richiesto
-  return `Ho fatto ${stars}/5 ⭐ in Zen su Skullory in ${moves} mosse, ${eff}% efficienza e tempo ${fmt(elapsedMs)} — prova a battermi! ${GAME_URL}`;
+return `Ho fatto ${stars}/5 ⭐ in Zen su Skullory in ${moves} mosse, ${eff}% efficienza e tempo ${fmt(elapsedMs)} — prova a battermi!\n\n${GAME_URL}`;
+
 }
 
 async function shareZen(){
   const text = buildZenShareText();
   try{
-    // Foglio di condivisione nativo (mobile/desktop supportati)
     if (navigator.share){
       await navigator.share({
         title: 'Skullory — Zen',
-        text,
-        url: GAME_URL
+        text
+        // ❌ niente 'url' qui: molti target (WhatsApp) ignorano 'text' se 'url' è presente
       });
       return;
     }
@@ -1697,7 +1697,7 @@ async function shareZen(){
     // utente ha annullato: ignora
   }
 
-  // Fallback: copia negli appunti (richiede HTTPS, ok su github.io)
+  // Fallback: copia negli appunti
   try{
     if (navigator.clipboard && window.isSecureContext){
       await navigator.clipboard.writeText(text);
@@ -1706,13 +1706,15 @@ async function shareZen(){
     }
   }catch(_) {}
 
-  // Ultimo fallback: apre l’email precompilata
+  // Ultimo fallback: mailto
   const mailto = `mailto:?subject=${encodeURIComponent('Il mio risultato Zen su Skullory')}&body=${encodeURIComponent(text)}`;
   window.location.href = mailto;
 }
 
 function showZenEnd(){
-  const elapsedMs = calcElapsedMs();
+  // Congela l'elapsed al momento della vittoria
+  state.finalElapsedMs = calcElapsedMs();
+  const elapsedMs = state.finalElapsedMs;   // <-- usa quello salvato
   const moves = state.moves || 0;
   const eff = calcZenEfficiency(moves, LEVELS[currentLevelIdx]);
 
