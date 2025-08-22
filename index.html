@@ -919,6 +919,28 @@
     const over = moves - free;
     return Math.max(50, Math.round(100 - over));
   }
+// Da % efficienza a numero stelle (1..5)
+function effToStars(eff){
+  // Soglie consigliate (tienile pure come vuoi):
+  // 96–100 => 5 ⭐, 90–95 => 4 ⭐, 80–89 => 3 ⭐, 70–79 => 2 ⭐, <70 => 1 ⭐
+  if (eff >= 96) return 5;
+  if (eff >= 90) return 4;
+  if (eff >= 80) return 3;
+  if (eff >= 70) return 2;
+  return 1;
+}
+
+// Etichetta testuale carina per il rating
+function starsLabel(n){
+  return (
+    n === 5 ? 'Eccellente! (5/5)' :
+    n === 4 ? 'Ottimo! (4/5)' :
+    n === 3 ? 'Buono! (3/5)' :
+    n === 2 ? 'Discreto (2/5)' :
+              'Da ritentare (1/5)'
+  );
+}
+
   function markFrameStart(){ state.frameStartTs = performance.now(); }
 
   function rotateTheme(){
@@ -1701,11 +1723,9 @@ function showZenEnd(){
     `🎯 Mosse totali: <b>${moves}</b><br/>` +
     `📊 Efficienza: <b>${eff}%</b>`;
 
-  const stars = eff >= 95 ? 3 : eff >= 85 ? 2 : 1;
-  ovSub.innerHTML += `<br/>${'⭐'.repeat(stars)}${
-    stars===3 ? '   Perfetto! (3/3 stelle)'
-  : stars===2 ? '   Ottimo! (2/3 stelle)'
-              : '   Bene! (1/3 stelle)'}`;
+  // ⭐⭐⭐⭐⭐ — nuovo rating a 5 stelle
+  const nStars = effToStars(eff);
+  ovSub.innerHTML += `<br/>${'⭐'.repeat(nStars)} <small>${starsLabel(nStars)}</small>`;
 
   ovBtn.textContent = 'Gioca ancora';
   ovBtn.onclick = () => { hideOverlay(); startZen(); };
@@ -1714,23 +1734,22 @@ function showZenEnd(){
   ovBtnSkip.textContent = 'Torna al menu';
   ovBtnSkip.onclick = () => { hideOverlay(); showIntro(); };
 
-  // ⬇️ QUI aggiungiamo/aggiorniamo il bottone "Condividi immagine"
+  // (se avevi già il bottone "Condividi immagine", lo lasciamo com'è)
   const actions = document.querySelector('.ov-actions');
   if (actions) {
-    // Evita duplicati se giochi più volte
     document.getElementById('shareImageBtn')?.remove();
-
     const shareBtn = document.createElement('button');
     shareBtn.id = 'shareImageBtn';
     shareBtn.className = 'primary outline-btn';
     shareBtn.textContent = 'Condividi immagine';
-    shareBtn.onclick = () => shareZenResult();
+    shareBtn.onclick = () => shareZenResult?.();
     actions.appendChild(shareBtn);
   }
 
   overlay.classList.add('show');
   updateSaveButton();
 }
+
 
   function win(){
     if (state?.isZen){ showZenEnd(); return; }
