@@ -578,6 +578,8 @@
     </div>
   </div>
 </div>
+<!-- html2canvas per generare l'immagine da condividere -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <script>
 (() => {
@@ -966,18 +968,31 @@
   function updateScoreChip(){ if(scoreChip) scoreChip.textContent = `Punti: ${totalScore}`; }
 
   function canSaveNow(){
+  if (state?.isZen) return false; 
     const endOfFrame = overlay.classList.contains('show');
     const freshStart = !state.running && state.moves === 0 && state.matched === 0;
     return endOfFrame || freshStart;
   }
-  function updateSaveButton(){
-    if(!saveBtn) return;
-    const ok = canSaveNow();
-    saveBtn.disabled = !ok;
-    saveBtn.style.opacity = ok ? '1' : '0.6';
-    saveBtn.title = ok ? 'Salva' : 'Salva disponibile solo a fine quadro o prima di iniziare';
+function updateSaveButton(){
+  if (!saveBtn) return;
+
+  if (state?.isZen){
+    // In modalità Zen non si salva mai
+    saveBtn.disabled = true;
+    saveBtn.style.opacity = '0.6';
+    saveBtn.title = 'In Zen non si salva';
+    return;
   }
-  function isPreFrame(){ return !!state && !state.running && state.moves === 0 && state.matched === 0; }
+
+  const ok = canSaveNow();
+  saveBtn.disabled = !ok;
+  saveBtn.style.opacity = ok ? '1' : '0.6';
+  saveBtn.title = ok ? 'Salva' : 'Salva disponibile solo a fine quadro o prima di iniziare';
+}
+
+function isPreFrame(){
+  return !!state && !state.running && state.moves === 0 && state.matched === 0;
+}
 
   function anyOverlayOpen(){
     return overlay.classList.contains('show')
@@ -1216,7 +1231,7 @@
       const cl = document.querySelector('.controls-left');
       if (cb) cb.style.justifyContent = 'center';
       if (cl) cl.style.margin = '0 auto';
-
+if (saveBtn) saveBtn.style.display = 'none';
     } else {
       if (levelChip)  levelChip.style.display  = '';
       if (statusChip) statusChip.style.display = '';
@@ -1231,6 +1246,7 @@
       const cl = document.querySelector('.controls-left');
       if (cb) cb.style.justifyContent = 'space-between';
       if (cl) cl.style.margin = '';
+if (saveBtn) saveBtn.style.display = '';
     }
 
     if (modeZen){
@@ -1632,34 +1648,89 @@
     }
     setTimeout(() => wrap.remove(), 650);
   }
+async function shareZenResult() {
+  try {
+    const target = document.querySelector('#overlay .dialog');
+    if (!target) return;
 
-  function showZenEnd(){
-    const elapsedMs = calcElapsedMs();
-    const moves = state.moves || 0;
-    const eff = calcZenEfficiency(moves, LEVELS[currentLevelIdx]);
+    // Cattura il riquadro di fine Zen
+    const canvas = await html2canvas(target, {
+      backgroundColor: null,   // sfondo trasparente
+      scale: 2,                // qualità alta
+      useCORS: true
+    });
+    const dataUrl = canvas.toDataURL('image/png');
 
-    ovTitle.textContent = 'Griglia completata!';
-    ovSub.innerHTML =
-      `⏱️ Tempo impiegato: <b>${fmt(elapsedMs)}</b><br/>` +
-      `🎯 Mosse totali: <b>${moves}</b><br/>` +
-      `📊 Efficienza: <b>${eff}%</b>`;
+    // Se il dispositivo supporta la Web Share API con file (mobile)
+    if (navigator.canShare && navigator.canShare({ files: [] })) {
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], 'skullory-zen.png', { type: 'image/png' });
 
-    const stars = eff >= 95 ? 3 : eff >= 85 ? 2 : 1;
-    ovSub.innerHTML += `<br/>${'⭐'.repeat(stars)}${
-      stars===3 ? '   Perfetto! (3/3 stelle)'
-    : stars===2 ? '   Ottimo! (2/3 stelle)'
-                : '   Bene! (1/3 stelle)'}`;
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'Il mio risultato Zen su Skullory 🧘',
+          text: 'Guarda che memoria!'
+        });
+        return;
+      } catch (e) {
+        // Utente ha annullato: va bene così, passiamo al fallback
+        console.log('Condivisione annullata', e);
+      }
+    }
 
-    ovBtn.textContent = 'Gioca ancora';
-    ovBtn.onclick = () => { hideOverlay(); startZen(); };
-
-    showSkip(true);
-    ovBtnSkip.textContent = 'Torna al menu';
-    ovBtnSkip.onclick = () => { hideOverlay(); showIntro(); };
-
-    overlay.classList.add('show');
-    updateSaveButton();
+    // Fallback desktop: scarica l'immagine
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'skullory-zen.png';
+    link.click();
+  } catch (err) {
+    console.error(err);
+    flashMessage('Ops, non riesco a creare l’immagine 😔');
   }
+}
+
+function showZenEnd(){
+  const elapsedMs = calcElapsedMs();
+  const moves = state.moves || 0;
+  const eff = calcZenEfficiency(moves, LEVELS[currentLevelIdx]);
+
+  ovTitle.textContent = 'Griglia completata!';
+  ovSub.innerHTML =
+    `⏱️ Tempo impiegato: <b>${fmt(elapsedMs)}</b><br/>` +
+    `🎯 Mosse totali: <b>${moves}</b><br/>` +
+    `📊 Efficienza: <b>${eff}%</b>`;
+
+  const stars = eff >= 95 ? 3 : eff >= 85 ? 2 : 1;
+  ovSub.innerHTML += `<br/>${'⭐'.repeat(stars)}${
+    stars===3 ? '   Perfetto! (3/3 stelle)'
+  : stars===2 ? '   Ottimo! (2/3 stelle)'
+              : '   Bene! (1/3 stelle)'}`;
+
+  ovBtn.textContent = 'Gioca ancora';
+  ovBtn.onclick = () => { hideOverlay(); startZen(); };
+
+  showSkip(true);
+  ovBtnSkip.textContent = 'Torna al menu';
+  ovBtnSkip.onclick = () => { hideOverlay(); showIntro(); };
+
+  // ⬇️ QUI aggiungiamo/aggiorniamo il bottone "Condividi immagine"
+  const actions = document.querySelector('.ov-actions');
+  if (actions) {
+    // Evita duplicati se giochi più volte
+    document.getElementById('shareImageBtn')?.remove();
+
+    const shareBtn = document.createElement('button');
+    shareBtn.id = 'shareImageBtn';
+    shareBtn.className = 'primary outline-btn';
+    shareBtn.textContent = 'Condividi immagine';
+    shareBtn.onclick = () => shareZenResult();
+    actions.appendChild(shareBtn);
+  }
+
+  overlay.classList.add('show');
+  updateSaveButton();
+}
 
   function win(){
     if (state?.isZen){ showZenEnd(); return; }
@@ -1889,6 +1960,10 @@ Punteggio parziale: <b>${totalScore}</b>`;
   }
 
   function openSaveManager(){
+ if (state?.isZen) {                         // ⬅️ AGGIUNGI
+    flashMessage('In Zen non si salva 😊');
+    return;
+  }
     if(!canSaveNow()){
       flashMessage('💾 Salva solo a fine quadro o prima di iniziare');
       return;
@@ -2087,7 +2162,7 @@ Punteggio parziale: <b>${totalScore}</b>`;
     const sKey = (e.key||'').toLowerCase()==='s';
     if(sKey && (e.ctrlKey || e.metaKey)){
       e.preventDefault();
-      openSaveManager();
+      if (!state?.isZen) openSaveManager();
     }
   });
 
