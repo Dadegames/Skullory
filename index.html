@@ -944,6 +944,55 @@ function starsLabel(n){
               'Da ritentare (1/5)'
   );
 }
+// === Zen: calcolo stelle su 5 con mezze stelle (0.5 step) ===
+function computeZenStars(moves, elapsedMs, level){
+  const pairs = level.pairs;
+
+  // --- Punteggio MOSSE (più pesante)
+  // Perfetto = pairs; "buono" ~2.5×; "ok" ~4× (tarabile)
+  const M_best = pairs;
+  const M_good = Math.round(pairs * 2.5);
+  const M_ok   = Math.round(pairs * 4.0);
+
+  let mScore; // [0..1]
+  if (moves <= M_best) mScore = 1;
+  else if (moves >= M_ok) mScore = 0;
+  else if (moves <= M_good){
+    // Degrada da 1 → 0.5
+    mScore = 1 - (moves - M_best) / (M_good - M_best) * 0.5;
+  } else {
+    // Degrada da 0.5 → 0
+    mScore = 0.5 - (moves - M_good) / (M_ok - M_good) * 0.5;
+  }
+
+  // --- Punteggio TEMPO (più leggero)
+  // Scala col numero di coppie: ~6s ottimo, 10s buono, 16s ok per coppia
+  const T_best = pairs * 6 * 1000;
+  const T_good = pairs * 10 * 1000;
+  const T_ok   = pairs * 16 * 1000;
+
+  let tScore; // [0..1]
+  if (elapsedMs <= T_best) tScore = 1;
+  else if (elapsedMs >= T_ok) tScore = 0;
+  else if (elapsedMs <= T_good){
+    tScore = 1 - (elapsedMs - T_best) / (T_good - T_best) * 0.5;
+  } else {
+    tScore = 0.5 - (elapsedMs - T_good) / (T_ok - T_good) * 0.5;
+  }
+
+  // Combina: mosse contano di più (70/30)
+  const combined = Math.max(0, Math.min(1, 0.7*mScore + 0.3*tScore));
+
+  // Mappa a 1..5 stelle, poi arrotonda a mezze stelle
+  const rawStars = 1 + 4*combined;
+  const starsHalf = Math.round(rawStars * 2) / 2;
+  return starsHalf;
+}
+
+// Format tipo "⭐3.5"
+function fmtStars(n){
+  return '⭐' + (Number.isInteger(n) ? n.toFixed(0) : n.toFixed(1));
+}
 
   function markFrameStart(){ state.frameStartTs = performance.now(); }
 
@@ -1500,21 +1549,27 @@ function onCardClick(card){
   }
 
   // --- Mismatch: nessun blocco input, ma programmo la richiusa di entrambe ---
-  state.streak = 0;
-  if (!state.isZen){
-    const now = performance.now();
-    state.deadlineTs = state.deadlineTs - 1000; // -1s
-    state.leftMs = Math.max(0, state.deadlineTs - now);
-    updateTime();
-    flashMessage('-1s');
-    SFX.play('fail', { volume:.9 });
-  }
+// --- Mismatch: richiudo SOLO la carta "vecchia" (prev).
+state.streak = 0;
+if (!state.isZen){
+  const now = performance.now();
+  state.deadlineTs = state.deadlineTs - 1000; // -1s
+  state.leftMs = Math.max(0, state.deadlineTs - now);
+  updateTime();
+  flashMessage('-1s');
+  SFX.play('fail', { volume:.9 });
+}
 
-  // Le due carte restano visibili per la solita finestra, poi si richiudono
-  scheduleHidePair(prev, card);
+// La carta appena girata (card) resta visibile e diventa la nuova pivot.
+// Per sicurezza, annulla qualunque timer residuo su "card".
+cancelHide(card);
 
-  // Il nuovo pivot diventa l'ultima carta girata (così puoi matchare al terzo flip)
-  state.pivot = card;
+// Chiudi SOLO la precedente dopo la solita finestra
+scheduleHide(prev, MISMATCH_HOLD_MS);
+
+// Nuova pivot = l'ultima carta girata
+state.pivot = card;
+
 }
 
   function flip(card, reveal){ card.setAttribute('data-state', reveal ? 'revealed' : 'hidden'); }
@@ -1715,15 +1770,18 @@ function scheduleHidePair(a, b){
   }
 // ===== Condivisione testuale Zen =====
 function buildZenShareText(){
- const elapsedMs = state?.finalElapsedMs ?? calcElapsedMs();  // preferisci il tempo congelato
+  const elapsedMs = state?.finalElapsedMs ?? calcElapsedMs();
   const moves = state?.moves || 0;
-  const eff = calcZenEfficiency(moves, LEVELS[currentLevelIdx]);
-  const stars = effToStars(eff);
+  const level = LEVELS[currentLevelIdx];
+  const stars = computeZenStars(moves, elapsedMs, level);
+  return `Skullory — Zen
+Mosse: ${moves}
+Tempo: ${fmt(elapsedMs)}
+Valutazione: ${fmtStars(stars)}/5
 
-  // Messaggio richiesto
-return `Ho fatto ${stars}/5 ⭐ in Zen su Skullory in ${moves} mosse, ${eff}% efficienza e tempo ${fmt(elapsedMs)} — prova a battermi!\n\n${GAME_URL}`;
-
+${GAME_URL}`;
 }
+
 
 async function shareZen(){
   const text = buildZenShareText();
@@ -1755,21 +1813,19 @@ async function shareZen(){
 }
 
 function showZenEnd(){
-  // Congela l'elapsed al momento della vittoria
+  // Congela il tempo al momento della vittoria
   state.finalElapsedMs = calcElapsedMs();
-  const elapsedMs = state.finalElapsedMs;   // <-- usa quello salvato
+  const elapsedMs = state.finalElapsedMs;
   const moves = state.moves || 0;
-  const eff = calcZenEfficiency(moves, LEVELS[currentLevelIdx]);
+
+  const level = LEVELS[currentLevelIdx];
+  const stars = computeZenStars(moves, elapsedMs, level);
 
   ovTitle.textContent = 'Griglia completata!';
   ovSub.innerHTML =
-    `⏱️ Tempo impiegato: <b>${fmt(elapsedMs)}</b><br/>` +
-    `🎯 Mosse totali: <b>${moves}</b><br/>` +
-    `📊 Efficienza: <b>${eff}%</b>`;
-
-  // ⭐⭐⭐⭐⭐ — nuovo rating a 5 stelle
-  const nStars = effToStars(eff);
-  ovSub.innerHTML += `<br/>${'⭐'.repeat(nStars)} <small>${starsLabel(nStars)}</small>`;
+    `🎯 Mosse: <b>${moves}</b><br/>` +
+    `⏱️ Tempo: <b>${fmt(elapsedMs)}</b><br/>` +
+    `⭐ Valutazione: <b>${fmtStars(stars)}/5</b>`;
 
   ovBtn.textContent = 'Gioca ancora';
   ovBtn.onclick = () => { hideOverlay(); startZen(); };
@@ -1778,21 +1834,22 @@ function showZenEnd(){
   ovBtnSkip.textContent = 'Torna al menu';
   ovBtnSkip.onclick = () => { hideOverlay(); showIntro(); };
 
-
-const actions = document.querySelector('.ov-actions');
-if (actions) {
-  document.getElementById('shareTextBtn')?.remove();
-  const shareBtn = document.createElement('button');
-  shareBtn.id = 'shareTextBtn';
-  shareBtn.className = 'primary outline-btn';
-  shareBtn.textContent = 'Condividi';
-  shareBtn.onclick = () => shareZen();
-  actions.appendChild(shareBtn);
-}
+  // Pulsante Condividi (testo aggiornato)
+  const actions = document.querySelector('.ov-actions');
+  if (actions) {
+    document.getElementById('shareTextBtn')?.remove();
+    const shareBtn = document.createElement('button');
+    shareBtn.id = 'shareTextBtn';
+    shareBtn.className = 'primary outline-btn';
+    shareBtn.textContent = 'Condividi';
+    shareBtn.onclick = () => shareZen();
+    actions.appendChild(shareBtn);
+  }
 
   overlay.classList.add('show');
   updateSaveButton();
 }
+
 
 
   function win(){
