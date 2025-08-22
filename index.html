@@ -96,35 +96,6 @@
   .stats{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center }
   .chip{ padding:8px 12px; border-radius:999px; background:#1a1f37; border:1px solid var(--panel-border); color:#c8cde0; white-space:nowrap }
   .level-chip{ padding:6px 10px; border-radius:999px; background:#1a1f37; border:1px solid var(--panel-border); color:#c8cde0; font-size:14px; white-space:nowrap }
-/* Jackpot chip più grande */
-#jackpotChip{
-  font-size: 18px;            /* testo più grande */
-  padding: 10px 14px;         /* più aria */
-  border-width: 2px;          /* bordo un filo più marcato */
-  border-color: #ffd54f;      /* un accenno “gold” */
-  box-shadow: 0 6px 18px rgba(0,0,0,.35);
-}
-
-#jackpotChip b{               /* i tre simboli in bold un pelino più grandi */
-  font-size: 1.15em;
-}
-
-#jackpotChip small{           /* il progress 0/3 resta discreto */
-  font-size: .85em;
-  opacity: .85;
-}
-
-/* Facoltativo: su schermi piccoli riduciamo leggermente */
-@media (max-width: 480px){
-  #jackpotChip{ font-size: 16px; padding: 9px 12px; }
-}
-@keyframes jackpotPulse{
-  0%   { transform: scale(1);   }
-  35%  { transform: scale(1.06);}
-  100% { transform: scale(1);   }
-}
-#jackpotChip.pulse { animation: jackpotPulse 300ms ease-out; }
-
   .timer{ font-size:26px; font-weight:700 }
   .grid{
     margin-top:18px; display:grid; grid-template-columns:repeat(var(--cols), minmax(0,1fr));
@@ -347,23 +318,6 @@
     line-height: 1;
     filter: drop-shadow(0 6px 16px rgba(0,0,0,.35));
   }
-/* Jackpot (slide tutorial) */
-.jackpot-row{
-  display:flex; gap:12px; justify-content:center; align-items:center;
-  margin:12px 0;
-}
-.jackpot-box{
-  width: clamp(48px, 9vw, 64px);
-  height: clamp(48px, 9vw, 64px);
-  display:grid; place-items:center;
-  border-radius:14px;
-  border:1px solid var(--panel-border);
-  background: linear-gradient(180deg, var(--panel-1), var(--panel-2));
-  box-shadow: var(--shadow);
-  font-size: clamp(28px, 6vw, 36px);
-  line-height: 1;
-  filter: drop-shadow(0 6px 16px rgba(0,0,0,.35));
-}
 
   /* X in alto a destra */
   .tutorial-close{
@@ -564,28 +518,6 @@
               <li>Alla fine vedi il report: <b>tempo impiegato</b>, <b>mosse</b>, <b>efficienza</b> e ⭐.</li>
             </ul>
           </div>
-<!-- Slide Zen — Jackpot -->
-<div class="tutorial-slide" data-mode="zen" hidden>
-  <h3 style="color:#FFF44F">Jackpot 🎰</h3>
-
-  <!-- Mini “vetrina” grafica dei 3 simboli (esempio) -->
-  <div class="jackpot-row" aria-hidden="true">
-    <div class="jackpot-box">🍎</div>
-    <div class="jackpot-box">🐶</div>
-    <div class="jackpot-box">🍪</div>
-  </div>
-
-  <p style="margin:0; color:var(--muted)">
-    In Zen c’è anche un Jackpot: i <b>3 simboli</b> in alto.<br/>
-    <b>Toccali in sequenza corretta</b> per le <b>tre coppie al volo!</b><br/>
-    <small>È una scorciatoia, ma attenzione: cercarli ti farà spendere mosse preziose…</small>
-  </p>
-
-  <p style="margin-top:8px; color:var(--muted)">
-    <small><em>I simboli reali cambiano a ogni griglia.</em></small>
-  </p>
-</div>
-
         </div>
 
         <button class="tutorial-arrow prev" id="intro-prev" aria-label="Slide precedente">‹</button>
@@ -1303,12 +1235,7 @@ function isPreFrame(){
       pauseLeftMs: 0,
       powerUsed: { reveal:false, plus10:false, shift:false },
       preAppliedBonusMs: 0,
-      startBonusMs: 0,
-jackpot: {
-  active: false,        // solo in Zen
-  target: [],           // es. ['🍎','🐶','🍪']
-  progress: 0           // 0..3
-},
+      startBonusMs: 0
     };
 
     // === UI: nascondi chip e poteri in Zen + CENTRA i 5 bottoni ===
@@ -1396,9 +1323,6 @@ if (saveBtn) saveBtn.style.display = '';
     }
 
     grid.appendChild(frag);
-if (state.isZen) {
-  setupZenJackpot();
-}
     tapBuffer = [];
     updateHud();
     updateScoreChip();
@@ -1475,27 +1399,6 @@ if (state.isZen) {
     }
     if(card.dataset.state === 'matched' || card.dataset.state === 'revealed') return;
     startTimer();
-// --- JACKPOT (solo Zen) ---
-if (state.isZen && state.jackpot.active) {
-  const sym = card.dataset.symbol;
-  // ignora carte già rivelate/matched/speciali
-  if (card.getAttribute('data-state') === 'hidden' && sym !== '💀' && sym !== '⚡') {
-    const need = state.jackpot.target[state.jackpot.progress];
-    if (sym === need) {
-      state.jackpot.progress++;
-      renderJackpotChip();
-      if (state.jackpot.progress >= 3) {
-        // Evita che questo tap faccia procedere la logica normale
-        triggerJackpot(); 
-        return; // interrompi qui l’handler (niente flip/move)
-      }
-      // continua normalmente (flip, ecc.)
-    } else {
-      // clic sbagliato: reset progress
-      if (state.jackpot.progress > 0) resetJackpotProgress();
-    }
-  }
-}
 
     flip(card, true);
     SFX.play('flip', { volume:.75, rate: 0.96 + Math.random()*0.08 });
@@ -1573,11 +1476,6 @@ if (state.isZen && state.jackpot.active) {
         spawnMatchStars(a);
         spawnMatchStars(b);
         SFX.play('ok', { volume:.9, rate: 0.98 });
-// ——— Jackpot adattivo (solo Zen): se la coppia matched è nel target, rimpiazza quel simbolo
-if (state.isZen && state.jackpot?.active){
-  const symMatched = a.dataset.symbol; // a e b sono uguali qui
-  adaptJackpotAfterMatch(symMatched);
-}
 
         state.matched++;
         refreshPowersUI(); 
@@ -1853,179 +1751,6 @@ if (actions) {
   updateSaveButton();
 }
 
-function pickThreeDistinctSymbolsFromDeck() {
-  // Prende i simboli “normali” presenti a quadro (niente 💀/⚡)
-  const seen = new Set();
-  const out = [];
-  getActiveCards().forEach(c => {
-    const s = c.dataset.symbol;
-    if (s === '💀' || s === '⚡') return;
-    if (!seen.has(s)) { seen.add(s); out.push(s); seen.add(s); }
-  });
-  // Se non bastano, niente jackpot
-  if (out.length < 3) return [];
-  // mischiamo e prendiamo i primi 3
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = (Math.random() * (i + 1)) | 0;
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out.slice(0, 3);
-}
-
-function setupZenJackpot(){
-  const t = pickThreeDistinctSymbolsFromDeck();
-  if (!t.length) return;
-  state.jackpot.active = true;
-  state.jackpot.target = t;
-  state.jackpot.progress = 0;
-  renderJackpotChip();
-}
-
-function renderJackpotChip(){
-  const id = 'jackpotChip';
-  const prev = document.getElementById(id);
-  if (prev) prev.remove();
-
-  const wrap = document.querySelector('.stats');
-  if (!wrap || !state?.isZen || !state.jackpot.active) return;
-
-  const chip = document.createElement('span');
-  chip.id = id;
-  chip.className = 'level-chip';
-
-  const p = state.jackpot.progress;
-  const [a,b,c] = state.jackpot.target;
-  chip.innerHTML = `🎰 Jackpot: <b>${a}</b> <b>${b}</b> <b>${c}</b> &nbsp; <small>${p}/3</small>`;
-
-  wrap.appendChild(chip);
-
-  // micro anim se appena cambiato
-  chip.animate?.(
-    [{ transform:'scale(1)', opacity: .85 }, { transform:'scale(1.06)', opacity:1 }, { transform:'scale(1)', opacity:1 }],
-    { duration: 380, easing: 'ease-out' }
-  );
-}
-
-
-function resetJackpotProgress(){
-  if (!state?.isZen || !state.jackpot.active) return;
-  state.jackpot.progress = 0;
-  renderJackpotChip();
-}
-function triggerJackpot(){
-  if (!state?.isZen || !state.jackpot.active) return;
-
-  const targets = state.jackpot.target.slice(); // 3 simboli
-  state.jackpot.active = false;
-
-  // Anima e marca tutte le carte con quei simboli
-  const cards = getActiveCards().filter(c => c.getAttribute('data-state') !== 'matched');
-
-  let matchedNow = 0;
-  targets.forEach(sym => {
-    const group = cards.filter(c => c.dataset.symbol === sym);
-    // fai match di entrambe le copie, se presenti
-    // (se per qualunque ragione non sono 2, si ignora parzialmente)
-    let done = 0;
-    group.forEach(c => {
-      if (done < 2 && c.getAttribute('data-state') !== 'matched') {
-        c.setAttribute('data-state','matched');
-        spawnMatchStars(c);
-        done++;
-      }
-    });
-    if (done === 2) matchedNow += 1;
-  });
-
-  // Aggiorna contatore coppie (niente incremento mosse!)
-  state.matched += matchedNow;
-
-  flashMessage('🎰 Jackpot! 3 coppie completate');
-  SFX.play?.('ok', { volume:1 });
-
-  // Rimuovi chip
-  document.getElementById('jackpotChip')?.remove();
-
-  // Fine partita se abbiamo chiuso tutte le coppie
-  if (state.matched >= state.level.pairs){
-    showZenEnd();
-  } else {
-    refreshPowersUI?.();
-    updateHud?.();
-  }
-}
-// === Helpers stato griglia (solo Zen/jackpot) ===
-function getUnmatchedNormalSymbols(){
-  // Raccoglie i simboli NON speciali che hanno ancora almeno una carta non matched
-  const counts = new Map();
-  getActiveCards().forEach(c => {
-    const s = c.dataset.symbol;
-    if (s === '💀' || s === '⚡') return;
-    if (c.getAttribute('data-state') === 'matched') return;
-    counts.set(s, (counts.get(s) || 0) + 1);
-  });
-  // Ritorna solo quelli che potenzialmente hanno ancora la coppia non chiusa
-  return Array.from(counts.keys()).filter(s => (counts.get(s) || 0) >= 1);
-}
-
-function countUnmatchedPairs(){
-  // Approssimazione: quante coppie "normali" restano? Conta i matched attuali.
-  // Vale per la logica di soglia (2 coppie → 4 carte) senza essere pignoli simbolo per simbolo.
-  const total = state?.level?.pairs || 0;
-  return Math.max(0, total - (state?.matched || 0));
-}
-
-function pickReplacementSymbol(excludeSet){
-  // Sceglie un simbolo non ancora accoppiato e che non sia tra i target attuali (excludeSet)
-  const pool = getUnmatchedNormalSymbols().filter(s => !excludeSet.has(s));
-  if (!pool.length) return null;
-  // shuffle rapido
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = (Math.random() * (i + 1)) | 0;
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  return pool[0] || null;
-}
-function adaptJackpotAfterMatch(matchedSymbol){
-  if (!state?.isZen || !state.jackpot?.active) return;
-
-  // Se stiamo per entrare nell’endgame (<= 2 coppie rimanenti), disattiva
-  const afterMatchPairsLeft = countUnmatchedPairs(); // già aggiornato subito dopo il match? gestiamo sotto
-  // Nota: questa funzione la chiami PRIMA di incrementare state.matched,
-  // quindi ragioniamo "come se" la coppia appena chiusa sia già fuori.
-  const pairsLeftConsideringThis = Math.max(0, afterMatchPairsLeft - 1);
-
-  if (pairsLeftConsideringThis <= 2){
-    state.jackpot.active = false;
-    document.getElementById('jackpotChip')?.remove();
-    return;
-  }
-
-  // Se la coppia chiusa è dentro i 3 target, rimpiazzala
-  const idx = state.jackpot.target.indexOf(matchedSymbol);
-  if (idx === -1) return; // non è un simbolo del jackpot → niente da fare
-
-  // Evita duplicati mantenendo i 3 simboli sempre distinti
-  const exclude = new Set(state.jackpot.target);
-  exclude.delete(matchedSymbol); // questo è quello da rimpiazzare, può rientrare se capita (ma meglio evitarlo)
-  const replacement = pickReplacementSymbol(exclude);
-
-  if (!replacement){
-    // Non abbiamo un rimpiazzo valido → disattiviamo il jackpot
-    state.jackpot.active = false;
-    document.getElementById('jackpotChip')?.remove();
-    return;
-  }
-
-  // Rimpiazza il simbolo nel target
-  state.jackpot.target[idx] = replacement;
-
-  // Per semplicità: quando cambiamo il target azzeriamo il progresso della sequenza
-  // (altrimenti dovremmo "accorciare" solo se rimpiazziamo un simbolo non ancora superato nella sequenza)
-  state.jackpot.progress = 0;
-
-  renderJackpotChip();
-}
 
   function win(){
     if (state?.isZen){ showZenEnd(); return; }
