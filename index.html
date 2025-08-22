@@ -578,8 +578,6 @@
     </div>
   </div>
 </div>
-<!-- html2canvas per generare l'immagine da condividere -->
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <script>
 (() => {
@@ -617,6 +615,8 @@
   ];
 
   const EMOJI = ['🐶','🐱','🦊','🐼','🐵','🐯','🦁','🐸','🐨','🦄','🐷','🐹','🐙','🦉','🦋','🐝','🐢','🐠','🍎','🍉','🍇','🍒','🍓','🍑','🥑','🌽','🥕','🍩','🍪','🍰','🍔','🍕','🍣','🍤','🍜','🍿','🐋','🦭','🦀','🐞','🐍','🦜','🦢','🐎','🐫','🦒','🐿','🦔','🦩','🐬','🐳','🦦','🐡','🐌','🍋','🍊','🫐','🥥','🥭','🥒','🫑','🥔','🌶','🍄','🧄','🧅','🧀','🥨','🥯','🥞','🥪','🥙','🥗','🥘','🥟','🍮','🍫','🍹','🧋','🍺','☕','🥛','🍷','🍵'];
+
+const GAME_URL = 'https://dadegames.github.io/Skullory/';
 
   // --- SFX: inizializza al primo gesto utente ---
   function ensureSfx(){
@@ -1670,46 +1670,45 @@ if (saveBtn) saveBtn.style.display = '';
     }
     setTimeout(() => wrap.remove(), 650);
   }
-async function shareZenResult() {
-  try {
-    const target = document.querySelector('#overlay .dialog');
-    if (!target) return;
+// ===== Condivisione testuale Zen =====
+function buildZenShareText(){
+  const elapsedMs = calcElapsedMs();
+  const moves = state?.moves || 0;
+  const eff = calcZenEfficiency(moves, LEVELS[currentLevelIdx]);
+  const stars = effToStars(eff);
 
-    // Cattura il riquadro di fine Zen
-    const canvas = await html2canvas(target, {
-      backgroundColor: null,   // sfondo trasparente
-      scale: 2,                // qualità alta
-      useCORS: true
-    });
-    const dataUrl = canvas.toDataURL('image/png');
+  // Messaggio richiesto
+  return `Ho fatto ${stars}/5 ⭐ in Zen su Skullory in ${moves} mosse, ${eff}% efficienza e tempo ${fmt(elapsedMs)} — prova a battermi! ${GAME_URL}`;
+}
 
-    // Se il dispositivo supporta la Web Share API con file (mobile)
-    if (navigator.canShare && navigator.canShare({ files: [] })) {
-      const blob = await (await fetch(dataUrl)).blob();
-      const file = new File([blob], 'skullory-zen.png', { type: 'image/png' });
-
-      try {
-        await navigator.share({
-          files: [file],
-          title: 'Il mio risultato Zen su Skullory 🧘',
-          text: 'Guarda che memoria!'
-        });
-        return;
-      } catch (e) {
-        // Utente ha annullato: va bene così, passiamo al fallback
-        console.log('Condivisione annullata', e);
-      }
+async function shareZen(){
+  const text = buildZenShareText();
+  try{
+    // Foglio di condivisione nativo (mobile/desktop supportati)
+    if (navigator.share){
+      await navigator.share({
+        title: 'Skullory — Zen',
+        text,
+        url: GAME_URL
+      });
+      return;
     }
-
-    // Fallback desktop: scarica l'immagine
-    const link = document.createElement('a');
-    link.href = dataUrl;
-    link.download = 'skullory-zen.png';
-    link.click();
-  } catch (err) {
-    console.error(err);
-    flashMessage('Ops, non riesco a creare l’immagine 😔');
+  }catch(e){
+    // utente ha annullato: ignora
   }
+
+  // Fallback: copia negli appunti (richiede HTTPS, ok su github.io)
+  try{
+    if (navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      flashMessage('✅ Copiato: incolla dove vuoi!');
+      return;
+    }
+  }catch(_) {}
+
+  // Ultimo fallback: apre l’email precompilata
+  const mailto = `mailto:?subject=${encodeURIComponent('Il mio risultato Zen su Skullory')}&body=${encodeURIComponent(text)}`;
+  window.location.href = mailto;
 }
 
 function showZenEnd(){
@@ -1734,17 +1733,17 @@ function showZenEnd(){
   ovBtnSkip.textContent = 'Torna al menu';
   ovBtnSkip.onclick = () => { hideOverlay(); showIntro(); };
 
-  // (se avevi già il bottone "Condividi immagine", lo lasciamo com'è)
-  const actions = document.querySelector('.ov-actions');
-  if (actions) {
-    document.getElementById('shareImageBtn')?.remove();
-    const shareBtn = document.createElement('button');
-    shareBtn.id = 'shareImageBtn';
-    shareBtn.className = 'primary outline-btn';
-    shareBtn.textContent = 'Condividi immagine';
-    shareBtn.onclick = () => shareZenResult?.();
-    actions.appendChild(shareBtn);
-  }
+
+const actions = document.querySelector('.ov-actions');
+if (actions) {
+  document.getElementById('shareTextBtn')?.remove();
+  const shareBtn = document.createElement('button');
+  shareBtn.id = 'shareTextBtn';
+  shareBtn.className = 'primary outline-btn';
+  shareBtn.textContent = 'Condividi';
+  shareBtn.onclick = () => shareZen();
+  actions.appendChild(shareBtn);
+}
 
   overlay.classList.add('show');
   updateSaveButton();
