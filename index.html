@@ -28,71 +28,67 @@
 
   *{box-sizing:border-box}
   html,body{height:100%}
-body{
-  margin:0; color:var(--text); font:16px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial;
-  background:
-    radial-gradient(1200px 800px at 20% -10%, var(--bg-3), transparent),
-    radial-gradient(900px 600px at 110% 20%, var(--bg-4), transparent),
-    linear-gradient(180deg, var(--bg-1), var(--bg-2));
-  display:flex; 
-  align-items:flex-start;      /* ← da center a flex-start */
-  justify-content:center; 
-  padding:10px 18px 18px;      /* ← prima era 18px uniformi */
-  -webkit-font-smoothing: antialiased; 
-  min-height:100dvh;
-}
-  .wrap{ width:min(1100px, 98vw); margin: 30px auto 0; /* 12px sopra, centrato orizzontalmente, 0 sotto */ }
-.top{
-  display:block;          /* non serve più il flex: c’è solo il logo */
-  padding: 0;             /* niente padding per far aderire il logo */
-}
+  body{
+    margin:0; color:var(--text); font:16px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial;
+    background:
+      radial-gradient(1200px 800px at 20% -10%, var(--bg-3), transparent),
+      radial-gradient(900px 600px at 110% 20%, var(--bg-4), transparent),
+      linear-gradient(180deg, var(--bg-1), var(--bg-2));
+    display:flex; 
+    align-items:flex-start;
+    justify-content:center; 
+    padding:10px 18px 18px;
+    -webkit-font-smoothing: antialiased; 
+    min-height:100dvh;
+  }
+  .wrap{ width:min(1100px, 98vw); margin: 30px auto 0; }
+  .top{
+    display:block;
+    padding: 0;
+  }
 
-.brand{ width:100%; }
+  .brand{ width:100%; }
 
-.brand img{
-  display:block;
-  width:100%;             /* il logo si estende su tutta la larghezza del banner */
-  height:auto;            /* scala proporzionalmente */
-  /* opzionale: sblocca il vecchio vincolo di altezza e imposta un massimo */
-  max-height: 70px;       /* cambia a tuo gusto (60–90px sono comuni) */
-}
+  .brand img{
+    display:block;
+    width:100%;
+    height:auto;
+    max-height: 70px;
+  }
 
-.controls {
-  display: flex; /* pulsanti in riga */
-  gap: 6px;      /* spazio tra pulsanti */
-}
-.controls-bottom{
-  display: flex;
-  justify-content: space-between;   /* ⟵ prima era center */
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  margin-top: 14px;
-}
-.controls-left, .controls-right{
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+  .controls { display: flex; gap: 6px; }
+  .controls-bottom{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 14px;
+  }
+  .controls-left, .controls-right{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 
-/* Riduci la larghezza SOLO dei tre bottoni in alto a destra */
-.controls-bottom .outline-btn{
-  padding: 8px 8px;
-  min-width: 40px;
-}
+  /* Riduci la larghezza SOLO dei tre bottoni in alto a destra */
+  .controls-bottom .outline-btn{
+    padding: 8px 8px;
+    min-width: 40px;
+  }
 
-/* Stato visivo disabilitato, ma cliccabile per mostrare l’help */
-.controls-right .power-btn[aria-disabled="true"]{
-  filter: grayscale(100%);
-  opacity: .35;
-  cursor: not-allowed;
-  box-shadow: none;
-  border-color: #3a4168;
-}
-.controls-right .power-btn[aria-disabled="true"]:hover{
-  transform: none;
-  box-shadow: none;
-}
+  /* Stato visivo disabilitato, ma cliccabile per mostrare l’help */
+  .controls-right .power-btn[aria-disabled="true"]{
+    filter: grayscale(100%);
+    opacity: .35;
+    cursor: not-allowed;
+    box-shadow: none;
+    border-color: #3a4168;
+  }
+  .controls-right .power-btn[aria-disabled="true"]:hover{
+    transform: none;
+    box-shadow: none;
+  }
 
   button.primary{background:var(--accent); color:#0b0f1e; border:none; padding:10px 16px; border-radius:12px; font-weight:700; cursor:pointer}
   button.primary:active{transform:translateY(1px)}
@@ -109,12 +105,12 @@ body{
   .card{
     position:relative; aspect-ratio:1/1; perspective:900px;
     cursor:pointer; border-radius:var(--radius); -webkit-tap-highlight-color:transparent; touch-action:manipulation;
-container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghezza della carta */
+    container-type: inline-size;
   }
-  .face{ pointer-events:none; }
   .face{
     position:absolute; inset:0; display:grid; place-items:center; border-radius:var(--radius); border:1px solid var(--card-border);
     backface-visibility:hidden;
+    pointer-events:none; /* unita qui */
   }
   .front{ background:var(--card-front); transform:rotateY(180deg) }
   .back{ background:var(--card-back) }
@@ -140,12 +136,11 @@ container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghez
   }
   .card[data-state="revealed"] .inner,
   .card[data-state="matched"] .inner{ transform:rotateY(180deg) }
-.symbol{
-  /* prima era: font-size: clamp(28px, 7.2vw, 64px);  */
-  font-size: clamp(28px, 50cqi, 86px);  /* ⟵ scala con la carta: 58% della sua larghezza */
-  line-height: 1;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,.45));
-}
+  .symbol{
+    font-size: clamp(28px, 50cqi, 86px);
+    line-height: 1;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,.45));
+  }
   .card[data-state="matched"] .front{ outline:3px solid var(--ok); box-shadow:0 0 18px rgba(82,206,137,.45) inset }
   .card[data-state="locked"]{ pointer-events:none }
 
@@ -163,716 +158,546 @@ container-type: inline-size;   /* ⟵ nuovo: abilita i cqi relativi alla larghez
   .card[data-symbol="⚡"] .front .symbol{ text-shadow: 0 0 10px rgba(255,213,79,.6) }
   .card[data-symbol="⚡"][data-state="revealed"] .front{ outline:3px solid #ffd54f; box-shadow:0 0 22px rgba(255,213,79,.4) inset }
 
-.flash-msg{
-  position:fixed;
-  top:20%;
-  left:50%;
-  transform:translateX(-50%);
-  background:rgba(0,0,0,.8);
-  color:#fff;
-  padding:12px 20px;          /* più grande */
-  border-radius:12px;         /* un filo più morbido */
-  font-weight:700;
-  font-size:1.3em;            /* testo più grande */
-  z-index:9999;
-  pointer-events:none;        /* NON blocca i clic sotto */
-  animation:flashUp 1.5s ease forwards; /* durata 1.5s */
-}
-/* Stelline match */
-.match-stars { 
-  position: absolute; inset: 0; pointer-events: none; 
-  display: grid; place-items: center; 
-}
-.match-stars .star {
-  position: absolute;
-  font-size: 18px;
-  opacity: 0;
-  animation: starPop 600ms ease-out forwards;
-  will-change: transform, opacity;
-  filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
-}
-@keyframes starPop {
-  0%   { transform: translate(0,0) scale(.4) rotate(0deg);   opacity: 0; }
-  20%  { opacity: 1; }
-  100% { transform: translate(var(--dx), var(--dy)) scale(1.2) rotate(35deg); opacity: 0; }
-}
-/* Anellino “pulse” sulla carta matched (delicatissimo) */
-.card[data-state="matched"] .front {
-  animation: ringPulse 420ms ease-out;
-}
-@keyframes ringPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(82,206,137,.45) inset; }
-  100% { box-shadow: 0 0 18px rgba(82,206,137,.45) inset; }
-}
+  .flash-msg{
+    position:fixed;
+    top:20%;
+    left:50%;
+    transform:translateX(-50%);
+    background:rgba(0,0,0,.8);
+    color:#fff;
+    padding:12px 20px;
+    border-radius:12px;
+    font-weight:700;
+    font-size:1.3em;
+    z-index:9999;
+    pointer-events:none;
+    animation:flashUp 1.5s ease forwards;
+  }
+  /* Stelline match */
+  .match-stars { 
+    position: absolute; inset: 0; pointer-events: none; 
+    display: grid; place-items: center; 
+  }
+  .match-stars .star {
+    position: absolute;
+    font-size: 18px;
+    opacity: 0;
+    animation: starPop 600ms ease-out forwards;
+    will-change: transform, opacity;
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+  }
+  @keyframes starPop {
+    0%   { transform: translate(0,0) scale(.4) rotate(0deg);   opacity: 0; }
+    20%  { opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(1.2) rotate(35deg); opacity: 0; }
+  }
+  /* Anellino “pulse” sulla carta matched */
+  .card[data-state="matched"] .front { animation: ringPulse 420ms ease-out; }
+  @keyframes ringPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(82,206,137,.45) inset; }
+    100% { box-shadow: 0 0 18px rgba(82,206,137,.45) inset; }
+  }
 
-/* Accessibilità: niente animazioni se l’utente le riduce */
-@media (prefers-reduced-motion: reduce){
-  .match-stars .star, .card[data-state="matched"] .front { animation: none !important; }
-}
+  /* Accessibilità: niente animazioni se l’utente le riduce */
+  @media (prefers-reduced-motion: reduce){
+    .match-stars .star, .card[data-state="matched"] .front { animation: none !important; }
+  }
 
-@keyframes flashUp{
-  0%{opacity:0; transform:translate(-50%, 8px)}
-  15%{opacity:1; transform:translate(-50%, 0)}
-  100%{opacity:0; transform:translate(-50%, -8px)}
-}
-  .overlay{ position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.5); z-index:1000 }
+  @keyframes flashUp{
+    0%{opacity:0; transform:translate(-50%, 8px)}
+    15%{opacity:1; transform:translate(-50%, 0)}
+    100%{opacity:0; transform:translate(-50%, -8px)}
+  }
+
+  /* Overlay unificato */
+  .overlay{
+    position:fixed;
+    inset:0;
+    display:none;
+    place-items:center;
+    background: rgba(10,12,22,.45);
+    -webkit-backdrop-filter: blur(10px) saturate(110%);
+    backdrop-filter: blur(10px) saturate(110%);
+    z-index:1000;
+  }
   .overlay.show{ display:grid }
-  .overlay.hide{ display:none !important }
+
   .dialog{ width:min(640px, 92vw); background:linear-gradient(180deg,var(--panel-1),var(--panel-2)); border:1px solid var(--panel-border);
     border-radius:20px; padding:24px; text-align:center; box-shadow:var(--shadow) }
   .dialog h2{ margin:6px 0 8px; font-size:28px }
   .dialog p{ margin:0 0 14px; color:var(--muted) }
+
   @media (max-width: 600px){
     .wrap{ width:min(520px, 96vw) }
     .top, .grid{ width:100% }
   }
-/* Disabilita il flip animato quando vogliamo richiudere le carte di colpo */
-.no-flip .inner { transition: none !important; }
-/* (consigliato) metti il ghost sopra a tutto, così copre bene la carta */
-.simon-ghost { z-index: 30; }
-/* Quando è attivo il Simon, impedisci ogni flip e nascondi la faccia front */
-body.mode-simon .card .inner{
-  transform: none !important;
-  transition: none !important;
-}
-body.mode-simon .card .front{
-  visibility: hidden !important;
-}
 
-/* Pulsanti Pausa, Salva, Ricomincia in versione outline */
-.outline-btn {
-  background: transparent !important;      /* sfondo trasparente */
-  color: var(--accent) !important;          /* colore icona/testo = colore tema */
-  border: 2px solid var(--accent) !important; /* bordo a tema */
-}
+  /* Disabilita il flip animato quando vogliamo richiudere le carte di colpo */
+  .no-flip .inner { transition: none !important; }
+  .simon-ghost { z-index: 30; }
 
-.outline-btn:hover {
-  background: rgba(255, 255, 255, 0.05);    /* leggero highlight al passaggio */
-}
+  /* Quando è attivo il Simon, impedisci ogni flip e nascondi la faccia front */
+  body.mode-simon .card .inner{ transform: none !important; transition: none !important; }
+  body.mode-simon .card .front{ visibility: hidden !important; }
 
-.outline-btn:active {
-  background: rgba(255, 255, 255, 0.12);    /* feedback al click/tap */
-}
-/* Splash pre-tutorial */
-.splash{
-  position: fixed;
-  inset: 0;
-  z-index: 2000;                /* sopra intro/overlay */
-  display: grid;
-  place-items: center;
-  background: linear-gradient(180deg, var(--bg-1), var(--bg-2));
-  transition: opacity 280ms ease, visibility 280ms ease;
-  opacity: 1;
-  visibility: visible;
-  cursor: pointer;
-}
-.splash.hide{
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-.splash .splash-art{
-  width: min(70vmin, 900px);
-  max-width: 92vw;
-  height: auto;
-  filter: drop-shadow(0 24px 50px rgba(0,0,0,.45));
-}
-.splash .splash-skip{
-  position: absolute;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,.35);
-  border: 1px solid var(--panel-border);
-  color: var(--muted);
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-size: 14px;
-  user-select: none;
-}
-/* Tutorial a slide */
-.tutorial-dialog{ position:relative; overflow:hidden; }
-.tutorial-carousel{ position:relative; min-height: 140px; }
-.tutorial-slide[hidden]{ display:none !important; }
+  /* Pulsanti Pausa, Salva, Ricomincia in versione outline */
+  .outline-btn { background: transparent !important; color: var(--accent) !important; border: 2px solid var(--accent) !important; }
+  .outline-btn:hover { background: rgba(255, 255, 255, 0.05); }
+  .outline-btn:active { background: rgba(255, 255, 255, 0.12); }
 
-.tutorial-arrow{
-  position:absolute;
- bottom: 20px;
-  width:38px; height:38px;
-  display:grid; place-items:center;
-  border-radius:999px;
-  border:1px solid var(--panel-border);
-  background:linear-gradient(180deg, var(--panel-1), var(--panel-2));
-  color:var(--text);
-  cursor:pointer;
-  box-shadow: var(--shadow);
-  user-select:none;
-}
-.tutorial-arrow.prev{ left:10px; }
-.tutorial-arrow.next{ right:10px; }
-.tutorial-arrow:disabled{ opacity:.5; cursor:default; }
+  /* Splash pre-tutorial */
+  .splash{
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(180deg, var(--bg-1), var(--bg-2));
+    transition: opacity 280ms ease, visibility 280ms ease;
+    opacity: 1;
+    visibility: visible;
+    cursor: pointer;
+  }
+  .splash.hide{ opacity: 0; visibility: hidden; pointer-events: none; }
+  .splash .splash-art{
+    width: min(70vmin, 900px);
+    max-width: 92vw;
+    height: auto;
+    filter: drop-shadow(0 24px 50px rgba(0,0,0,.45));
+  }
+  .splash .splash-skip{
+    position: absolute;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,.35);
+    border: 1px solid var(--panel-border);
+    color: var(--muted);
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 14px;
+    user-select: none;
+  }
 
-.tutorial-dots{
-  display:flex; gap:8px; justify-content:center; align-items:center;
-  margin-top:12px;
-}
-.tutorial-dots button{
-  width:8px; height:8px; border-radius:999px; border:none;
-  background:#3a4168; cursor:pointer;
-}
-.tutorial-dots button[aria-current="true"]{
-  width:22px; height:8px; border-radius:999px; background:var(--accent);
-}
+  /* Tutorial a slide */
+  .tutorial-dialog{ position:relative; overflow:hidden; }
+  .tutorial-carousel{ position:relative; min-height: 140px; }
+  .tutorial-slide[hidden]{ display:none !important; }
 
-.big-symbol{
-  font-size: clamp(42px, 10vw, 72px);
-  line-height: 1;
-  filter: drop-shadow(0 6px 16px rgba(0,0,0,.35));
-}
+  .tutorial-arrow{
+    position:absolute;
+    bottom: 20px;
+    width:38px; height:38px;
+    display:grid; place-items:center;
+    border-radius:999px;
+    border:1px solid var(--panel-border);
+    background:linear-gradient(180deg, var(--panel-1), var(--panel-2));
+    color:var(--text);
+    cursor:pointer;
+    box-shadow: var(--shadow);
+    user-select:none;
+  }
+  .tutorial-arrow.prev{ left:10px; }
+  .tutorial-arrow.next{ right:10px; }
+  .tutorial-arrow:disabled{ opacity:.5; cursor:default; }
 
-/* X in alto a destra */
-.tutorial-close{
-  position:absolute; top:10px; right:10px;
-  width:34px; height:34px; display:grid; place-items:center;
-  border-radius:10px;
-  border:1px solid var(--panel-border);
-  background:linear-gradient(180deg, var(--panel-1), var(--panel-2));
-  color:var(--muted);
-  cursor:pointer;
-}
-/* --- Testo centrato e niente pallini nelle slide del tutorial --- */
-#intro .tutorial-slide { text-align: center; }
-#intro .tutorial-slide ul { 
-  list-style: none; 
-  padding: 0; 
-  margin: 10px 0 0; 
-}
-#intro .tutorial-slide li { 
-  margin: 8px 0; 
-}
-#intro .tutorial-slide h3{
-  margin: 6px 0 10px; 
-  font-size: 22px;
-}
-/* Close del popup Salvataggi (stile coerente col tutorial) */
-.save-close{
-  position:absolute; top:10px; right:10px;
-  width:34px; height:34px; display:grid; place-items:center;
-  border-radius:10px;
-  border:1px solid var(--panel-border);
-  background:linear-gradient(180deg,var(--panel-1),var(--panel-2));
-  color:var(--muted);
-  cursor:pointer;
-}
+  .tutorial-dots{
+    display:flex; gap:8px; justify-content:center; align-items:center;
+    margin-top:12px;
+  }
+  .tutorial-dots button{
+    width:8px; height:8px; border-radius:999px; border:none;
+    background:#3a4168; cursor:pointer;
+  }
+  .tutorial-dots button[aria-current="true"]{
+    width:22px; height:8px; border-radius:999px; background:var(--accent);
+  }
 
-/* Bottoni icona (Upload, Cestino) */
-.icon-btn{
-  width:36px; height:36px;
-  display:grid; place-items:center;
-  border-radius:10px;
-  border:1px solid var(--panel-border);
-  background:linear-gradient(180deg,var(--panel-1),var(--panel-2));
-  color:var(--text);
-  cursor:pointer;
-  box-shadow:var(--shadow);
-  font-size:18px; line-height:1;
-}
-.icon-btn:hover{ filter:brightness(1.05) }
-.icon-btn:active{ transform:translateY(1px) }
-/* --- SIMON (flash del fantasmino) --- */
-.simon-ghost{
-  position:absolute; inset:0;
-  display:grid; place-items:center;
-  font-size: clamp(36px, 50cqi, 90px);
-  border:2px solid var(--accent);
-  border-radius: var(--radius);
-  background: rgba(255,255,255,.05);
-  animation: simonFlash .55s ease-out;
-  filter: drop-shadow(0 10px 24px rgba(0,0,0,.35));
-  pointer-events: none;            /* non cattura click */
-  backface-visibility: hidden;     /* niente doppio paint col 3D */
-  transform: translateZ(0);        /* promuovi a layer GPU */
-  will-change: transform, opacity; /* anticipa l'animazione */
-}
-@keyframes simonFlash{
-  0%{ opacity:.15; transform:scale(.92) }
-  50%{ opacity:1; transform:scale(1.02) }
-  100%{ opacity:0; transform:scale(1) }
-}
-.no-flip .card[data-state="hidden"] .front { visibility: hidden; }
-/* --- Poteri: stile dedicato --- */
-.controls-right .power-btn{
-  width: 46px; height: 46px;
-  padding: 0;                       /* icona centrata */
-  border-radius: 999px;             /* tondo */
-  display: grid; place-items: center;
-  border: 2px solid var(--accent);
-  background: linear-gradient(180deg, var(--panel-1), var(--panel-2));
-  box-shadow: var(--shadow);
-  font-size: 20px;                  /* emoji più leggibile */
-  transition:
-    filter .18s ease, opacity .18s ease,
-    transform .12s ease, box-shadow .18s ease, border-color .18s ease;
-}
+  .big-symbol{
+    font-size: clamp(42px, 10vw, 72px);
+    line-height: 1;
+    filter: drop-shadow(0 6px 16px rgba(0,0,0,.35));
+  }
 
-/* Hover/active (solo quando abilitati) */
-.controls-right .power-btn:not(:disabled):hover{
-  transform: translateY(-1px);
-  box-shadow: 0 14px 28px rgba(0,0,0,.45);
-}
-.controls-right .power-btn:not(:disabled):active{
-  transform: translateY(0);
-}
+  /* X in alto a destra */
+  .tutorial-close{
+    position:absolute; top:10px; right:10px;
+    width:34px; height:34px; display:grid; place-items:center;
+    border-radius:10px;
+    border:1px solid var(--panel-border);
+    background:linear-gradient(180deg, var(--panel-1), var(--panel-2));
+    color:var(--muted);
+    cursor:pointer;
+  }
 
-/* Stato disabilitato: subito riconoscibile */
-.controls-right .power-btn:disabled{
-  filter: grayscale(100%);
-  opacity: .35;
-  cursor: not-allowed;
-  box-shadow: none;
-  border-color: #3a4168;            /* un filo più spento del tema */
-}
+  /* --- Testo centrato e niente pallini nelle slide del tutorial --- */
+  #intro .tutorial-slide { text-align: center; }
+  #intro .tutorial-slide ul { list-style: none; padding: 0; margin: 10px 0 0; }
+  #intro .tutorial-slide li { margin: 8px 0; }
+  #intro .tutorial-slide h3{ margin: 6px 0 10px; font-size: 22px; }
 
-/* Stato “pronto” (abilitato): leggero bagliore/pulse */
-@keyframes powerPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(116,132,255,.25); }
-  70%  { box-shadow: 0 0 0 8px rgba(116,132,255,0); }
-  100% { box-shadow: 0 0 0 0 rgba(116,132,255,0); }
-}
-.controls-right .power-btn.ready{
-  animation: powerPulse 1.2s ease-out infinite;
-}
+  /* Close del popup Salvataggi (stile coerente col tutorial) */
+  .save-close{
+    position:absolute; top:10px; right:10px;
+    width:34px; height:34px; display:grid; place-items:center;
+    border-radius:10px;
+    border:1px solid var(--panel-border);
+    background:linear-gradient(180deg,var(--panel-1),var(--panel-2));
+    color:var(--muted);
+    cursor:pointer;
+  }
 
-/* opzionale: colori leggermente diversi per i tre poteri */
-#powerReveal.ready { border-color: #ffd54f; }  /* 👁️ giallo tenue */
-#powerPlus10.ready { border-color: #60e8a8; }  /* 🦇 verdino */
-#powerShift.ready  { border-color: #ff7aa2; }  /* 🌀 rosato */
+  /* Bottoni icona (Upload, Cestino) */
+  .icon-btn{
+    width:36px; height:36px;
+    display:grid; place-items:center;
+    border-radius:10px;
+    border:1px solid var(--panel-border);
+    background:linear-gradient(180deg,var(--panel-1),var(--panel-2));
+    color:var(--text);
+    cursor:pointer;
+    box-shadow:var(--shadow);
+    font-size:18px; line-height:1;
+  }
+  .icon-btn:hover{ filter:brightness(1.05) }
+  .icon-btn:active{ transform:translateY(1px) }
 
-/* Sfocato dell’intero sfondo quando un overlay è aperto */
-.overlay{
-  /* colore di oscuramento (resta trasparente per far vedere il blur) */
-  background: rgba(10,12,22,.45);
+  /* --- SIMON (flash del fantasmino) --- */
+  .simon-ghost{
+    position:absolute; inset:0;
+    display:grid; place-items:center;
+    font-size: clamp(36px, 50cqi, 90px);
+    border:2px solid var(--accent);
+    border-radius: var(--radius);
+    background: rgba(255,255,255,.05);
+    animation: simonFlash .55s ease-out;
+    filter: drop-shadow(0 10px 24px rgba(0,0,0,.35));
+    pointer-events: none;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    will-change: transform, opacity;
+  }
+  @keyframes simonFlash{
+    0%{ opacity:.15; transform:scale(.92) }
+    50%{ opacity:1; transform:scale(1.02) }
+    100%{ opacity:0; transform:scale(1) }
+  }
+  .no-flip .card[data-state="hidden"] .front { visibility: hidden; }
 
-  /* blur + un filo di saturazione per un effetto “glass” */
-  -webkit-backdrop-filter: blur(10px) saturate(110%);
-  backdrop-filter: blur(10px) saturate(110%);
-}
+  /* --- Poteri: stile dedicato --- */
+  .controls-right .power-btn{
+    width: 46px; height: 46px;
+    padding: 0;
+    border-radius: 999px;
+    display: grid; place-items: center;
+    border: 2px solid var(--accent);
+    background: linear-gradient(180deg, var(--panel-1), var(--panel-2));
+    box-shadow: var(--shadow);
+    font-size: 20px;
+    transition:
+      filter .18s ease, opacity .18s ease,
+      transform .12s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .controls-right .power-btn:not(:disabled):hover{
+    transform: translateY(-1px);
+    box-shadow: 0 14px 28px rgba(0,0,0,.45);
+  }
+  .controls-right .power-btn:not(:disabled):active{ transform: translateY(0); }
 
-/* opzionale: stesso effetto anche per l’intro/tutorial che usa .overlay */
-#intro.overlay{
-  background: rgba(10,12,22,.45);
-  -webkit-backdrop-filter: blur(10px) saturate(110%);
-  backdrop-filter: blur(10px) saturate(110%);
-}
+  /* Stato “pronto” (abilitato): leggero bagliore/pulse */
+  @keyframes powerPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(116,132,255,.25); }
+    70%  { box-shadow: 0 0 0 8px rgba(116,132,255,0); }
+    100% { box-shadow: 0 0 0 0 rgba(116,132,255,0); }
+  }
+  .controls-right .power-btn.ready{ animation: powerPulse 1.2s ease-out infinite; }
+  #powerReveal.ready { border-color: #ffd54f; }
+  #powerPlus10.ready { border-color: #60e8a8; }
+  #powerShift.ready  { border-color: #ff7aa2; }
 </style>
 </head>
 <body class="theme-1">
 <!-- ⬇️ AGGIUNGI QUESTA RIGA PRIMA DEL TUO <script> PRINCIPALE -->
 <script src="sfx.js?v=6"></script>
 <div class="wrap">
-<div class="top">
-  <!-- Logo a sinistra -->
-  <div class="brand">
-    <img src="skullory-logo.svg" alt="Skullory">
-  </div>
- <div class="stats-container">
-    <div class="stats">
-      <span class="level-chip" id="levelChip">Livello: —</span>
-      <span class="level-chip" id="statusChip">Stato: —</span>
-      <span class="level-chip" id="moves" aria-live="polite">Mosse: 0</span>
-      <span class="chip timer" id="timer" aria-live="polite">0:30</span>
-      <span class="chip" id="score" aria-live="polite" style="color:#FFF44F">Punti: 0</span>
+  <div class="top">
+    <div class="brand">
+      <img src="skullory-logo.svg" alt="Skullory">
     </div>
-  </div>
-
-  <div class="grid" id="grid" aria-label="Griglia Skullory"></div>
-<!-- Pulsanti centrati sotto la griglia -->
-<div class="controls controls-bottom">
-  <div class="controls-left">
-    <button class="primary outline-btn" id="pause">⏸️</button>
-    <button class="primary outline-btn" id="save">💾</button>
-    <button class="primary outline-btn" id="restart">🔄</button>
-<button class="primary outline-btn" id="audioCycle" title="Audio">🎵</button>
-  </div>
-
-  <div class="controls-right">
-    <button class="primary outline-btn" id="powerReveal"
-      title="👁️ Svela per 1s (−20% tempo, min −4s, non sotto 3s) · 1×">👁️</button>
-    <button class="primary outline-btn" id="powerPlus10"
-      title="🦇 +10s (sacrifica 1 coppia a caso, rilocalizzata) · 1×">🦇</button>
-    <button class="primary outline-btn" id="powerShift"
-      title="🌀 Sposta 💀 e ⚡, rimescola (come ⚡), +15s · 1×">🌀</button>
-  </div>
-</div>
-
-
-<!-- Intro / Tutorial (carousel a 3 slide) -->
-<div class="overlay hide" id="intro">
-  <div class="dialog tutorial-dialog">
-    <!-- X in alto a destra -->
-    <button class="tutorial-close" id="intro-close" aria-label="Chiudi tutorial">✕</button>
-
-    <h2 id="intro-title" style="margin-bottom:8px">Come si gioca</h2>
-
-    <!-- Contenitore slide -->
-    <div class="tutorial-carousel" aria-live="polite">
-<!-- Slide 0 (scelta modalità) -->
-<div class="tutorial-slide" data-mode="root">
-
-  <h3 style="color:#FFF44F">Scegli modalità</h3>
-  <div style="display:flex; gap:12px; justify-content:center; margin-top:12px; flex-wrap:wrap">
-    <button class="primary" id="intro-arcade">🎮 Gioca (Arcade)</button>
-    <button class="primary outline-btn" id="intro-zen">🧘 Allenati (Zen 5×5)</button>
-
-  </div>
-  <p style="color:var(--muted); margin-top:10px">
-    Arcade: tempo, bonus, carte speciali e poteri.<br/>
-    Zen: nessun timer, solo te e la memoria. Riepilogo finale.
-  </p>
-</div>
-
-      <!-- Slide 1 -->
-<div class="tutorial-slide" data-mode="arcade">
-
-  <h3 style="color:#FFF44F">Obiettivo</h3>
-  <ul>
-    <li>Trova tutte le <b>coppie</b> ribaltando le carte, ma <b>occhio al tempo!</b></li>
-<li><b>Sblocco livello</b>: completa lo stesso livello <b>3 volte di fila</b>!</li>
-<li>Dopo lo sblocco resti sul livello <b>per fare punti</b>.</li>
-<li><b>Al primo errore</b>, sali al livello successivo.</li>
-  </ul>
-</div>
-
-<!-- Slide 2 (simboli grandi) -->
-<div class="tutorial-slide" data-mode="arcade" hidden>
-
-  <h3 style="color:#FFF44F">Carte speciali</h3>
-  <div style="display:flex; gap:18px; align-items:center; justify-content:center; margin:10px 0 6px">
-    <div class="big-symbol" aria-hidden="true">⚡</div>
-    <div class="big-symbol" aria-hidden="true">💀</div>
-  </div>
-  <ul>
-    <li>⚡ rimescola tutte le carte coperte (tranne 💀 e ⚡).</li>
-    <li>💀 se rivelato due volte: <b>sconfitta!</b></li>
-  </ul>
-</div>
-
-<!-- Slide 3 -->
-<div class="tutorial-slide" data-mode="arcade" hidden>
-  <h3 style="color:#FFF44F">Bonus, penalità e punteggio</h3>
-  <ul>
-    <li><b>Bonus 1</b>: ogni coppia trovata = <b>+1s</b></li>
-    <li><b>Bonus 2</b>: 2 coppie di fila entro 5s = <b>+5s</b></li>
-    <li><b>Penalità</b>: ogni errore <b>−1s</b></li>
-    <li><b>Punteggio</b>: secondi risparmiati <b>x</b> efficienza mosse.</li>
-  </ul>
-</div>
-<!-- Slide Zen (mostrata solo se scegli Zen) -->
-<div class="tutorial-slide" data-mode="zen" hidden>
-  <h3 style="color:#FFF44F">Modalità Zen 🧘</h3>
-  <ul>
-    <li>Nessun timer, nessun punteggio a schermo.</li>
-    <li>Giochi tranquillo: niente poteri, niente carte speciali.</li>
-    <li>Alla fine vedi il report: <b>tempo impiegato</b>, <b>mosse</b>, <b>efficienza</b> e ⭐.</li>
-  </ul>
-</div>
+    <div class="stats-container">
+      <div class="stats">
+        <span class="level-chip" id="levelChip">Livello: —</span>
+        <span class="level-chip" id="statusChip">Stato: —</span>
+        <span class="level-chip" id="moves" aria-live="polite">Mosse: 0</span>
+        <span class="chip timer" id="timer" aria-live="polite">0:30</span>
+        <span class="chip" id="score" aria-live="polite" style="color:#FFF44F">Punti: 0</span>
+      </div>
     </div>
 
-    <!-- Frecce laterali -->
-    <button class="tutorial-arrow prev" id="intro-prev" aria-label="Slide precedente">‹</button>
-    <button class="tutorial-arrow next" id="intro-next" aria-label="Slide successiva">›</button>
+    <div class="grid" id="grid" aria-label="Griglia Skullory"></div>
 
-    <!-- Pallini -->
-    <div class="tutorial-dots" id="intro-dots" role="tablist" aria-label="Pagine tutorial"></div>
+    <div class="controls controls-bottom">
+      <div class="controls-left">
+        <button class="primary outline-btn" id="pause">⏸️</button>
+        <button class="primary outline-btn" id="save">💾</button>
+        <button class="primary outline-btn" id="restart">🔄</button>
+        <button class="primary outline-btn" id="audioCycle" title="Audio">🎵</button>
+      </div>
 
-    <!-- CTA: manteniamo l'id intro-play per compatibilità col tuo JS -->
-    <div class="actions" style="margin-top:14px; display:flex; justify-content:center; gap:10px">
-      <button class="primary" id="intro-play">Gioca</button>
+      <div class="controls-right">
+        <button class="primary outline-btn power-btn" id="powerReveal"
+          title="👁️ Svela per 1s (−20% tempo, min −4s, non sotto 3s) · 1×">👁️</button>
+        <button class="primary outline-btn power-btn" id="powerPlus10"
+          title="🦇 +10s (sacrifica 1 coppia a caso, rilocalizzata) · 1×">🦇</button>
+        <button class="primary outline-btn power-btn" id="powerShift"
+          title="🌀 Sposta 💀 e ⚡, rimescola (come ⚡), +15s · 1×">🌀</button>
+      </div>
     </div>
-  </div>
-</div>
 
+    <!-- Intro / Tutorial (carousel a 3 slide) -->
+    <div class="overlay hide" id="intro">
+      <div class="dialog tutorial-dialog">
+        <button class="tutorial-close" id="intro-close" aria-label="Chiudi tutorial">✕</button>
+        <h2 id="intro-title" style="margin-bottom:8px">Come si gioca</h2>
 
-<!-- Gestore Salvataggi (Modal) -->
-<!-- Conferma Ricomincia -->
-<div class="overlay" id="restartConfirm" aria-hidden="true">
-  <div class="dialog">
-    <h2>Vuoi ricominciare ?</h2>
-    <p style="margin-top:4px; color:var(--muted)">Perderai lo stato del quadro corrente.</p>
-    <div style="display:flex; gap:10px; justify-content:center; margin-top:8px">
-      <button class="primary" id="restart-yes">Sì, ricomincia</button>
-      <button class="primary" id="restart-no" style="background:var(--bad); color:#fff">Annulla</button>
+        <div class="tutorial-carousel" aria-live="polite">
+          <!-- Slide 0 (scelta modalità) -->
+          <div class="tutorial-slide" data-mode="root">
+            <h3 style="color:#FFF44F">Scegli modalità</h3>
+            <div style="display:flex; gap:12px; justify-content:center; margin-top:12px; flex-wrap:wrap">
+              <button class="primary" id="intro-arcade">🎮 Gioca (Arcade)</button>
+              <button class="primary outline-btn" id="intro-zen">🧘 Allenati (Zen 5×5)</button>
+            </div>
+            <p style="color:var(--muted); margin-top:10px">
+              Arcade: tempo, bonus, carte speciali e poteri.<br/>
+              Zen: nessun timer, solo te e la memoria. Riepilogo finale.
+            </p>
+          </div>
+
+          <!-- Slide 1 -->
+          <div class="tutorial-slide" data-mode="arcade">
+            <h3 style="color:#FFF44F">Obiettivo</h3>
+            <ul>
+              <li>Trova tutte le <b>coppie</b> ribaltando le carte, ma <b>occhio al tempo!</b></li>
+              <li><b>Sblocco livello</b>: completa lo stesso livello <b>3 volte di fila</b>!</li>
+              <li>Dopo lo sblocco resti sul livello <b>per fare punti</b>.</li>
+              <li><b>Al primo errore</b>, sali al livello successivo.</li>
+            </ul>
+          </div>
+
+          <!-- Slide 2 -->
+          <div class="tutorial-slide" data-mode="arcade" hidden>
+            <h3 style="color:#FFF44F">Carte speciali</h3>
+            <div style="display:flex; gap:18px; align-items:center; justify-content:center; margin:10px 0 6px">
+              <div class="big-symbol" aria-hidden="true">⚡</div>
+              <div class="big-symbol" aria-hidden="true">💀</div>
+            </div>
+            <ul>
+              <li>⚡ rimescola tutte le carte coperte (tranne 💀 e ⚡).</li>
+              <li>💀 se rivelato due volte: <b>sconfitta!</b></li>
+            </ul>
+          </div>
+
+          <!-- Slide 3 -->
+          <div class="tutorial-slide" data-mode="arcade" hidden>
+            <h3 style="color:#FFF44F">Bonus, penalità e punteggio</h3>
+            <ul>
+              <li><b>Bonus 1</b>: ogni coppia trovata = <b>+1s</b></li>
+              <li><b>Bonus 2</b>: 2 coppie di fila entro 5s = <b>+5s</b></li>
+              <li><b>Penalità</b>: ogni errore <b>−1s</b></li>
+              <li><b>Punteggio</b>: secondi risparmiati <b>x</b> efficienza mosse.</li>
+            </ul>
+          </div>
+
+          <!-- Slide Zen -->
+          <div class="tutorial-slide" data-mode="zen" hidden>
+            <h3 style="color:#FFF44F">Modalità Zen 🧘</h3>
+            <ul>
+              <li>Nessun timer, nessun punteggio a schermo.</li>
+              <li>Giochi tranquillo: niente poteri, niente carte speciali.</li>
+              <li>Alla fine vedi il report: <b>tempo impiegato</b>, <b>mosse</b>, <b>efficienza</b> e ⭐.</li>
+            </ul>
+          </div>
+        </div>
+
+        <button class="tutorial-arrow prev" id="intro-prev" aria-label="Slide precedente">‹</button>
+        <button class="tutorial-arrow next" id="intro-next" aria-label="Slide successiva">›</button>
+
+        <div class="tutorial-dots" id="intro-dots" role="tablist" aria-label="Pagine tutorial"></div>
+
+        <div class="actions" style="margin-top:14px; display:flex; justify-content:center; gap:10px">
+          <button class="primary" id="intro-play">Gioca</button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
-<div class="overlay" id="saveModal" aria-hidden="true">
-  <div class="dialog" style="text-align:left; position:relative">
-    <!-- X in alto a destra -->
-    <button class="save-close" id="save-close" aria-label="Chiudi salvataggi">✕</button>
 
-    <h2 style="text-align:center; margin-top:2px">Salvataggi</h2>
+    <!-- Gestore Salvataggi (Modal) -->
+    <!-- Conferma Ricomincia -->
+    <div class="overlay" id="restartConfirm" aria-hidden="true">
+      <div class="dialog">
+        <h2>Vuoi ricominciare ?</h2>
+        <p style="margin-top:4px; color:var(--muted)">Perderai lo stato del quadro corrente.</p>
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:8px">
+          <button class="primary" id="restart-yes">Sì, ricomincia</button>
+          <button class="primary" id="restart-no" style="background:var(--bad); color:#fff">Annulla</button>
+        </div>
+      </div>
+    </div>
 
-    <div id="saveList" style="max-height:46vh; overflow:auto; margin:8px 0 12px"></div>
+    <div class="overlay" id="saveModal" aria-hidden="true">
+      <div class="dialog" style="text-align:left; position:relative">
+        <button class="save-close" id="save-close" aria-label="Chiudi salvataggi">✕</button>
+        <h2 style="text-align:center; margin-top:2px">Salvataggi</h2>
+        <div id="saveList" style="max-height:46vh; overflow:auto; margin:8px 0 12px"></div>
 
-<div id="saveControls" style="display:flex; gap:8px; align-items:center; margin-top:6px">
-  <input id="saveName" placeholder="Nome partita…"
-    style="width:150px; padding:10px 12px; border-radius:10px;
-           border:1px solid var(--panel-border); background:var(--panel-2);
-           color:var(--text)"/>
-  <button class="primary" id="doSave">Salva</button>
-</div>
+        <div id="saveControls" style="display:flex; gap:8px; align-items:center; margin-top:6px">
+          <input id="saveName" placeholder="Nome partita…"
+            style="width:150px; padding:10px 12px; border-radius:10px;
+                   border:1px solid var(--panel-border); background:var(--panel-2);
+                   color:var(--text)"/>
+          <button class="primary" id="doSave">Salva</button>
+        </div>
 
-    <p style="color:var(--muted); margin-top:10px">
-      I salvataggi sono consentiti <b>solo a fine quadro</b> o <b>prima di iniziare</b> il prossimo.
-    </p>
-  </div>
-</div>
+        <p style="color:var(--muted); margin-top:10px">
+          I salvataggi sono consentiti <b>solo a fine quadro</b> o <b>prima di iniziare</b> il prossimo.
+        </p>
+      </div>
+    </div>
 
+    <!-- Overlay di fine quadro -->
+    <div class="overlay" id="overlay">
+      <div class="dialog">
+        <h2 id="ov-title">Hai vinto!</h2>
+        <p id="ov-sub">Tempo rimasto: —</p>
 
-<!-- Overlay di fine quadro -->
-<div class="overlay" id="overlay">
-  <div class="dialog">
-    <h2 id="ov-title">Hai vinto!</h2>
-    <p id="ov-sub">Tempo rimasto: —</p>
-
-    <div class="ov-actions" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-      <button class="primary" id="ov-btn">Continua</button>
-      <button class="primary outline-btn" id="ov-btn-skip" style="display:none">Salta</button>
+        <div class="ov-actions" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <button class="primary" id="ov-btn">Continua</button>
+          <button class="primary outline-btn" id="ov-btn-skip" style="display:none">Salta</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
-
 
 <script>
 (() => {
   const RED = '💀';
   const YELLOW = '⚡';
-// --- SIMON: manopole per le durate ---
-const SIMON_CFG = {
-  previewMs: 700,     // 👻 durante la demo automatica
-  gapMs: 140,         // pausa tra i flash
-  inputRevealMs: 520, // quanto resta aperta la carta toccata
-  wrongHoldMs: 850,   // quanto resta aperta la carta con 💀 quando sbagli
-  startLen: 3         // primo giro del Simon lungo 3
-};
+  // --- SIMON: manopole per le durate ---
+  const SIMON_CFG = {
+    previewMs: 700,
+    gapMs: 140,
+    inputRevealMs: 520,
+    wrongHoldMs: 850,
+    startLen: 3
+  };
 
-const GHOST = '👻';            // icona unica per il Simon
-let sim = null;                // stato dell’intermezzo Simon
-let pendingStartBonusMs = 0;   // bonus “una tantum” da applicare al prossimo livello
- let modeZen = false; // 🧘 nuova modalità “senza tempo”
+  const GHOST = '👻';
+  let sim = null;
+  let modeZen = false;
 
-  const STORAGE_KEY = 'skullory_save_v1'; // legacy single-save (migrazione)
-  const SAVES_KEY = 'skullory_saves_v2';   // multi-slot (v2: solo meta, niente stato carte)
+  const STORAGE_KEY = 'skullory_save_v1';
+  const SAVES_KEY = 'skullory_saves_v2';
 
-const LEVELS = [
-  // 3×3 (no centro) — NUOVO
-  {
-    name: '3×3 (no centro)',
-    side: 3,
-    disabled: [4], // centro vuoto
-    pairs: 3,
-    red: 0,
-    yellow: 2,
-    timeMs: 20000,
-    unlockMs: [20000, 15000, 10000],
-    postDeltaSec: 1
-  },
-
-  // 3×3 base
-  { name: '3×3', side: 3, disabled: [], pairs: 4, red: 1, yellow: 0,
-    timeMs: 40000, unlockMs: [40000, 35000, 30000], postDeltaSec: 2 },
-
-  // 4×4 (–angoli)
-  { name: '4×4 (–angoli)', side: 4,
-    disabled: [0,3,12,15],
-    pairs: 5, red: 1, yellow: 1,
-    timeMs: 45000, unlockMs: [45000, 40000, 35000], postDeltaSec: 2 },
-
-  // 4×4 base
-  { name: '4×4', side: 4, disabled: [], pairs: 7, red: 1, yellow: 1,
-    timeMs: 60000, unlockMs: [60000, 55000, 50000], postDeltaSec: 2 },
-
-  // 5×5 (caotico simm.) — NUOVO
-  { 
-    name: '5×5 (caotico simm.)',
-    side: 5,
-    disabled: [1,3,5,9,12,15,19,21,23],
-    pairs: 6,
-    red: 1,
-    yellow: 3,
-    timeMs: 65000,
-    unlockMs: [65000, 60000, 55000],
-    postDeltaSec: 3
-  },
-
-  // 5×5 (cornice) — NUOVO
-  {
-    name: '5×5 (cornice)',
-    side: 5,
-    disabled: [0,4,12,20,24],
-    pairs: 9,
-    red: 1,
-    yellow: 1,
-    timeMs: 70000,
-    unlockMs: [70000, 65000, 60000],
-    postDeltaSec: 3
-  },
-
-  // 5×5 (–angoli)
-  { name: '5×5 (–angoli)', side: 5,
-    disabled: [0,4,20,24],
-    pairs: 9, red: 1, yellow: 2,
-    timeMs: 70000, unlockMs: [70000, 65000, 60000], postDeltaSec: 3 },
-
-  // 5×5 base
-  { name: '5×5', side: 5, disabled: [], pairs: 11, red: 1, yellow: 2,
-    timeMs: 80000, unlockMs: [80000, 75000, 70000], postDeltaSec: 3 },
-
-  // 6×6 (croce) — NUOVO
-  {
-    name: '6×6 (croce)',
-    side: 6,
-    disabled: [0,1,4,5,6,11,24,29,30,31,34,35],
-    pairs: 10,
-    red: 1,
-    yellow: 3,
-    timeMs: 90000,
-    unlockMs: [90000, 85000, 80000],
-    postDeltaSec: 3
-  },
-
-  // 6×6 (cornici+centro) — NUOVO
-  { 
-    name: '6×6 (cornici+centro)',
-    side: 6,
-    disabled: [0, 5, 30, 35, 14, 15, 20, 21], // angoli + centro 2×2
-    pairs: 12,
-    red: 1,
-    yellow: 3,
-    timeMs: 112000,
-    unlockMs: [112000, 108000, 104000],
-    postDeltaSec: 4
-  },
-
-  // 6×6 (–angoli)
-  { name: '6×6 (–angoli)', side: 6,
-    disabled: [0,5,30,35],
-    pairs: 14, red: 1, yellow: 3,
-    timeMs: 95000, unlockMs: [95000, 90000, 85000], postDeltaSec: 3 },
-
-  // 6×6 base
-  { name: '6×6', side: 6, disabled: [], pairs: 16, red: 1, yellow: 3,
-    timeMs: 100000, unlockMs: [100000, 95000, 90000], postDeltaSec: 3 }
-];
-
+  const LEVELS = [
+    { name: '3×3 (no centro)', side: 3, disabled: [4], pairs: 3, red: 0, yellow: 2, timeMs: 20000, unlockMs: [20000, 15000, 10000], postDeltaSec: 1 },
+    { name: '3×3', side: 3, disabled: [], pairs: 4, red: 1, yellow: 0, timeMs: 40000, unlockMs: [40000, 35000, 30000], postDeltaSec: 2 },
+    { name: '4×4 (–angoli)', side: 4, disabled: [0,3,12,15], pairs: 5, red: 1, yellow: 1, timeMs: 45000, unlockMs: [45000, 40000, 35000], postDeltaSec: 2 },
+    { name: '4×4', side: 4, disabled: [], pairs: 7, red: 1, yellow: 1, timeMs: 60000, unlockMs: [60000, 55000, 50000], postDeltaSec: 2 },
+    { name: '5×5 (caotico simm.)', side: 5, disabled: [1,3,5,9,12,15,19,21,23], pairs: 6, red: 1, yellow: 3, timeMs: 65000, unlockMs: [65000, 60000, 55000], postDeltaSec: 3 },
+    { name: '5×5 (cornice)', side: 5, disabled: [0,4,12,20,24], pairs: 9, red: 1, yellow: 1, timeMs: 70000, unlockMs: [70000, 65000, 60000], postDeltaSec: 3 },
+    { name: '5×5 (–angoli)', side: 5, disabled: [0,4,20,24], pairs: 9, red: 1, yellow: 2, timeMs: 70000, unlockMs: [70000, 65000, 60000], postDeltaSec: 3 },
+    { name: '5×5', side: 5, disabled: [], pairs: 11, red: 1, yellow: 2, timeMs: 80000, unlockMs: [80000, 75000, 70000], postDeltaSec: 3 },
+    { name: '6×6 (croce)', side: 6, disabled: [0,1,4,5,6,11,24,29,30,31,34,35], pairs: 10, red: 1, yellow: 3, timeMs: 90000, unlockMs: [90000, 85000, 80000], postDeltaSec: 3 },
+    { name: '6×6 (cornici+centro)', side: 6, disabled: [0, 5, 30, 35, 14, 15, 20, 21], pairs: 12, red: 1, yellow: 3, timeMs: 112000, unlockMs: [112000, 108000, 104000], postDeltaSec: 4 },
+    { name: '6×6 (–angoli)', side: 6, disabled: [0,5,30,35], pairs: 14, red: 1, yellow: 3, timeMs: 95000, unlockMs: [95000, 90000, 85000], postDeltaSec: 3 },
+    { name: '6×6', side: 6, disabled: [], pairs: 16, red: 1, yellow: 3, timeMs: 100000, unlockMs: [100000, 95000, 90000], postDeltaSec: 3 }
+  ];
 
   const EMOJI = ['🐶','🐱','🦊','🐼','🐵','🐯','🦁','🐸','🐨','🦄','🐷','🐹','🐙','🦉','🦋','🐝','🐢','🐠','🍎','🍉','🍇','🍒','🍓','🍑','🥑','🌽','🥕','🍩','🍪','🍰','🍔','🍕','🍣','🍤','🍜','🍿','🐋','🦭','🦀','🐞','🐍','🦜','🦢','🐎','🐫','🦒','🐿','🦔','🦩','🐬','🐳','🦦','🐡','🐌','🍋','🍊','🫐','🥥','🥭','🥒','🫑','🥔','🌶','🍄','🧄','🧅','🧀','🥨','🥯','🥞','🥪','🥙','🥗','🥘','🥟','🍮','🍫','🍹','🧋','🍺','☕','🥛','🍷','🍵'];
 
- // --- SFX: inizializza al primo gesto utente ---
-// --- SFX: inizializza al primo gesto utente ---
-function ensureSfx(){
-  if (window.__sfxReady) return;
-  window.__sfxReady = true;
+  // --- SFX: inizializza al primo gesto utente ---
+  function ensureSfx(){
+    if (window.__sfxReady) return;
+    window.__sfxReady = true;
 
-  try {
-    // inizializza effetti
-    SFX.init();
+    try {
+      SFX.init();
 
-    // segna interazione utente e prova a far partire la musica
-    if (window.BGM){
-      BGM._markInteracted();
-      BGM.start();
-      BGM.updateUi?.(); // se esiste, aggiorna icona
+      if (window.BGM){
+        BGM._markInteracted();
+        BGM.start();
+        BGM.updateUi?.();
+      }
+
+      if (!SFX.__wrapped){
+        const origPlay = SFX.play.bind(SFX);
+        SFX.play = (name, opts = {}) => {
+          if (name === 'bgm') {
+            if (musicMuted) return null;
+            if (opts.volume == null) opts.volume = 0.18;
+            opts.loop = (opts.loop !== false);
+          } else {
+            if (sfxMuted) return null;
+          }
+          return origPlay(name, opts);
+        };
+        SFX.__wrapped = true;
+      }
+
+      setMusicMuted(musicMuted);
+      setSfxMuted(sfxMuted);
+      refreshAudioButtons();
+
+    } catch(e){
+      window.__sfxReady = false;
     }
+  }
 
-    // Avvolgi SFX.play una sola volta per rispettare i mute
-    if (!SFX.__wrapped){
-      const origPlay = SFX.play.bind(SFX);
-      SFX.play = (name, opts = {}) => {
-        if (name === 'bgm') {
-          // (se mai userai SFX per la musica)
-          if (musicMuted) return null;
-          if (opts.volume == null) opts.volume = 0.18;
-          opts.loop = (opts.loop !== false);
-        } else {
-          if (sfxMuted) return null;
-        }
-        return origPlay(name, opts);
-      };
-      SFX.__wrapped = true;
+  function setMusicMuted(v){
+    musicMuted = !!v;
+    localStorage.setItem('skullory.musicMuted', JSON.stringify(musicMuted));
+
+    if (window.BGM) {
+      if (musicMuted) {
+        try { BGM.setEnabled(false); } catch(_) {}
+        try { BGM.stop(); } catch(_) {}
+      } else {
+        try { BGM.setEnabled(true); } catch(_) {}
+        try { BGM.start(); } catch(_) {}
+      }
     }
-
-    // Applica stato iniziale mute ai controlli/UI
-    setMusicMuted(musicMuted);
-    setSfxMuted(sfxMuted);
     refreshAudioButtons();
-
-  } catch(e){
-    window.__sfxReady = false;
-    // opzionale: console.error(e);
-  }
-}
-
-function setMusicMuted(v){
-  musicMuted = !!v;
-  localStorage.setItem('skullory.musicMuted', JSON.stringify(musicMuted));
-
-  if (window.BGM) {
-    if (musicMuted) {
-      // Muto musica = disabilita e ferma
-      try { BGM.setEnabled(false); } catch(_) {}
-      try { BGM.stop(); } catch(_) {}
-    } else {
-      // Riattiva musica
-      try { BGM.setEnabled(true); } catch(_) {}
-      try { BGM.start(); } catch(_) {}
-    }
   }
 
-  refreshAudioButtons();
-}
-
-
-function setSfxMuted(v){
-  sfxMuted = !!v;
-  localStorage.setItem('skullory.sfxMuted', JSON.stringify(sfxMuted));
-
-  // Se la tua SFX ha un'API dedicata, usala
-  if (window.SFX && SFX.setSfxMuted) SFX.setSfxMuted(sfxMuted);
-
-  refreshAudioButtons();
-}
-// 0 = musica+SFX, 1 = solo SFX, 2 = tutto OFF
-function getAudioMode(){
-  if (!musicMuted && !sfxMuted) return 0;      // tutto ON
-  if (musicMuted && !sfxMuted)  return 1;      // solo SFX
-  return 2;                                     // tutto OFF (o SFX OFF)
-}
-
-function setAudioMode(mode){
-  if (mode === 0){            // musica+SFX
-    setMusicMuted(false);
-    setSfxMuted(false);
-  } else if (mode === 1){     // solo SFX
-    setMusicMuted(true);
-    setSfxMuted(false);
-  } else {                    // tutto OFF
-    setMusicMuted(true);
-    setSfxMuted(true);
+  function setSfxMuted(v){
+    sfxMuted = !!v;
+    localStorage.setItem('skullory.sfxMuted', JSON.stringify(sfxMuted));
+    if (window.SFX && SFX.setSfxMuted) SFX.setSfxMuted(sfxMuted);
+    refreshAudioButtons();
   }
-}
 
-function cycleAudioMode(){
-  const next = (getAudioMode() + 1) % 3;
-  setAudioMode(next);
-  // feedback testuale (opzionale)
-  if (next === 0)      flashMessage('Audio: musica + effetti');
-  else if (next === 1) flashMessage('Audio: solo effetti');
-  else                 flashMessage('Audio: spento');
-  refreshAudioButtons();
-}
+  // 0 = musica+SFX, 1 = solo SFX, 2 = tutto OFF
+  function getAudioMode(){
+    if (!musicMuted && !sfxMuted) return 0;
+    if (musicMuted && !sfxMuted)  return 1;
+    return 2;
+  }
+  function setAudioMode(mode){
+    if (mode === 0){ setMusicMuted(false); setSfxMuted(false); }
+    else if (mode === 1){ setMusicMuted(true); setSfxMuted(false); }
+    else { setMusicMuted(true); setSfxMuted(true); }
+  }
+  function cycleAudioMode(){
+    const next = (getAudioMode() + 1) % 3;
+    setAudioMode(next);
+    if (next === 0)      flashMessage('Audio: musica + effetti');
+    else if (next === 1) flashMessage('Audio: solo effetti');
+    else                 flashMessage('Audio: spento');
+    refreshAudioButtons();
+  }
 
-const grid = document.getElementById('grid');
+  const grid = document.getElementById('grid');
   const movesEl = document.getElementById('moves');
   const timerEl = document.getElementById('timer');
   const restartBtn = document.getElementById('restart');
@@ -880,261 +705,222 @@ const grid = document.getElementById('grid');
   const ovTitle = document.getElementById('ov-title');
   const ovSub = document.getElementById('ov-sub');
   const ovBtn = document.getElementById('ov-btn');
-const ovBtnSkip = document.getElementById('ov-btn-skip'); // ⬅️ nuovo
-function showSkip(v){ if (ovBtnSkip) ovBtnSkip.style.display = v ? '' : 'none'; }
+  const ovBtnSkip = document.getElementById('ov-btn-skip');
+  function showSkip(v){ if (ovBtnSkip) ovBtnSkip.style.display = v ? '' : 'none'; }
   const pauseBtn = document.getElementById('pause');
   const saveBtn = document.getElementById('save');
   const levelChip = document.getElementById('levelChip');
   const statusChip = document.getElementById('statusChip');
   const scoreChip = document.getElementById('score');
-const muteMusicBtn = document.getElementById('muteMusic');
-const muteSfxBtn   = document.getElementById('muteSfx');
-if (muteMusicBtn) muteMusicBtn.addEventListener('click', () => setMusicMuted(!musicMuted));
-if (muteSfxBtn)   muteSfxBtn.addEventListener('click',   () => setSfxMuted(!sfxMuted));
-const powerRevealBtn = document.getElementById('powerReveal'); // 👁️
-const powerPlus10Btn = document.getElementById('powerPlus10'); // 🦇
-const powerShiftBtn  = document.getElementById('powerShift');  // 🌀
-[powerRevealBtn, powerPlus10Btn, powerShiftBtn].forEach(b => b && b.classList.add('power-btn'));
-// ⬇️ RIFERIMENTI AI CONTENITORI DEI BOTTONI
-const controlsBottom = document.querySelector('.controls-bottom');
-const controlsLeft   = document.querySelector('.controls-left');
-const controlsRight  = document.querySelector('.controls-right');
-// 🔊 Bottone unico audio (🎵 → 🔊 → 🔇)
-const audioBtn = document.getElementById('audioCycle');
-if (audioBtn) {
-  audioBtn.addEventListener('click', () => {
-    ensureSfx();       // sblocca audio al primo gesto utente
-    cycleAudioMode();  // cicla 0→1→2
-  });
-}
 
+  const powerRevealBtn = document.getElementById('powerReveal');
+  const powerPlus10Btn = document.getElementById('powerPlus10');
+  const powerShiftBtn  = document.getElementById('powerShift');
 
-let musicMuted = JSON.parse(localStorage.getItem('skullory.musicMuted') || 'false');
-let sfxMuted   = JSON.parse(localStorage.getItem('skullory.sfxMuted')   || 'false');
-refreshAudioButtons();
+  // 🔊 Bottone unico audio (🎵 → 🔊 → 🔇)
+  const audioBtn = document.getElementById('audioCycle');
+  if (audioBtn) {
+    audioBtn.addEventListener('click', () => {
+      ensureSfx();
+      cycleAudioMode();
+    });
+  }
 
-const restartConfirm = document.getElementById('restartConfirm');
-const restartYes = document.getElementById('restart-yes');
-const restartNo = document.getElementById('restart-no');
-  // Save modal refs
+  let musicMuted = JSON.parse(localStorage.getItem('skullory.musicMuted') || 'false');
+  let sfxMuted   = JSON.parse(localStorage.getItem('skullory.sfxMuted')   || 'false');
+  refreshAudioButtons();
+
+  const restartConfirm = document.getElementById('restartConfirm');
+  const restartYes = document.getElementById('restart-yes');
+  const restartNo = document.getElementById('restart-no');
+
   const saveModal = document.getElementById('saveModal');
   const saveList = document.getElementById('saveList');
   const saveNameInput = document.getElementById('saveName');
-const doSaveBtn = document.getElementById('doSave');
-const saveClose = document.getElementById('save-close');
+  const doSaveBtn = document.getElementById('doSave');
+  const saveClose = document.getElementById('save-close');
 
   const intro = document.getElementById('intro');
   const introBtn = document.getElementById('intro-play');
 
-// ===== TUTORIAL: variabili + funzioni (FIX) =====
-let currentSlide = 0;
-const slides = [];   // array delle slide attive (per la modalità corrente)
-let dotsWrap, prevBtn, nextBtn, closeBtn;
-let allSlides = [];           // tutte le slide nel DOM (#intro)
-let tutorialMode = 'root';    // 'root' | 'arcade' | 'zen'
+  // ===== TUTORIAL =====
+  let currentSlide = 0;
+  const slides = [];
+  let dotsWrap, prevBtn, nextBtn, closeBtn;
+  let allSlides = [];
+  let tutorialMode = 'root';
 
-function rebuildDots(){
-  dotsWrap.innerHTML = '';
-  slides.length = 0;
-  const active = allSlides.filter(s => s.dataset.mode === tutorialMode);
-  active.forEach(s => slides.push(s));
+  function rebuildDots(){
+    dotsWrap.innerHTML = '';
+    slides.length = 0;
+    const active = allSlides.filter(s => s.dataset.mode === tutorialMode);
+    active.forEach(s => slides.push(s));
 
-  allSlides.forEach(s => s.setAttribute('hidden',''));
-  slides.forEach(s => s.removeAttribute('hidden'));
+    allSlides.forEach(s => s.setAttribute('hidden',''));
+    slides.forEach(s => s.removeAttribute('hidden'));
 
-  slides.forEach((_, i) => {
-    const d = document.createElement('button');
-    d.setAttribute('aria-label', `Vai alla slide ${i+1}`);
-    d.addEventListener('click', () => goToSlide(i));
-    dotsWrap.appendChild(d);
-  });
+    slides.forEach((_, i) => {
+      const d = document.createElement('button');
+      d.setAttribute('aria-label', `Vai alla slide ${i+1}`);
+      d.addEventListener('click', () => goToSlide(i));
+      dotsWrap.appendChild(d);
+    });
 
-  const multi = slides.length > 1;
-  if (prevBtn)  prevBtn.style.display  = multi ? '' : 'none';
-  if (nextBtn)  nextBtn.style.display  = multi ? '' : 'none';
-  if (dotsWrap) dotsWrap.style.display = multi ? '' : 'none';
-}
-
-function setTutorialMode(mode){
-  tutorialMode = mode;
-  rebuildDots();
-  goToSlide(0);
-
-  const introTitle = document.getElementById('intro-title');
-if (introTitle){
-  if (mode === 'root') {
-    introTitle.style.display = 'none';   // nasconde il titolo nella schermata di scelta
-  } else {
-    introTitle.style.display = '';
-    introTitle.textContent =
-      mode === 'arcade' ? 'Come si gioca (Arcade)' :
-      mode === 'zen'    ? 'Allenamento Zen' :
-                          '';
+    const multi = slides.length > 1;
+    if (prevBtn)  prevBtn.style.display  = multi ? '' : 'none';
+    if (nextBtn)  nextBtn.style.display  = multi ? '' : 'none';
+    if (dotsWrap) dotsWrap.style.display = multi ? '' : 'none';
   }
-}
 
-  if (introBtn){
-    if (mode === 'arcade'){
-      introBtn.textContent = 'Gioca (Arcade)';
-introBtn.onclick = () => { ensureSfx(); modeZen = false; currentLevelIdx = 0; hideIntro(); startArcade(); };
+  function setTutorialMode(mode){
+    tutorialMode = mode;
+    rebuildDots();
+    goToSlide(0);
 
-      introBtn.style.display = '';
-   } else if (mode === 'zen'){
-  introBtn.textContent = 'Allenati (Zen 5×5)';
-  introBtn.onclick = () => { ensureSfx(); modeZen = true; hideIntro(); startZen(); };
-  introBtn.style.display = '';
-    } else {
-      introBtn.textContent = 'Gioca';
-      introBtn.onclick = () => {};
-      introBtn.style.display = 'none';
+    const introTitle = document.getElementById('intro-title');
+    if (introTitle){
+      if (mode === 'root') {
+        introTitle.style.display = 'none';
+      } else {
+        introTitle.style.display = '';
+        introTitle.textContent =
+          mode === 'arcade' ? 'Come si gioca (Arcade)' :
+          mode === 'zen'    ? 'Allenamento Zen' :
+                              '';
+      }
+    }
+
+    if (introBtn){
+      if (mode === 'arcade'){
+        introBtn.textContent = 'Gioca (Arcade)';
+        introBtn.onclick = () => { ensureSfx(); modeZen = false; currentLevelIdx = 0; hideIntro(); startArcade(); };
+        introBtn.style.display = '';
+      } else if (mode === 'zen'){
+        introBtn.textContent = 'Allenati (Zen 5×5)';
+        introBtn.onclick = () => { ensureSfx(); modeZen = true; hideIntro(); startZen(); };
+        introBtn.style.display = '';
+      } else {
+        introBtn.textContent = 'Gioca';
+        introBtn.onclick = () => {};
+        introBtn.style.display = 'none';
+      }
     }
   }
-}
 
-function buildTutorialRefs(){
-  dotsWrap = document.getElementById('intro-dots');
-  prevBtn  = document.getElementById('intro-prev');
-  nextBtn  = document.getElementById('intro-next');
-  closeBtn = document.getElementById('intro-close');
+  function buildTutorialRefs(){
+    dotsWrap = document.getElementById('intro-dots');
+    prevBtn  = document.getElementById('intro-prev');
+    nextBtn  = document.getElementById('intro-next');
+    closeBtn = document.getElementById('intro-close');
 
-  allSlides = Array.from(document.querySelectorAll('#intro .tutorial-slide'));
+    allSlides = Array.from(document.querySelectorAll('#intro .tutorial-slide'));
 
-  prevBtn.addEventListener('click', () => goToSlide(currentSlide - 1));
-  nextBtn.addEventListener('click', () => goToSlide(currentSlide + 1));
+    prevBtn.addEventListener('click', () => goToSlide(currentSlide - 1));
+    nextBtn.addEventListener('click', () => goToSlide(currentSlide + 1));
 
-  closeBtn.addEventListener('click', () => hideIntro());
+    closeBtn.addEventListener('click', () => hideIntro());
 
-  document.addEventListener('keydown', (e) => {
-    if (intro.classList.contains('hide')) return;
-    if (e.key === 'ArrowLeft')  goToSlide(currentSlide - 1);
-    if (e.key === 'ArrowRight') goToSlide(currentSlide + 1);
-  });
+    document.addEventListener('keydown', (e) => {
+      if (intro.classList.contains('hide')) return;
+      if (e.key === 'ArrowLeft')  goToSlide(currentSlide - 1);
+      if (e.key === 'ArrowRight') goToSlide(currentSlide + 1);
+    });
 
-  const btnArcade = document.getElementById('intro-arcade');
-  const btnZen    = document.getElementById('intro-zen');
-  if (btnArcade) btnArcade.addEventListener('click', () => setTutorialMode('arcade'));
-  if (btnZen)    btnZen.addEventListener('click',    () => setTutorialMode('zen'));
+    const btnArcade = document.getElementById('intro-arcade');
+    const btnZen    = document.getElementById('intro-zen');
+    if (btnArcade) btnArcade.addEventListener('click', () => setTutorialMode('arcade'));
+    if (btnZen)    btnZen.addEventListener('click',    () => setTutorialMode('zen'));
 
-  setTutorialMode('root');
-}
+    setTutorialMode('root');
+  }
 
+  function goToSlide(i){
+    currentSlide = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((el, idx) => {
+      if (idx === currentSlide) el.removeAttribute('hidden');
+      else el.setAttribute('hidden', '');
+    });
 
-function goToSlide(i){
-  currentSlide = Math.max(0, Math.min(slides.length - 1, i));
-  slides.forEach((el, idx) => {
-    if (idx === currentSlide) el.removeAttribute('hidden');
-    else el.setAttribute('hidden', '');
-  });
+    Array.from(dotsWrap.children).forEach((dot, idx) => {
+      dot.setAttribute('aria-current', idx === currentSlide ? 'true' : 'false');
+    });
 
-  // aggiorna pallini
-  Array.from(dotsWrap.children).forEach((dot, idx) => {
-    dot.setAttribute('aria-current', idx === currentSlide ? 'true' : 'false');
-  });
+    prevBtn.disabled = (currentSlide === 0);
+    nextBtn.disabled = (currentSlide === slides.length - 1);
+  }
 
-  // disabilita frecce agli estremi
-  prevBtn.disabled = (currentSlide === 0);
-  nextBtn.disabled = (currentSlide === slides.length - 1);
-}
-
-function showIntro(){
-  intro.classList.remove('hide');
-  intro.classList.add('show');
-
-  if (slides.length === 0) buildTutorialRefs();
-  setTutorialMode('root');   // <-- torna sempre alla slide di scelta
-}
-
-
+  function showIntro(){
+    intro.classList.remove('hide');
+    intro.classList.add('show');
+    if (slides.length === 0) buildTutorialRefs();
+    setTutorialMode('root');
+  }
   function hideIntro(){ intro.classList.add('hide'); intro.classList.remove('show'); }
 
   let state;
   let currentLevelIdx = 0;
   let totalScore = 0;
   let themeIndex = 1;
-let frameBaseScore = 0;  // punteggio di partenza del quadro corrente
-// Slot di salvataggio "attivo": se valorizzato, abilita l'autosalvataggio
-let activeSaveName = localStorage.getItem('skullory_active_save') || '';
+  let frameBaseScore = 0;
+  let activeSaveName = localStorage.getItem('skullory_active_save') || '';
 
-function setActiveSaveName(name){
-  activeSaveName = name || '';
-  try {
-    if (activeSaveName) localStorage.setItem('skullory_active_save', activeSaveName);
-    else localStorage.removeItem('skullory_active_save');
-  } catch(_) {}
-}
-
-let __bgmHandle = null;  // terrà l’handle della musica (se SFX.play lo restituisce)
-
-function refreshAudioButtons(){
-  // -- vecchi bottoni separati (se li hai rimossi dall’HTML, qui non succede nulla)
-  if (muteMusicBtn){
-    muteMusicBtn.textContent = musicMuted ? '🚫🎵' : '🎵';
-    muteMusicBtn.title = musicMuted ? 'Musica: off' : 'Musica: on';
-    muteMusicBtn.setAttribute('aria-pressed', musicMuted);
-  }
-  if (muteSfxBtn){
-    muteSfxBtn.textContent = sfxMuted ? '🔇' : '🔊';
-    muteSfxBtn.title = sfxMuted ? 'SFX: off' : 'SFX: on';
-    muteSfxBtn.setAttribute('aria-pressed', sfxMuted);
+  function setActiveSaveName(name){
+    activeSaveName = name || '';
+    try {
+      if (activeSaveName) localStorage.setItem('skullory_active_save', activeSaveName);
+      else localStorage.removeItem('skullory_active_save');
+    } catch(_) {}
   }
 
-  // -- NUOVO: bottone unico ciclico (🎵 → 🔊 → 🔇)
-  if (typeof getAudioMode === 'function' && audioBtn){
-    const mode = getAudioMode(); // 0=tutto ON, 1=solo SFX, 2=tutto OFF
+  function refreshAudioButtons(){
+    // NUOVO: bottone unico ciclico
+    if (typeof getAudioMode === 'function' && audioBtn){
+      const mode = getAudioMode(); // 0=tutto ON, 1=solo SFX, 2=tutto OFF
 
-    if (mode === 0){
-      audioBtn.textContent = '🎵';
-      audioBtn.title = 'Audio: musica + effetti';
-      audioBtn.setAttribute('aria-label','Audio: musica + effetti');
-    } else if (mode === 1){
-      audioBtn.textContent = '🔊';
-      audioBtn.title = 'Audio: solo effetti (musica OFF)';
-      audioBtn.setAttribute('aria-label','Audio: solo effetti (musica OFF)');
-    } else {
-      audioBtn.textContent = '🔇';
-      audioBtn.title = 'Audio: spento';
-      audioBtn.setAttribute('aria-label','Audio: spento');
+      if (mode === 0){
+        audioBtn.textContent = '🎵';
+        audioBtn.title = 'Audio: musica + effetti';
+        audioBtn.setAttribute('aria-label','Audio: musica + effetti');
+      } else if (mode === 1){
+        audioBtn.textContent = '🔊';
+        audioBtn.title = 'Audio: solo effetti (musica OFF)';
+        audioBtn.setAttribute('aria-label','Audio: solo effetti (musica OFF)');
+      } else {
+        audioBtn.textContent = '🔇';
+        audioBtn.title = 'Audio: spento';
+        audioBtn.setAttribute('aria-label','Audio: spento');
+      }
     }
   }
-}
 
-  let pendingCheck = null; // id timeout per checkPair
-let tapBuffer = [];
-const TAP_BUFFER_MAX = 2; // massimo 2 tocchi accodati
-let progress = LEVELS.map(L => ({
-  streak: 0,
-  unlocked: false,
-  baseTimeMs: L.unlockMs[0],
-  postUnlockWins: 0,
-  carryBonusMs: 0      // ← bonus cumulativo da Simon per questo livello (vale finché non è sbloccato)
-}));
-
+  let pendingCheck = null;
+  let tapBuffer = [];
+  const TAP_BUFFER_MAX = 2;
+  let progress = LEVELS.map(L => ({
+    streak: 0,
+    unlocked: false,
+    baseTimeMs: L.unlockMs[0],
+    postUnlockWins: 0,
+    carryBonusMs: 0
+  }));
 
   function setCols(n){ document.documentElement.style.setProperty('--cols', n); }
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
   function fmt(ms){ const s = Math.max(0, Math.floor(ms/1000)); const mm = Math.floor(s/60), ss = s%60; return `${mm}:${ss.toString().padStart(2,'0')}`; }
-function calcElapsedMs(){
-  // calcola quanto è durato il quadro
-  const now = performance.now();
-  return Math.max(0, now - (state.frameStartTs || now));
-}
-
-function calcZenEfficiency(moves, level){
-  // Baseline semplice: più ti avvicini alle "mosse gratuite", meglio è
-  // freeMovesFor(level) ce l'hai già nel tuo codice (side*side)
-  const free = freeMovesFor(level);
-  if (moves <= free) return 100;
-  const over = moves - free;
-  // toglie ~1% per mossa extra, con minimo 50%
-  return Math.max(50, Math.round(100 - over));
-}
-
-function markFrameStart(){
-  state.frameStartTs = performance.now();
-}
+  function calcElapsedMs(){
+    const now = performance.now();
+    return Math.max(0, now - (state.frameStartTs || now));
+  }
+  function calcZenEfficiency(moves, level){
+    const free = freeMovesFor(level);
+    if (moves <= free) return 100;
+    const over = moves - free;
+    return Math.max(50, Math.round(100 - over));
+  }
+  function markFrameStart(){ state.frameStartTs = performance.now(); }
 
   function rotateTheme(){
-    themeIndex = themeIndex % 10 + 1; // 1..10
+    themeIndex = themeIndex % 10 + 1;
     const b = document.body;
     b.className = (b.className || '').replace(/\btheme-\d+\b/g, '').trim();
     b.classList.add('theme-' + themeIndex);
@@ -1142,8 +928,8 @@ function markFrameStart(){
 
   function updateStatusChip(){
     const p = progress[currentLevelIdx];
-const extra = !p.unlocked ? (p.carryBonusMs || 0) : 0;
-const baseSec = Math.max(0, p.baseTimeMs + extra) / 1000 | 0;
+    const extra = !p.unlocked ? (p.carryBonusMs || 0) : 0;
+    const baseSec = Math.max(0, p.baseTimeMs + extra) / 1000 | 0;
     if(!p.unlocked){
       statusChip.textContent = `Sbloc ${p.streak}/3 · ${baseSec}s`;
     } else {
@@ -1159,15 +945,13 @@ const baseSec = Math.max(0, p.baseTimeMs + extra) / 1000 | 0;
     const deck = pairs.concat(specials);
     return shuffle(deck);
   }
-function getActiveCards(){
-  return Array.from(grid.querySelectorAll('.card'))
-    .filter(c => !c.classList.contains('placeholder'));
-}
-function getCardByIndex(idx){
-  return grid.querySelector(`.card[data-index="${idx}"]`);
-}
+  function getActiveCards(){
+    return Array.from(grid.querySelectorAll('.card'))
+      .filter(c => !c.classList.contains('placeholder'));
+  }
+  function getCardByIndex(idx){ return grid.querySelector(`.card[data-index="${idx}"]`); }
 
-  // --- MOSSE & PUNTEGGIO: funzioni helper ---
+  // --- MOSSE & PUNTEGGIO ---
   function freeMovesFor(level){ return level.side * level.side; }
   function efficiencyMultiplier(moves, free){
     const delta = moves - free;
@@ -1182,7 +966,6 @@ function getCardByIndex(idx){
   function updateScoreChip(){ if(scoreChip) scoreChip.textContent = `Punti: ${totalScore}`; }
 
   function canSaveNow(){
-    // Consentito: overlay visibile (fine quadro) OPPURE stato appena inizializzato prima di qualsiasi mossa
     const endOfFrame = overlay.classList.contains('show');
     const freshStart = !state.running && state.moves === 0 && state.matched === 0;
     return endOfFrame || freshStart;
@@ -1194,235 +977,203 @@ function getCardByIndex(idx){
     saveBtn.style.opacity = ok ? '1' : '0.6';
     saveBtn.title = ok ? 'Salva' : 'Salva disponibile solo a fine quadro o prima di iniziare';
   }
-function isPreFrame(){
-  return !!state && !state.running && state.moves === 0 && state.matched === 0;
-}
+  function isPreFrame(){ return !!state && !state.running && state.moves === 0 && state.matched === 0; }
 
-function anyOverlayOpen(){
-  // true se c’è qualsiasi overlay di blocco aperto
-  return overlay.classList.contains('show')
-      || restartConfirm.classList.contains('show')
-      || saveModal.classList.contains('show')
-      || (intro && !intro.classList.contains('hide')); // tutorial visibile
-}
+  function anyOverlayOpen(){
+    return overlay.classList.contains('show')
+        || restartConfirm.classList.contains('show')
+        || saveModal.classList.contains('show')
+        || (intro && !intro.classList.contains('hide'));
+  }
 
-function canUsePowersBase(){
-  // In Zen i poteri sono disattivati
-  if (state?.isZen) return false;
+  function canUsePowersBase(){
+    if (state?.isZen) return false;
+    return !!state
+        && state.running
+        && !state.paused
+        && !state.lock
+        && !anyOverlayOpen()
+        && !(sim && sim.active)
+        && !document.body.classList.contains('mode-simon');
+  }
 
-  return !!state
-      && state.running
-      && !state.paused
-      && !state.lock
-      && !anyOverlayOpen()
-      && !(sim && sim.active)
-      && !document.body.classList.contains('mode-simon');
-}
+  function addTimeMs(ms){
+    if (state?.isZen) return;
+    const now = performance.now();
+    state.deadlineTs += ms;
+    state.leftMs = Math.max(0, state.deadlineTs - now);
+    updateTime();
+  }
+  function takeTimeMs(ms){ addTimeMs(-Math.max(0, ms)); }
 
-function addTimeMs(ms){
-  if (state?.isZen) return; // 🧘 in Zen il tempo non cambia
-  const now = performance.now();
-  state.deadlineTs += ms;
-  state.leftMs = Math.max(0, state.deadlineTs - now);
-  updateTime();
-}
+  function refreshPowersUI(){
+    if (!powerRevealBtn || !powerPlus10Btn || !powerShiftBtn) return;
 
+    if (state?.isZen){
+      [powerRevealBtn, powerPlus10Btn, powerShiftBtn].forEach(b => {
+        if (!b) return;
+        b.classList.remove('ready');
+        b.setAttribute('aria-disabled','true');
+      });
+      return;
+    }
 
-function takeTimeMs(ms){ addTimeMs(-Math.max(0, ms)); }
+    const base = canUsePowersBase();
+    const haveOnePair = state.matched >= 1;
+    const skullSeen = state.redFlips >= 1;
 
-function refreshPowersUI(){
-  if (!powerRevealBtn || !powerPlus10Btn || !powerShiftBtn) return;
+    const revealCost = Math.max(4000, Math.floor(state.leftMs * 0.20));
+    const safeAfterReveal = (state.leftMs - revealCost) >= 3000;
 
-  // In Zen: disattiva visivamente e basta
-  if (state?.isZen){
-    [powerRevealBtn, powerPlus10Btn, powerShiftBtn].forEach(b => {
-      if (!b) return;
-      b.classList.remove('ready');
-      b.setAttribute('aria-disabled','true');
+    const canReveal = base && !state.powerUsed.reveal && haveOnePair && safeAfterReveal;
+    const canPlus10 = base && !state.powerUsed.plus10 && haveOnePair;
+    const canShift  = base && !state.powerUsed.shift  && skullSeen;
+
+    setPowerState(powerRevealBtn, canReveal);
+    setPowerState(powerPlus10Btn, canPlus10);
+    setPowerState(powerShiftBtn,  canShift);
+  }
+  function setPowerState(btn, enabled){
+    btn.classList.toggle('ready', !!enabled);
+    btn.setAttribute('aria-disabled', String(!enabled));
+  }
+
+  function getHiddenNonSpecialCards(){
+    return getActiveCards().filter(c =>
+      c.getAttribute('data-state') === 'hidden' &&
+      c.dataset.symbol !== RED && c.dataset.symbol !== YELLOW
+    );
+  }
+  function getMatchedPairs(){
+    const map = new Map();
+    getActiveCards().forEach(c => {
+      if (c.getAttribute('data-state') === 'matched'){
+        const s = c.dataset.symbol;
+        if (s === RED || s === YELLOW) return;
+        if (!map.has(s)) map.set(s, []);
+        map.get(s).push(c);
+      }
     });
-    return;
+    return Array.from(map.entries()).filter(([_, arr]) => arr.length === 2);
   }
 
-  const base = canUsePowersBase();
-  const haveOnePair = state.matched >= 1;
-  const skullSeen = state.redFlips >= 1;
-
-  const revealCost = Math.max(4000, Math.floor(state.leftMs * 0.20));
-  const safeAfterReveal = (state.leftMs - revealCost) >= 3000;
-
-  const canReveal = base && !state.powerUsed.reveal && haveOnePair && safeAfterReveal;
-  const canPlus10 = base && !state.powerUsed.plus10 && haveOnePair;
-  const canShift  = base && !state.powerUsed.shift  && skullSeen;
-
-  setPowerState(powerRevealBtn, canReveal);
-  setPowerState(powerPlus10Btn, canPlus10);
-  setPowerState(powerShiftBtn,  canShift);
-}
-
-function setPowerState(btn, enabled){
-  // Non usare il vero disabled: così possiamo intercettare i click per mostrare l’help
-  btn.classList.toggle('ready', !!enabled);
-  btn.setAttribute('aria-disabled', String(!enabled));
-  // niente aria-pressed qui (non è un toggle)
-}
-
-
-function getHiddenNonSpecialCards(){
-  return getActiveCards().filter(c =>
-    c.getAttribute('data-state') === 'hidden' &&
-    c.dataset.symbol !== RED && c.dataset.symbol !== YELLOW
-  );
-}
-
-function getMatchedPairs(){
-  // mappa simbolo ➜ array di carte matched con quel simbolo
-  const map = new Map();
-  getActiveCards().forEach(c => {
-    if (c.getAttribute('data-state') === 'matched'){
-      const s = c.dataset.symbol;
-      if (s === RED || s === YELLOW) return; // per sicurezza
-      if (!map.has(s)) map.set(s, []);
-      map.get(s).push(c);
+  function usePowerReveal(){
+    const baseOk = canUsePowersBase();
+    if (!baseOk || state.powerUsed.reveal || state.matched < 1){
+      if (isPreFrame()) explainPower('reveal');
+      return;
     }
-  });
-  // tieni solo simboli che hanno davvero 2 carte
-  return Array.from(map.entries()).filter(([_, arr]) => arr.length === 2);
-}
-function usePowerReveal(){
-  const baseOk = canUsePowersBase();
-  if (!baseOk || state.powerUsed.reveal || state.matched < 1){
-    if (isPreFrame()) explainPower('reveal');
-    return;
+
+    const cost = Math.max(4000, Math.floor(state.leftMs * 0.20));
+    if ((state.leftMs - cost) < 3000) { refreshPowersUI(); return; }
+
+    ensureSfx();
+    state.powerUsed.reveal = true;
+    takeTimeMs(cost);
+    flashMessage(`👁️ Svela tutto (−${Math.ceil(cost/1000)}s)`);
+    SFX.play?.('flip', { volume:.85 });
+
+    const cards = getActiveCards();
+    const prev = new Map(cards.map(c => [c, c.getAttribute('data-state')]));
+
+    const prevLock = state.lock;
+    state.lock = true;
+
+    cards.forEach(c => c.setAttribute('data-state', 'revealed'));
+
+    setTimeout(() => {
+      cards.forEach(c => c.setAttribute('data-state', prev.get(c)));
+      state.lock = prevLock;
+      if (tapBuffer.length){
+        const next = tapBuffer.shift();
+        setTimeout(() => onCardClick(next), 0);
+      }
+      refreshPowersUI();
+    }, 1000);
   }
 
-  const cost = Math.max(4000, Math.floor(state.leftMs * 0.20));
-  if ((state.leftMs - cost) < 3000) { refreshPowersUI(); return; }
-
-  ensureSfx();
-  state.powerUsed.reveal = true;
-  takeTimeMs(cost);
-  flashMessage(`👁️ Svela tutto (−${Math.ceil(cost/1000)}s)`);
-  SFX.play?.('flip', { volume:.85 });
-
-  const cards = getActiveCards();
-  const prev = new Map(cards.map(c => [c, c.getAttribute('data-state')]));
-
-  // blocca input 1s (eviti interferenze con checkPair)
-  const prevLock = state.lock;
-  state.lock = true;
-
-  cards.forEach(c => c.setAttribute('data-state', 'revealed'));
-
-  setTimeout(() => {
-    cards.forEach(c => c.setAttribute('data-state', prev.get(c)));
-    state.lock = prevLock;
-    // esegui un eventuale tap messo in coda
-    if (tapBuffer.length){
-      const next = tapBuffer.shift();
-      setTimeout(() => onCardClick(next), 0);
+  function usePowerPlus10(){
+    const baseOk = canUsePowersBase();
+    if (!baseOk || state.powerUsed.plus10 || state.matched < 1){
+      if (isPreFrame()) explainPower('plus10');
+      return;
     }
+
+    const pairs = getMatchedPairs();
+    if (!pairs.length){ refreshPowersUI(); return; }
+
+    ensureSfx();
+    state.powerUsed.plus10 = true;
+
+    const [symSac, cardsSac] = pairs[(Math.random() * pairs.length) | 0];
+
+    const pool = getHiddenNonSpecialCards();
+    shuffle(pool);
+
+    cardsSac.forEach(c => c.setAttribute('data-state','hidden'));
+    state.matched = Math.max(0, state.matched - 1);
+
+    if (pool.length >= 2){
+      const t1 = pool[0], t2 = pool[1];
+      const t1Sym = t1.dataset.symbol, t2Sym = t2.dataset.symbol;
+
+      t1.dataset.symbol = symSac; t1.querySelector('.symbol').textContent = symSac;
+      t2.dataset.symbol = symSac; t2.querySelector('.symbol').textContent = symSac;
+
+      cardsSac[0].dataset.symbol = t1Sym; cardsSac[0].querySelector('.symbol').textContent = t1Sym;
+      cardsSac[1].dataset.symbol = t2Sym; cardsSac[1].querySelector('.symbol').textContent = t2Sym;
+    }
+    addTimeMs(10000);
+    flashMessage('+10s • Coppia annullata');
+    SFX.play?.('bonus5', { volume:1.0 });
+
     refreshPowersUI();
-  }, 1000);
-}
-function usePowerPlus10(){
-  const baseOk = canUsePowersBase();
-  if (!baseOk || state.powerUsed.plus10 || state.matched < 1){
-    if (isPreFrame()) explainPower('plus10');
-    return;
   }
 
-  const pairs = getMatchedPairs();
-  if (!pairs.length){ refreshPowersUI(); return; }
+  function usePowerShift(){
+    const baseOk = canUsePowersBase();
+    if (!baseOk || state.powerUsed.shift || state.redFlips < 1){
+      if (isPreFrame()) explainPower('shift');
+      return;
+    }
 
-  ensureSfx();
-  state.powerUsed.plus10 = true;
+    ensureSfx();
+    state.powerUsed.shift = true;
 
-  // scegli una coppia matched a caso
-  const [symSac, cardsSac] = pairs[(Math.random() * pairs.length) | 0]; // [symbol, [c1, c2]]
+    const specials = getActiveCards().filter(c => c.dataset.symbol === RED || c.dataset.symbol === YELLOW);
+    let pool = getHiddenNonSpecialCards();
+    shuffle(pool);
 
-  // prova a rilocalizzare su 2 slot coperti casuali
-  const pool = getHiddenNonSpecialCards();
-  shuffle(pool);
+    for (let i=0; i<specials.length && i<pool.length; i++){
+      const s = specials[i];
+      const t = pool[i];
 
-  // Sblocca la coppia (−1 alle coppie fatte)
-  cardsSac.forEach(c => c.setAttribute('data-state','hidden'));
-  state.matched = Math.max(0, state.matched - 1);
+      const tSym = t.dataset.symbol;
+      const sSym = s.dataset.symbol;
 
-  if (pool.length >= 2){
-    const t1 = pool[0], t2 = pool[1];
+      t.dataset.symbol = sSym; t.querySelector('.symbol').textContent = sSym;
+      s.dataset.symbol = tSym; s.querySelector('.symbol').textContent = tSym;
+    }
 
-    const t1Sym = t1.dataset.symbol, t2Sym = t2.dataset.symbol;
+    reshuffleHiddenNonSpecial();
 
-    // metti il simbolo sacrificato nei 2 target nascosti
-    t1.dataset.symbol = symSac; t1.querySelector('.symbol').textContent = symSac;
-    t2.dataset.symbol = symSac; t2.querySelector('.symbol').textContent = symSac;
+    state.redFlips = 0;
 
-    // le ex carte matched ora prendono i simboli che c’erano nei target
-    cardsSac[0].dataset.symbol = t1Sym; cardsSac[0].querySelector('.symbol').textContent = t1Sym;
-    cardsSac[1].dataset.symbol = t2Sym; cardsSac[1].querySelector('.symbol').textContent = t2Sym;
-  }
-  // +10s al timer
-  addTimeMs(10000);
-  flashMessage('+10s • Coppia annullata');
-  SFX.play?.('bonus5', { volume:1.0 });
+    addTimeMs(15000);
+    flashMessage('🌀 Speciali spostate • +15s');
+    SFX.play?.('reshuffle', { volume:.9 });
 
-  refreshPowersUI();
-}
-function usePowerShift(){
-  const baseOk = canUsePowersBase();
-  if (!baseOk || state.powerUsed.shift || state.redFlips < 1){
-    if (isPreFrame()) explainPower('shift');
-    return;
+    refreshPowersUI();
   }
 
-  ensureSfx();
-  state.powerUsed.shift = true;
+  function startArcade(){ init(currentLevelIdx || 0); }
 
-  // prendi tutte le speciali (💀 e ⚡) presenti
-  const specials = getActiveCards().filter(c => c.dataset.symbol === RED || c.dataset.symbol === YELLOW);
-  let pool = getHiddenNonSpecialCards();
-  shuffle(pool);
-
-  // sposta OGNI speciale su uno slot coperto (scambio simboli)
-  for (let i=0; i<specials.length && i<pool.length; i++){
-    const s = specials[i];
-    const t = pool[i];
-
-    const tSym = t.dataset.symbol;
-    const sSym = s.dataset.symbol;
-
-    // speciale va nel target (che resta coperto),
-    // il simbolo che stava nel target va sulla carta origine (stato visibilità invariato)
-    t.dataset.symbol = sSym; t.querySelector('.symbol').textContent = sSym;
-    s.dataset.symbol = tSym; s.querySelector('.symbol').textContent = tSym;
+  function startZen(){
+    const idx5base = LEVELS.findIndex(L => L.side === 5 && (!L.disabled || L.disabled.length === 0));
+    const idx5any  = LEVELS.findIndex(L => L.side === 5);
+    const target   = (idx5base >= 0) ? idx5base : (idx5any >= 0 ? idx5any : 0);
+    init(target);
   }
-
-  // rimescola come il fulmine
-  reshuffleHiddenNonSpecial();
-
-  // reset contatore teschio
-  state.redFlips = 0;
-
-  // +15s
-  addTimeMs(15000);
-  flashMessage('🌀 Speciali spostate • +15s');
-  SFX.play?.('reshuffle', { volume:.9 });
-
-  refreshPowersUI();
-}
-function startArcade(){
-  // avvia il gioco normale dal livello corrente (o 0)
-  init(currentLevelIdx || 0);
-}
-
-function startZen(){
-  // trova una 5×5 "base" (senza disabled), altrimenti la prima 5×5 disponibile
-  const idx5base = LEVELS.findIndex(L => L.side === 5 && (!L.disabled || L.disabled.length === 0));
-  const idx5any  = LEVELS.findIndex(L => L.side === 5);
-  const target   = (idx5base >= 0) ? idx5base : (idx5any >= 0 ? idx5any : 0);
-  init(target);
-}
-
 
   function init(levelIdx = currentLevelIdx){
     rotateTheme();
@@ -1434,75 +1185,68 @@ function startZen(){
     updateStatusChip();
 
     if (pendingCheck) { clearTimeout(pendingCheck); pendingCheck = null; }
-state = {
-  level: L,
-  deck: buildDeck(L),
-  flipped: [], matched: 0, moves: 0,
-  running: false, startTs: 0,
-leftMs: Math.max(0, progress[levelIdx].baseTimeMs + (!progress[levelIdx].unlocked ? (progress[levelIdx].carryBonusMs || 0) : 0)),
+    state = {
+      level: L,
+      deck: buildDeck(L),
+      flipped: [], matched: 0, moves: 0,
+      running: false, startTs: 0,
+      leftMs: Math.max(0, progress[levelIdx].baseTimeMs + (!progress[levelIdx].unlocked ? (progress[levelIdx].carryBonusMs || 0) : 0)),
+      lock: false,
+      redFlips: 0, yellowFlips: 0,
+      paused: false, streak: 0, lastMatchTime: 0, totalBonusMs: 0,
+      deadlineTs: 0,
+      pauseLeftMs: 0,
+      powerUsed: { reveal:false, plus10:false, shift:false },
+      preAppliedBonusMs: 0,
+      startBonusMs: 0
+    };
 
-  lock: false,
-  redFlips: 0, yellowFlips: 0,
-  paused: false, streak: 0, lastMatchTime: 0, totalBonusMs: 0,
-  deadlineTs: 0,
-  pauseLeftMs: 0,
-  powerUsed: { reveal:false, plus10:false, shift:false },
+    // === UI: nascondi chip e poteri in Zen + CENTRA i 5 bottoni ===
+    if (modeZen) {
+      if (levelChip)  levelChip.style.display  = 'none';
+      if (statusChip) statusChip.style.display = 'none';
+      if (scoreChip)  scoreChip.style.display  = 'none';
+      if (movesEl)    movesEl.style.display    = 'none';
+      if (timerEl)    timerEl.style.display    = 'none';
 
-  // nuovi flag per gestire il bonus del Simon
-  preAppliedBonusMs: 0,  // bonus già mostrato nel timer
-  startBonusMs: 0        // bonus “ritardato” (fallback)
-};
-// === UI: nascondi chip e poteri in Zen + CENTRA i 5 bottoni ===
-if (modeZen) {
-  // nascondi chip in alto
-  if (levelChip)  levelChip.style.display  = 'none';
-  if (statusChip) statusChip.style.display = 'none';
-  if (scoreChip)  scoreChip.style.display  = 'none';
-  if (movesEl)    movesEl.style.display    = 'none';  // ⬅️ NASCONDI MOSSE
-  if (timerEl)    timerEl.style.display    = 'none';  // ⬅️ NASCONDI TIMER
+      const cr = document.querySelector('.controls-right');
+      if (cr) cr.style.display = 'none';
 
-  // nascondi i 3 poteri (colonna destra)
-  const cr = document.querySelector('.controls-right');
-  if (cr) cr.style.display = 'none';
+      const cb = document.querySelector('.controls-bottom');
+      const cl = document.querySelector('.controls-left');
+      if (cb) cb.style.justifyContent = 'center';
+      if (cl) cl.style.margin = '0 auto';
 
-  // centra i 5 bottoni (pausa/salva/ricomincia/musica/sfx)
-  const cb = document.querySelector('.controls-bottom');
-  const cl = document.querySelector('.controls-left');
-  if (cb) cb.style.justifyContent = 'center';
-  if (cl) cl.style.margin = '0 auto';
+    } else {
+      if (levelChip)  levelChip.style.display  = '';
+      if (statusChip) statusChip.style.display = '';
+      if (scoreChip)  scoreChip.style.display  = '';
+      if (movesEl)    movesEl.style.display    = '';
+      if (timerEl)    timerEl.style.display    = '';
 
-} else {
-  // ripristina in Arcade
-  if (levelChip)  levelChip.style.display  = '';
-  if (statusChip) statusChip.style.display = '';
-  if (scoreChip)  scoreChip.style.display  = '';
-  if (movesEl)    movesEl.style.display    = '';      // ⬅️ MOSTRA MOSSE
-  if (timerEl)    timerEl.style.display    = '';      // ⬅️ MOSTRA TIMER
+      const cr = document.querySelector('.controls-right');
+      if (cr) cr.style.display = '';
 
-  const cr = document.querySelector('.controls-right');
-  if (cr) cr.style.display = '';
+      const cb = document.querySelector('.controls-bottom');
+      const cl = document.querySelector('.controls-left');
+      if (cb) cb.style.justifyContent = 'space-between';
+      if (cl) cl.style.margin = '';
+    }
 
-  const cb = document.querySelector('.controls-bottom');
-  const cl = document.querySelector('.controls-left');
-  if (cb) cb.style.justifyContent = 'space-between';
-  if (cl) cl.style.margin = '';
-}
+    if (modeZen){
+      if (timerEl){
+        timerEl.textContent = '—';
+        timerEl.style.opacity = .65;
+      }
+      state.isZen = true;
+    } else {
+      state.isZen = false;
+    }
 
+    updateSaveButton?.();
+    refreshPowersUI?.();
+    markFrameStart?.();
 
-// === Modalità Zen: setup UI / flag ===
-if (modeZen){
-  if (timerEl){
-    timerEl.textContent = '—';
-    timerEl.style.opacity = .65;
-  }
-  state.isZen = true;
-} else {
-  state.isZen = false;
-}
-
-updateSaveButton?.();
-refreshPowersUI?.();
-markFrameStart?.();
     grid.innerHTML = '';
     const frag = document.createDocumentFragment();
 
@@ -1518,7 +1262,7 @@ markFrameStart?.();
         continue;
       }
 
-      const symbol = state.deck[deckPtr++]; // usa il deck solo per slot attivi
+      const symbol = state.deck[deckPtr++];
       const card = document.createElement('div');
       card.className = 'card';
       card.dataset.index = i;
@@ -1541,46 +1285,41 @@ markFrameStart?.();
     }
 
     grid.appendChild(frag);
-tapBuffer = [];
+    tapBuffer = [];
     updateHud();
     updateScoreChip();
     hideOverlay();
     updateSaveButton();
-refreshPowersUI();
+    refreshPowersUI();
   }
 
-function startTimer(){
-  if(state.paused) return;
-  if(state.running) return;
+  function startTimer(){
+    if(state.paused) return;
+    if(state.running) return;
 
-  // 🧘 ZEN: niente countdown
-  if (state.isZen){
-    state.running = true;       // serve per far funzionare il gioco (input abilitati)
+    if (state.isZen){
+      state.running = true;
+      frameBaseScore = totalScore;
+      updateSaveButton();
+      return;
+    }
+
+    state.running = true;
     frameBaseScore = totalScore;
+    const now = performance.now();
+    state.startTs = now;
+
+    const p = progress[currentLevelIdx];
+    const carry = !p.unlocked ? (p.carryBonusMs || 0) : 0;
+    const base = Math.max(0, p.baseTimeMs + carry);
+
+    state.deadlineTs = now + base;
+    tick();
     updateSaveButton();
-    return;                     // esci: non impostare deadline, niente tick()
   }
-
-  // 🎮 ARCADE: comportamento originale
-  state.running = true;
-  frameBaseScore = totalScore;
-  const now = performance.now();
-  state.startTs = now;
-
-  const p = progress[currentLevelIdx];
-  const carry = !p.unlocked ? (p.carryBonusMs || 0) : 0;
-  const base = Math.max(0, p.baseTimeMs + carry);
-
-  state.deadlineTs = now + base;
-  tick();
-  updateSaveButton();
-
-  tick();
-  updateSaveButton();
-}
 
   function tick(){
-if (state?.isZen) return;  // 🧘 in Zen niente countdown
+    if (state?.isZen) return;
     if(!state.running || state.paused) return;
     const now = performance.now();
     state.leftMs = Math.max(0, state.deadlineTs - now);
@@ -1589,63 +1328,60 @@ if (state?.isZen) return;  // 🧘 in Zen niente countdown
     requestAnimationFrame(tick);
   }
 
-function updateTime() {
-  if (state?.isZen) return;   // In Zen non mostriamo il countdown
-  timerEl.textContent = fmt(state.leftMs);
-}
-
-function updateHud(){
-  // In Zen non aggiorniamo mosse/timer (sono nascosti)
-  if (!state?.isZen){
-    movesEl.textContent = `Mosse: ${state.moves}`;
+  function updateTime() {
+    if (state?.isZen) return;
     timerEl.textContent = fmt(state.leftMs);
   }
-  updateStatusChip();   // ok anche se nascosto in Zen
-  updateScoreChip();    // ok anche se nascosto in Zen
-}
 
+  function updateHud(){
+    if (!state?.isZen){
+      movesEl.textContent = `Mosse: ${state.moves}`;
+      timerEl.textContent = fmt(state.leftMs);
+    }
+    updateStatusChip();
+    updateScoreChip();
+  }
 
   function onCardClick(card){
-ensureSfx(); // sblocca audio al primo tocco
-if (sim && sim.active){
-  simonOnTap(card);
-  return;
-}
-SFX.play('tap', { volume:.5, rate: 0.98 + Math.random()*0.04 });
+    ensureSfx();
+    if (sim && sim.active){
+      simonOnTap(card);
+      return;
+    }
+    SFX.play('tap', { volume:.5, rate: 0.98 + Math.random()*0.04 });
+
     if (state.paused) { flashMessage('In pausa ▶️'); return; }
-  if (state.lock) {
-  // Accoda il tap, se sensato, così lo eseguiamo appena si sblocca
-  if (tapBuffer.length < TAP_BUFFER_MAX &&
-      card.dataset.state !== 'matched' &&
-      card.dataset.state !== 'revealed') {
-    tapBuffer.push(card);
-  }
-  return;
-}
+    if (state.lock) {
+      if (tapBuffer.length < TAP_BUFFER_MAX &&
+          card.dataset.state !== 'matched' &&
+          card.dataset.state !== 'revealed') {
+        tapBuffer.push(card);
+      }
+      return;
+    }
     if(card.dataset.state === 'matched' || card.dataset.state === 'revealed') return;
     startTimer();
 
     flip(card, true);
-SFX.play('flip', { volume:.75, rate: 0.96 + Math.random()*0.08 });
+    SFX.play('flip', { volume:.75, rate: 0.96 + Math.random()*0.08 });
 
     state.flipped.push(card);
 
     if(card.dataset.symbol === RED){
       state.redFlips++;
-refreshPowersUI();
-SFX.play('skull', { volume:.9, rate: 0.98 });
+      refreshPowersUI();
+      SFX.play('skull', { volume:.9, rate: 0.98 });
 
       if(state.redFlips >= 2){
         setTimeout(() => lose('Oh no! 💀', 'Hai rivelato il teschio due volte.'), 220);
         return;
       }
     }
-if(card.dataset.symbol === YELLOW){
-  state.yellowFlips++;
-  flashMessage('Shuffle!');
-  reshuffleHiddenNonSpecial(); 
-}
-
+    if(card.dataset.symbol === YELLOW){
+      state.yellowFlips++;
+      flashMessage('Shuffle!');
+      reshuffleHiddenNonSpecial(); 
+    }
 
     if(state.flipped.length === 2){
       state.moves++;
@@ -1669,12 +1405,11 @@ if(card.dataset.symbol === YELLOW){
         flip(a,false); flip(b,false);
         state.flipped.length = 0;
         state.lock = false;
-refreshPowersUI();
-// Se l'utente ha "tappato" durante il lock, esegui 1 tap in coda
-if (tapBuffer.length) {
-  const next = tapBuffer.shift();
-  setTimeout(() => onCardClick(next), 0);
-}
+        refreshPowersUI();
+        if (tapBuffer.length) {
+          const next = tapBuffer.shift();
+          setTimeout(() => onCardClick(next), 0);
+        }
         pendingCheck = null;
         return;
       }
@@ -1686,8 +1421,7 @@ if (tapBuffer.length) {
         state.leftMs = Math.max(0, state.deadlineTs - now);
         updateTime();
         if (!state.isZen) flashMessage('+1s');
-SFX.play('bonus1', { volume:.85, rate: 1.02 });
-
+        SFX.play('bonus1', { volume:.85, rate: 1.02 });
 
         if(state.streak >= 2 && (now - state.lastMatchTime) < 5000){
           const now2 = performance.now();
@@ -1695,34 +1429,33 @@ SFX.play('bonus1', { volume:.85, rate: 1.02 });
           state.leftMs = Math.max(0, state.deadlineTs - now2);
           updateTime();
           if (!state.isZen) flashMessage('+5s Bonus!');
-SFX.play('bonus5', { volume:1 });
-
+          SFX.play('bonus5', { volume:1 });
         }
         state.lastMatchTime = now;
 
         a.setAttribute('data-state','matched');
         b.setAttribute('data-state','matched');
-spawnMatchStars(a);
-spawnMatchStars(b);
-SFX.play('ok', { volume:.9, rate: 0.98 });
+        spawnMatchStars(a);
+        spawnMatchStars(b);
+        SFX.play('ok', { volume:.9, rate: 0.98 });
 
         state.matched++;
-refreshPowersUI(); 
+        refreshPowersUI(); 
         if(state.matched >= state.level.pairs){ win(); }
       } else {
         state.streak = 0;
         const now = performance.now();
-        state.deadlineTs = state.deadlineTs - 1000; // penalità di 1 secondo;
+        state.deadlineTs = state.deadlineTs - 1000;
         state.leftMs = Math.max(0, state.deadlineTs - now);
         updateTime();
         if (!state.isZen) flashMessage('-1s');
-SFX.play('fail', { volume:.9 });
+        SFX.play('fail', { volume:.9 });
 
         flip(a,false); flip(b,false);
       }
       state.flipped.length = 0;
       state.lock = false;
-refreshPowersUI();
+      refreshPowersUI();
       pendingCheck = null;
     }, match ? 120 : 420);
   }
@@ -1738,239 +1471,214 @@ refreshPowersUI();
       c.querySelector('.symbol').textContent = symbols[i];
     });
     flashMessage('🔀 Rimescolo!');
-SFX.play('reshuffle', { volume:.9 });
-
-  }
-function startSimonIntermezzo(){
-  ensureSfx();
-document.body.classList.add('mode-simon');
-refreshPowersUI();
-
-  // 1) niente animazione mentre chiudiamo tutte le carte
-  document.body.classList.add('no-flip');
-  getActiveCards().forEach(c => c.setAttribute('data-state', 'hidden'));
-
-  // 2) dopo 1 frame rimuovi il blocco e avvia il Simon
-  requestAnimationFrame(() => {
-    document.body.classList.remove('no-flip');
-
-    const activeIdx = getActiveCards().map(c => +c.dataset.index);
-    const order = shuffle(activeIdx.slice());
-    const maxLen   = order.length;
-    const startLen = Math.min(SIMON_CFG.startLen, maxLen);
-
-    sim = { active: true, busy: false, order, round: startLen - 1, pos: 0, maxLen };
-
-    if (pauseBtn) pauseBtn.disabled = true;
-    flashMessage('👻 Simon: ripeti la sequenza');
-    simNextRound();
-  });
-}
-
-
-function simNextRound(){
-  if (!sim || !sim.active) return;
-  if (sim.round >= sim.maxLen){
-    endSimon(sim.round);       // hai visto tutte le caselle
-    return;
-  }
-  sim.round++;                 // la sequenza diventa: order[0..round-1]
-  simShowSequence();
-}
-
-
-async function simShowSequence(){
-  sim.pos = 0;
-  sim.busy = true;
-
-  await new Promise(r => setTimeout(r, 350));      // micro pausa
-
-  for (let i = 0; i < sim.round; i++){
-    await simFlash(sim.order[i]);                  // 👻 durata = SIMON_CFG.previewMs
-    await new Promise(r => setTimeout(r, SIMON_CFG.gapMs));
+    SFX.play('reshuffle', { volume:.9 });
   }
 
-  sim.busy = false;
-}
+  function startSimonIntermezzo(){
+    ensureSfx();
+    document.body.classList.add('mode-simon');
+    refreshPowersUI();
 
-function simFlash(idx){
-  return new Promise(res => {
-    const card = getCardByIndex(idx);
-    if (!card){ res(); return; }
+    document.body.classList.add('no-flip');
+    getActiveCards().forEach(c => c.setAttribute('data-state', 'hidden'));
 
+    requestAnimationFrame(() => {
+      document.body.classList.remove('no-flip');
+
+      const activeIdx = getActiveCards().map(c => +c.dataset.index);
+      const order = shuffle(activeIdx.slice());
+      const maxLen   = order.length;
+      const startLen = Math.min(SIMON_CFG.startLen, maxLen);
+
+      sim = { active: true, busy: false, order, round: startLen - 1, pos: 0, maxLen };
+
+      if (pauseBtn) pauseBtn.disabled = true;
+      flashMessage('👻 Simon: ripeti la sequenza');
+      simNextRound();
+    });
+  }
+
+  function simNextRound(){
+    if (!sim || !sim.active) return;
+    if (sim.round >= sim.maxLen){
+      endSimon(sim.round);
+      return;
+    }
+    sim.round++;
+    simShowSequence();
+  }
+
+  async function simShowSequence(){
+    sim.pos = 0;
+    sim.busy = true;
+
+    await new Promise(r => setTimeout(r, 350));
+
+    for (let i = 0; i < sim.round; i++){
+      await simFlash(sim.order[i]);
+      await new Promise(r => setTimeout(r, SIMON_CFG.gapMs));
+    }
+
+    sim.busy = false;
+  }
+
+  function simFlash(idx){
+    return new Promise(res => {
+      const card = getCardByIndex(idx);
+      if (!card){ res(); return; }
+
+      const ghost = document.createElement('div');
+      ghost.className = 'simon-ghost';
+      ghost.textContent = GHOST;
+      ghost.style.animationDuration = SIMON_CFG.previewMs + 'ms';
+
+      card.appendChild(ghost);
+
+      SFX.play?.('tap', { volume:.6, rate: 1.05 });
+      setTimeout(() => { ghost.remove(); res(); }, SIMON_CFG.previewMs);
+    });
+  }
+
+  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+  async function simonRevealTemp(card, symbol, holdMs){
     const ghost = document.createElement('div');
     ghost.className = 'simon-ghost';
-    ghost.textContent = GHOST;
-    ghost.style.animationDuration = SIMON_CFG.previewMs + 'ms';
+    ghost.style.animationDuration = holdMs + 'ms';
+    ghost.textContent = symbol;
 
-    // 👇 TORNA QUI: sovrapponi il ghost alla carta intera
     card.appendChild(ghost);
+    if (symbol === '💀') {
+      SFX.play?.('skull', { volume:.95 });
+    } else {
+      SFX.play?.('flip', { volume:.75 });
+    }
 
-    SFX.play?.('tap', { volume:.6, rate: 1.05 });
-    setTimeout(() => { ghost.remove(); res(); }, SIMON_CFG.previewMs);
-  });
-}
-
-// attesa semplice
-function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
-
-// Mostra un overlay temporaneo (👻 o 💀) sopra la carta, senza girarla davvero
-async function simonRevealTemp(card, symbol, holdMs){
-  const ghost = document.createElement('div');
-  ghost.className = 'simon-ghost';
-  ghost.style.animationDuration = holdMs + 'ms';
-  ghost.textContent = symbol;
-
-  card.appendChild(ghost);
-  // un suono "neutro" se è 👻, altrimenti teschio
-  if (symbol === '💀') {
-    SFX.play?.('skull', { volume:.95 });
-  } else {
-    SFX.play?.('flip', { volume:.75 });
+    await sleep(holdMs);
+    ghost.remove();
   }
+  async function simonRevealSkull(card, holdMs){ return simonRevealTemp(card, '💀', holdMs); }
 
-  await sleep(holdMs);
-  ghost.remove();
-}
+  async function simonOnTap(card){
+    if (!sim || !sim.active) return;
+    if (sim.busy) return;
 
-// Alias comodo: errore = overlay 💀
-async function simonRevealSkull(card, holdMs){
-  return simonRevealTemp(card, '💀', holdMs);
-}
+    const idx = +card.dataset.index;
+    const expected = sim.order[sim.pos];
 
+    if (idx !== expected){
+      sim.busy = true;
+      await simonRevealSkull(card, SIMON_CFG.wrongHoldMs);
+      sim.busy = false;
+      endSimon(Math.max(0, sim.round - 1));
+      return;
+    }
 
-async function simonOnTap(card){
-  if (!sim || !sim.active) return;
-  if (sim.busy) return;                     // blocca input se il Simon "suona" o sta rivelando
-
-  const idx = +card.dataset.index;
-  const expected = sim.order[sim.pos];
-
-  if (idx !== expected){
-    sim.busy = true;                         // blocca fino a fine animazione errore
-    await simonRevealSkull(card, SIMON_CFG.wrongHoldMs);
+    sim.busy = true;
+    sim.pos++;
+    SFX.play?.('ok', { volume:.8 });
+    await simonRevealTemp(card, GHOST, SIMON_CFG.inputRevealMs);
     sim.busy = false;
-    endSimon(Math.max(0, sim.round - 1));
-    return;
+
+    if (sim.pos === sim.round){
+      flashMessage('✓');
+      setTimeout(() => simNextRound(), 350);
+    }
   }
 
-  // ✅ corretto: incrementa PRIMA dell'await per evitare la race sul secondo tap
-  sim.busy = true;                           // non accettare altri tap durante la rivelazione
-  sim.pos++;
-  SFX.play?.('ok', { volume:.8 });
-  await simonRevealTemp(card, GHOST, SIMON_CFG.inputRevealMs);
-  sim.busy = false;
+  function endSimon(completedLen){
+    document.body.classList.remove('mode-simon');
+    refreshPowersUI();
 
-  if (sim.pos === sim.round){
-    flashMessage('✓');
-    setTimeout(() => simNextRound(), 350);
-  }
-}
+    const bonusSec = Math.max(0, Math.min(completedLen, sim?.maxLen || 0));
+    sim.active = false;
+    sim = null;
 
-function endSimon(completedLen){
-document.body.classList.remove('mode-simon');
-refreshPowersUI();
+    if (pauseBtn) pauseBtn.disabled = false;
 
-  const bonusSec = Math.max(0, Math.min(completedLen, sim?.maxLen || 0));
-  sim.active = false;
-  sim = null;
+    const bonusMs = bonusSec * 1000;
+    const next = currentLevelIdx + 1;
 
-  if (pauseBtn) pauseBtn.disabled = false;
+    if (next < LEVELS.length && !progress[next].unlocked) {
+      progress[next].carryBonusMs = (progress[next].carryBonusMs || 0) + bonusMs;
+    }
 
-const bonusMs = bonusSec * 1000;
-const next = currentLevelIdx + 1;
+    const finalMsg = bonusSec > 0
+      ? `Hai guadagnato <b>+${bonusSec}s</b> per il prossimo livello!`
+      : 'Nessun bonus ottenuto.';
 
-// accumula il bonus nel livello successivo solo se esiste e non è già sbloccato
-if (next < LEVELS.length && !progress[next].unlocked) {
-  progress[next].carryBonusMs = (progress[next].carryBonusMs || 0) + bonusMs;
-}
-
-// non usiamo più il meccanismo one-shot
-pendingStartBonusMs = 0;
-
-  const finalMsg = bonusSec > 0
-    ? `Hai guadagnato <b>+${bonusSec}s</b> per il prossimo livello!`
-    : 'Nessun bonus ottenuto.';
-
-  // Vai al prossimo livello (quello già sbloccato) con overlay di cortesia
-  showOverlay('Intermezzo Simon concluso', `${finalMsg}`);
-  ovBtn.textContent = 'Vai al livello successivo';
-  ovBtn.onclick = () => { hideOverlay(); init(next); };
-}
-
-function spawnMatchStars(card){
-  // Contenitore
-  const wrap = document.createElement('div');
-  wrap.className = 'match-stars';
-  card.appendChild(wrap);
-
-  // Crea 6 stelline con direzioni diverse
-  const N = 6;
-  for(let i=0;i<N;i++){
-    const s = document.createElement('span');
-    s.className = 'star';
-    s.textContent = '✨';
-    // offset casuali (px) verso fuori
-    const r = 26 + Math.random()*18;                 // raggio
-    const ang = (Math.PI*2/N)*i + Math.random()*0.7; // angolo
-    const dx = Math.cos(ang)*r;
-    const dy = Math.sin(ang)*r;
-    s.style.setProperty('--dx', `${dx}px`);
-    s.style.setProperty('--dy', `${dy}px`);
-    wrap.appendChild(s);
+    showOverlay('Intermezzo Simon concluso', `${finalMsg}`);
+    ovBtn.textContent = 'Vai al livello successivo';
+    ovBtn.onclick = () => { hideOverlay(); init(next); };
   }
 
-  // Ripulisci dopo l’animazione
-  setTimeout(() => wrap.remove(), 650);
-}
-function showZenEnd(){
-  const elapsedMs = calcElapsedMs();
-  const moves = state.moves || 0;
-  const eff = calcZenEfficiency(moves, LEVELS[currentLevelIdx]);
+  function spawnMatchStars(card){
+    const wrap = document.createElement('div');
+    wrap.className = 'match-stars';
+    card.appendChild(wrap);
 
-  ovTitle.textContent = 'Griglia completata!';
-  ovSub.innerHTML =
-    `⏱️ Tempo impiegato: <b>${fmt(elapsedMs)}</b><br/>` +
-    `🎯 Mosse totali: <b>${moves}</b><br/>` +
-    `📊 Efficienza: <b>${eff}%</b>`;
+    const N = 6;
+    for(let i=0;i<N;i++){
+      const s = document.createElement('span');
+      s.className = 'star';
+      s.textContent = '✨';
+      const r = 26 + Math.random()*18;
+      const ang = (Math.PI*2/N)*i + Math.random()*0.7;
+      const dx = Math.cos(ang)*r;
+      const dy = Math.sin(ang)*r;
+      s.style.setProperty('--dx', `${dx}px`);
+      s.style.setProperty('--dy', `${dy}px`);
+      wrap.appendChild(s);
+    }
+    setTimeout(() => wrap.remove(), 650);
+  }
 
-  const stars = eff >= 95 ? 3 : eff >= 85 ? 2 : 1;
-  ovSub.innerHTML += `<br/>${'⭐'.repeat(stars)}${
-    stars===3 ? '   Perfetto! (3/3 stelle)'
-  : stars===2 ? '   Ottimo! (2/3 stelle)'
-              : '   Bene! (1/3 stelle)'}`;
+  function showZenEnd(){
+    const elapsedMs = calcElapsedMs();
+    const moves = state.moves || 0;
+    const eff = calcZenEfficiency(moves, LEVELS[currentLevelIdx]);
 
-  ovBtn.textContent = 'Gioca ancora';
-  ovBtn.onclick = () => { hideOverlay(); startZen(); };
+    ovTitle.textContent = 'Griglia completata!';
+    ovSub.innerHTML =
+      `⏱️ Tempo impiegato: <b>${fmt(elapsedMs)}</b><br/>` +
+      `🎯 Mosse totali: <b>${moves}</b><br/>` +
+      `📊 Efficienza: <b>${eff}%</b>`;
 
-  showSkip(true);
-  ovBtnSkip.textContent = 'Torna al menu';
-  ovBtnSkip.onclick = () => { hideOverlay(); showIntro(); };
+    const stars = eff >= 95 ? 3 : eff >= 85 ? 2 : 1;
+    ovSub.innerHTML += `<br/>${'⭐'.repeat(stars)}${
+      stars===3 ? '   Perfetto! (3/3 stelle)'
+    : stars===2 ? '   Ottimo! (2/3 stelle)'
+                : '   Bene! (1/3 stelle)'}`;
 
-  overlay.classList.add('show');
-  updateSaveButton();
-}
+    ovBtn.textContent = 'Gioca ancora';
+    ovBtn.onclick = () => { hideOverlay(); startZen(); };
+
+    showSkip(true);
+    ovBtnSkip.textContent = 'Torna al menu';
+    ovBtnSkip.onclick = () => { hideOverlay(); showIntro(); };
+
+    overlay.classList.add('show');
+    updateSaveButton();
+  }
 
   function win(){
-  if (state?.isZen){ showZenEnd(); return; } // 🧘 schermata Zen e uscita
+    if (state?.isZen){ showZenEnd(); return; }
     state.running = false;
-// in win()
-SFX.play('win', { volume:1.0 });
+    SFX.play('win', { volume:1.0 });
 
     const secondsLeft = Math.floor(state.leftMs/1000);
     const free = freeMovesFor(state.level);
     const mult = efficiencyMultiplier(state.moves, free);
-const frameScore = roundNearest(secondsLeft * mult);
-// totale robusto: base all'inizio del quadro + punti del quadro
-totalScore = frameBaseScore + frameScore;
-updateScoreChip();
+    const frameScore = roundNearest(secondsLeft * mult);
+    totalScore = frameBaseScore + frameScore;
+    updateScoreChip();
+
     const L = LEVELS[currentLevelIdx];
     const p = progress[currentLevelIdx];
 
-const detailRow = `Tempo: ${secondsLeft}s · Mosse: ${state.moves}<br>
+    const detailRow = `Tempo: ${secondsLeft}s · Mosse: ${state.moves}<br>
 Punti quadro = <b>${frameScore}</b><br>
 Punteggio parziale: <b>${totalScore}</b>`;
-
 
     if(!p.unlocked){
       p.streak += 1;
@@ -1979,44 +1687,34 @@ Punteggio parziale: <b>${totalScore}</b>`;
         showOverlay('Quadro completato ✔️', `Sblocco: ${p.streak}/3<br>${detailRow}<br><small>Prossimo tentativo: tempo base ${Math.floor(p.baseTimeMs/1000)}s</small>`);
         ovBtn.textContent = 'Continua a giocare';
         ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
-} else {
-  p.unlocked = true;
-  p.postUnlockWins = 0;
-  p.carryBonusMs = 0;   // azzera il bonus “carry” perché il livello è sbloccato
+      } else {
+        p.unlocked = true;
+        p.postUnlockWins = 0;
+        p.carryBonusMs = 0;
 
-  const next = currentLevelIdx + 1;
+        const next = currentLevelIdx + 1;
 
-  // Ri-usa il popup di fine quadro, ma con due scelte:
-  showOverlay(
-    'Sblocco conquistato! 🏆',
-    `Hai completato 3 quadri di fila.<br>
-     ${detailRow}<br><br>
-     <b>Cosa vuoi fare adesso?</b>`
-  );
+        showOverlay(
+          'Sblocco conquistato! 🏆',
+          `Hai completato 3 quadri di fila.<br>
+           ${detailRow}<br><br>
+           <b>Cosa vuoi fare adesso?</b>`
+        );
 
-  // A) Continua qui (grind di punti)
-  ovBtn.textContent = 'Continua qui (fai punti)';
-  ovBtn.onclick = () => {
-    hideOverlay();
-    init(currentLevelIdx);
-  };
+        ovBtn.textContent = 'Continua qui (fai punti)';
+        ovBtn.onclick = () => {
+          hideOverlay();
+          init(currentLevelIdx);
+        };
 
-  // B) Vai al livello successivo → mostra SUBITO il popup Simon/Salta
-  if (next < LEVELS.length){
-    showSkip(true);
-    ovBtnSkip.textContent = 'Livello successivo';
-    ovBtnSkip.onclick = () => {
-      // non serve nascondere: openSimonChoice riscrive il contenuto del popup
-      openSimonChoice(next);
-    };
-  } else {
-    // sei all’ultimo livello: niente "Livello successivo"
-    showSkip(false);
-  }
-}
-
-
-
+        if (next < LEVELS.length){
+          showSkip(true);
+          ovBtnSkip.textContent = 'Livello successivo';
+          ovBtnSkip.onclick = () => { openSimonChoice(next); };
+        } else {
+          showSkip(false);
+        }
+      }
     } else {
       p.postUnlockWins += 1;
       p.baseTimeMs = Math.max(0, p.baseTimeMs - L.postDeltaSec*1000);
@@ -2024,142 +1722,128 @@ Punteggio parziale: <b>${totalScore}</b>`;
       ovBtn.textContent = 'Continua a giocare';
       ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
     }
-// Autosalvataggio se c'è uno slot attivo
-if (activeSaveName) {
-  upsertSave(activeSaveName, buildPayload());
-  flashMessage('💾 Autosalvato: ' + activeSaveName);
-}
+
+    if (activeSaveName) {
+      upsertSave(activeSaveName, buildPayload());
+      flashMessage('💾 Autosalvato: ' + activeSaveName);
+    }
     updateSaveButton();
   }
 
- function lose(title, sub){
-  const L = LEVELS[currentLevelIdx];
-  const p = progress[currentLevelIdx];
-  state.running = false;
-  SFX.play('lose', { volume:1.0 });
+  function lose(title, sub){
+    const L = LEVELS[currentLevelIdx];
+    const p = progress[currentLevelIdx];
+    state.running = false;
+    SFX.play('lose', { volume:1.0 });
 
-  // ⬇️ SE IL LIVELLO È GIÀ SBLOCCATO: usa SEMPRE il popup Simon/Salta tramite l'helper
-  if (p.unlocked){
-    const next = currentLevelIdx + 1;
-    openSimonChoice(next);   // ← mostra "Prova il Bonus" / "Prosegui senza Bonus"
-    return;                  // ← IMPORTANTISSIMO: non proseguire oltre
-  } else {
-    // ⬇️ COMPORTAMENTO INVARIATO (livello non sbloccato)
-    p.streak = 0;
-    p.baseTimeMs = L.unlockMs[0];
+    if (p.unlocked){
+      const next = currentLevelIdx + 1;
+      openSimonChoice(next);
+      return;
+    } else {
+      p.streak = 0;
+      p.baseTimeMs = L.unlockMs[0];
 
-    totalScore = 0;         // ← azzera punteggio
-    frameBaseScore = 0;     // ← allinea la base
-    updateScoreChip();
+      totalScore = 0;
+      frameBaseScore = 0;
+      updateScoreChip();
 
+      showOverlay(
+        title || 'Hai perso',
+        (sub || 'Ritenta!') +
+        `<br><small>Sblocco: ${p.streak}/3 – tempo base ripristinato a ${Math.floor(p.baseTimeMs/1000)}s</small>`
+      );
+      ovBtn.textContent = 'Riprova questo livello';
+      ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
+    }
+    updateSaveButton();
+  }
+
+  function showOverlay(title, sub){
+    ovTitle.textContent = title;
+    ovSub.innerHTML = sub;
+    overlay.classList.add('show');
+    showSkip(false);
+    updateSaveButton();
+    refreshPowersUI();
+  }
+  function hideOverlay(){
+    overlay.classList.remove('show');
+    updateSaveButton();
+    refreshPowersUI();
+  }
+
+  function openSimonChoice(next){
     showOverlay(
-      title || 'Hai perso',
-      (sub || 'Ritenta!') +
-      `<br><small>Sblocco: ${p.streak}/3 – tempo base ripristinato a ${Math.floor(p.baseTimeMs/1000)}s</small>`
+      'Intermezzo bonus tempo 👻',
+      '<b>Bravo!</b> Prima di accedere al livello successivo puoi provare a guadagnare <b>secondi bonus</b> con un mini-gioco cliccando i fantasmini nella giusta sequenza.<br><br>' +
+      '<small>Ogni passo corretto = <b>+1s</b> al prossimo livello. Se riveli il teschio il mini-gioco termina.</small>'
     );
-    ovBtn.textContent = 'Riprova questo livello';
-    ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
-  }
 
-  updateSaveButton();
-}
-
-function showOverlay(title, sub){
-  ovTitle.textContent = title;
-  ovSub.innerHTML = sub;
-  overlay.classList.add('show');
-  showSkip(false);            // ⬅️ aggiunta
-  updateSaveButton();
-refreshPowersUI();
-}
-
-function hideOverlay(){
-  overlay.classList.remove('show');
-  updateSaveButton();
-  refreshPowersUI();    // <-- aggiunta
-}
-function openSimonChoice(next){
-  // stesso contenuto e stessi bottoni che usi in lose() quando il livello è già sbloccato
-  showOverlay(
-    'Intermezzo bonus tempo 👻',
-    '<b>Bravo!</b> Prima di accedere al livello successivo puoi provare a guadagnare <b>secondi bonus</b> con un mini-gioco cliccando i fantasmini nella giusta sequenza.<br><br>' +
-    '<small>Ogni passo corretto = <b>+1s</b> al prossimo livello. Se riveli il teschio il mini-gioco termina.</small>'
-  );
-
-  // Bottone principale: fai il Simon
-  ovBtn.textContent = 'Prova il Bonus';
-  ovBtn.onclick = () => {
-    hideOverlay();
-    startSimonIntermezzo();
-  };
-
-  // Secondo bottone: salta il Simon e vai subito al livello dopo (nessun bonus)
-  showSkip(true);
-  if (ovBtnSkip) {
-    ovBtnSkip.textContent = 'Prosegui senza Bonus';
-    ovBtnSkip.onclick = () => {
+    ovBtn.textContent = 'Prova il Bonus';
+    ovBtn.onclick = () => {
       hideOverlay();
-      if (next < LEVELS.length) {
-        init(next);
-      } else {
-        init(currentLevelIdx); // se già all’ultimo, resta qui
-      }
+      startSimonIntermezzo();
     };
-  }
-}
 
-function explainPower(which){
-  let title = '', desc = '', avail = '';
-
-  if (which === 'reveal'){
-    title = '👁️ Sbirciatina!';
-    desc  = 'Svela tutte le carte per 1s ma costa il 20% del tempo rimanente.';
-    avail = 'Disponibile dopo aver fatto almeno 1 coppia.';
-  } else if (which === 'plus10'){
-    title = '🦇 Guadagna 10s!';
-    desc  = '+10 secondi, ma una coppia già trovata torna coperta e viene rilocalizzata.';
-    avail = 'Disponibile dopo aver fatto almeno 1 coppia.';
-  } else if (which === 'shift'){
-    title = '🌀 Guadagna 15s!';
-    desc  = '+15 secondi, ma rimescola tutto, anche 💀 e ⚡.';
-    avail = 'Disponibile dopo aver svelato almeno un 💀.';
+    showSkip(true);
+    if (ovBtnSkip) {
+      ovBtnSkip.textContent = 'Prosegui senza Bonus';
+      ovBtnSkip.onclick = () => {
+        hideOverlay();
+        if (next < LEVELS.length) {
+          init(next);
+        } else {
+          init(currentLevelIdx);
+        }
+      };
+    }
   }
 
-  const html = `${desc}<br><small>${avail}</small><br><small>Utilizzabile solo durante la manche.</small>`;
-  showOverlay(title, html);
-  ovBtn.textContent = 'Ok';
-  ovBtn.onclick = () => { hideOverlay(); };
-  showSkip(false);
-}
+  function explainPower(which){
+    let title = '', desc = '', avail = '';
 
-function openRestartConfirm(){
-  // opzionale: metti in pausa mentre chiedi conferma
-  // if (state && state.running && !state.paused) togglePause();
+    if (which === 'reveal'){
+      title = '👁️ Sbirciatina!';
+      desc  = 'Svela tutte le carte per 1s ma costa il 20% del tempo rimanente.';
+      avail = 'Disponibile dopo aver fatto almeno 1 coppia.';
+    } else if (which === 'plus10'){
+      title = '🦇 Guadagna 10s!';
+      desc  = '+10 secondi, ma una coppia già trovata torna coperta e viene rilocalizzata.';
+      avail = 'Disponibile dopo aver fatto almeno 1 coppia.';
+    } else if (which === 'shift'){
+      title = '🌀 Guadagna 15s!';
+      desc  = '+15 secondi, ma rimescola tutto, anche 💀 e ⚡.';
+      avail = 'Disponibile dopo aver svelato almeno un 💀.';
+    }
 
-  restartConfirm.classList.add('show');
-  restartConfirm.setAttribute('aria-hidden','false');
-refreshPowersUI();
-}
+    const html = `${desc}<br><small>${avail}</small><br><small>Utilizzabile solo durante la manche.</small>`;
+    showOverlay(title, html);
+    ovBtn.textContent = 'Ok';
+    ovBtn.onclick = () => { hideOverlay(); };
+    showSkip(false);
+  }
 
-function closeRestartConfirm(){
-  restartConfirm.classList.remove('show');
-  restartConfirm.setAttribute('aria-hidden','true');
-  refreshPowersUI();    // <-- aggiunta
-}
-
-
-  // opzionale: se avevi messo in pausa automaticamente, puoi riavviare
-  // if (state && state.paused && state.pauseLeftMs > 0) togglePause();
+  function openRestartConfirm(){
+    restartConfirm.classList.add('show');
+    restartConfirm.setAttribute('aria-hidden','false');
+    refreshPowersUI();
+  }
+  function closeRestartConfirm(){
+    restartConfirm.classList.remove('show');
+    restartConfirm.setAttribute('aria-hidden','true');
+    refreshPowersUI();
+  }
 
   function flashMessage(text){
     const msg = document.createElement('div');
     msg.className = 'flash-msg';
     msg.textContent = text;
     document.body.appendChild(msg);
-   setTimeout(() => msg.remove(), 1500);
+    setTimeout(() => msg.remove(), 1500);
   }
 
-  // ===== Multi-slot Saves (solo meta, niente stato del quadro) =====
+  // ===== Multi-slot Saves =====
   function readSaves(){
     try{ const raw = localStorage.getItem(SAVES_KEY); return raw ? JSON.parse(raw) : []; }catch(e){ return []; }
   }
@@ -2174,7 +1858,6 @@ function closeRestartConfirm(){
   function deleteSave(name){ writeSaves(readSaves().filter(s => s && s.name !== name)); }
 
   function buildPayload(){
-    // Versione 3: salviamo SOLO metadati per ripartire da inizio quadro
     return {
       version: 3,
       when: Date.now(),
@@ -2191,30 +1874,28 @@ function closeRestartConfirm(){
     currentLevelIdx = data.currentLevelIdx ?? 0;
     if (Array.isArray(data.progress)) progress = data.progress;
 
-    // Avvia sempre un QUADRO NUOVO non in pausa
     init(currentLevelIdx);
-frameBaseScore = totalScore;   // la prossima vittoria partirà da questo totale
+    frameBaseScore = totalScore;
     const b = document.body;
     b.className = (b.className || '').split(' ').filter(c => !c.startsWith('theme-')).join(' ');
     b.classList.add('theme-' + themeIndex);
 
-    state.paused = false; // non in pausa
-    state.running = false; // fermo finché il giocatore non clicca
+    state.paused = false;
+    state.running = false;
     pauseBtn.textContent = '⏸️';
     updateHud();
     updateSaveButton();
     return true;
   }
 
-  // ===== Save Modal =====
   function openSaveManager(){
     if(!canSaveNow()){
       flashMessage('💾 Salva solo a fine quadro o prima di iniziare');
       return;
     }
     renderSaveList();
-const sc = document.getElementById('saveControls');
-if (sc) sc.style.display = '';
+    const sc = document.getElementById('saveControls');
+    if (sc) sc.style.display = '';
 
     saveModal.classList.add('show');
     saveModal.setAttribute('aria-hidden','false');
@@ -2231,126 +1912,104 @@ if (sc) sc.style.display = '';
     saveList.innerHTML = '';
     list.forEach(entry => {
       const row = document.createElement('div');
-row.className = 'save-row';
+      row.className = 'save-row';
       row.style.display = 'grid';
       row.style.gridTemplateColumns = '1fr auto auto';
       row.style.gap = '8px';
       row.style.alignItems = 'center';
       row.style.padding = '6px 0';
+
       const name = document.createElement('div');
       const d = new Date(entry.when||Date.now());
       const title = document.createElement('b');  title.textContent = entry.name;
-const small = document.createElement('small'); small.textContent = d.toLocaleString();
-name.append(title, document.createElement('br'), small);
-const loadBtn = document.createElement('button');
-loadBtn.className = 'icon-btn';
-loadBtn.innerHTML = '📤';           // Upload
-loadBtn.title = 'Carica questo salvataggio';
-loadBtn.setAttribute('aria-label','Carica questo salvataggio');
+      const small = document.createElement('small'); small.textContent = d.toLocaleString();
+      name.append(title, document.createElement('br'), small);
 
-const delBtn = document.createElement('button');
-delBtn.className = 'icon-btn';
-delBtn.innerHTML = '🗑️';          // Cestino
-delBtn.title = 'Elimina questo salvataggio';
-delBtn.setAttribute('aria-label','Elimina questo salvataggio');
+      const loadBtn = document.createElement('button');
+      loadBtn.className = 'icon-btn';
+      loadBtn.innerHTML = '📤';
+      loadBtn.title = 'Carica questo salvataggio';
+      loadBtn.setAttribute('aria-label','Carica questo salvataggio');
 
-loadBtn.onclick = () => {
-  loadPayload(entry.data);
-  setActiveSaveName(entry.name);                 // ⬅️ aggiunta
-  closeSaveManager();
-  flashMessage('📂 Caricato: ' + entry.name);
-};
-delBtn.onclick = () => {
-  // Pulisci eventuali conferme aperte
-  document.querySelectorAll('.inline-confirm').forEach(el => el.remove());
+      const delBtn = document.createElement('button');
+      delBtn.className = 'icon-btn';
+      delBtn.innerHTML = '🗑️';
+      delBtn.title = 'Elimina questo salvataggio';
+      delBtn.setAttribute('aria-label','Elimina questo salvataggio');
 
-  // Nascondi tutte le altre righe tranne questa
-  const rows = saveList.querySelectorAll('.save-row');
-  rows.forEach(r => { if (r !== row) r.style.display = 'none'; });
+      loadBtn.onclick = () => {
+        loadPayload(entry.data);
+        setActiveSaveName(entry.name);
+        closeSaveManager();
+        flashMessage('📂 Caricato: ' + entry.name);
+      };
+      delBtn.onclick = () => {
+        document.querySelectorAll('.inline-confirm').forEach(el => el.remove());
+        const rows = saveList.querySelectorAll('.save-row');
+        rows.forEach(r => { if (r !== row) r.style.display = 'none'; });
 
-  // Nascondi temporaneamente la toolbar "Nome + Salva + Chiudi"
-  const toolbar = doSaveBtn ? doSaveBtn.parentElement : null;
-  const restoreToolbar = () => { if (toolbar) toolbar.style.display = ''; };
-  if (toolbar) toolbar.style.display = 'none';
+        const toolbar = doSaveBtn ? doSaveBtn.parentElement : null;
+        const restoreToolbar = () => { if (toolbar) toolbar.style.display = ''; };
+        if (toolbar) toolbar.style.display = 'none';
 
-  // Conferma inline
-  const wrap = document.createElement('div');
-  wrap.className = 'inline-confirm';
-  wrap.style.display = 'flex';
-  wrap.style.gap = '8px';
-  wrap.style.alignItems = 'center';
-  wrap.style.gridColumn = '1 / -1';
-  wrap.style.marginTop = '6px';
-  wrap.style.padding = '8px 10px';
-  wrap.style.border = '1px solid var(--panel-border)';
-  wrap.style.borderRadius = '10px';
-  wrap.style.background = 'linear-gradient(180deg,var(--panel-1),var(--panel-2))';
-  wrap.innerHTML = `
-    <span>Eliminare <b>${entry.name}</b>?</span>
-    <div style="margin-left:auto; display:flex; gap:8px">
-      <button class="primary" id="c-yes">Sì, elimina</button>
-      <button class="primary" id="c-no" style="background:var(--bad); color:#fff">Annulla</button>
-    </div>
-  `;
+        const wrap = document.createElement('div');
+        wrap.className = 'inline-confirm';
+        wrap.style.display = 'flex';
+        wrap.style.gap = '8px';
+        wrap.style.alignItems = 'center';
+        wrap.style.gridColumn = '1 / -1';
+        wrap.style.marginTop = '6px';
+        wrap.style.padding = '8px 10px';
+        wrap.style.border = '1px solid var(--panel-border)';
+        wrap.style.borderRadius = '10px';
+        wrap.style.background = 'linear-gradient(180deg,var(--panel-1),var(--panel-2))';
+        wrap.innerHTML = `
+          <span>Eliminare <b>${entry.name}</b>?</span>
+          <div style="margin-left:auto; display:flex; gap:8px">
+            <button class="primary" id="c-yes">Sì, elimina</button>
+            <button class="primary" id="c-no" style="background:var(--bad); color:#fff">Annulla</button>
+          </div>
+        `;
 
-  row.after(wrap);
+        row.after(wrap);
 
-  // Conferma
-  wrap.querySelector('#c-yes').onclick = () => {
-    deleteSave(entry.name);
-    // Ripristina vista completa e toolbar ricaricando la lista
-    renderSaveList();
-    restoreToolbar();
-  };
-
-  // Annulla
-  wrap.querySelector('#c-no').onclick = () => {
-    wrap.remove();
-    // Ri-mostra tutte le righe
-    rows.forEach(r => { r.style.display = ''; });
-    restoreToolbar();
-  };
-};
-
+        wrap.querySelector('#c-yes').onclick = () => {
+          deleteSave(entry.name);
+          renderSaveList();
+          restoreToolbar();
+        };
+        wrap.querySelector('#c-no').onclick = () => {
+          wrap.remove();
+          rows.forEach(r => { r.style.display = ''; });
+          restoreToolbar();
+        };
+      };
 
       row.append(name, loadBtn, delBtn);
       saveList.appendChild(row);
     });
   }
 
-  // ===== Event Listeners =====
-if (introBtn){ /* l'handler viene impostato dinamicamente da setTutorialMode() */ }
+  if (introBtn){ /* handler impostato da setTutorialMode() */ }
 
-  restartBtn.addEventListener('click', () => {
-  openRestartConfirm();
-});
-if (restartYes) {
-  restartYes.addEventListener('click', () => {
-    closeRestartConfirm();
-    hideOverlay();
-
-    // Sempre menù iniziale (scelta Arcade / Zen)
-    currentLevelIdx = 0; // se poi scegli Arcade, parti dal primo livello
-    showIntro();         // apre il tutorial sulla slide "root"
-
-    // Nota: non azzero punteggio/sblocchi qui.
-    // "Ricomincia" = esco dalla manche corrente e torno al menu.
-  });
-}
-
-
-
-if (restartNo) {
-  restartNo.addEventListener('click', () => {
-    closeRestartConfirm();    // annulla e chiudi
-  });
-}
+  restartBtn.addEventListener('click', () => { openRestartConfirm(); });
+  if (restartYes) {
+    restartYes.addEventListener('click', () => {
+      closeRestartConfirm();
+      hideOverlay();
+      currentLevelIdx = 0;
+      showIntro();
+    });
+  }
+  if (restartNo) {
+    restartNo.addEventListener('click', () => { closeRestartConfirm(); });
+  }
 
   pauseBtn.addEventListener('click', togglePause);
   if(saveBtn){ saveBtn.addEventListener('click', openSaveManager); }
-if (powerRevealBtn) powerRevealBtn.addEventListener('click', usePowerReveal);
-if (powerPlus10Btn) powerPlus10Btn.addEventListener('click', usePowerPlus10);
-if (powerShiftBtn)  powerShiftBtn.addEventListener('click', usePowerShift);
+  if (powerRevealBtn) powerRevealBtn.addEventListener('click', usePowerReveal);
+  if (powerPlus10Btn) powerPlus10Btn.addEventListener('click', usePowerPlus10);
+  if (powerShiftBtn)  powerShiftBtn.addEventListener('click', usePowerShift);
 
   if (doSaveBtn) {
     let overwritePrompt = null;
@@ -2388,15 +2047,15 @@ if (powerShiftBtn)  powerShiftBtn.addEventListener('click', usePowerShift);
 
         requestAnimationFrame(() => yesBtn && yesBtn.focus());
 
-yesBtn.onclick = () => {
-  upsertSave(nm, buildPayload());
-  setActiveSaveName(nm);                          // ⬅️ AGGIUNTA
-  flashMessage('💾 Sovrascritto: ' + nm);
-  renderSaveList();
-  saveNameInput.value = '';
-  overwritePrompt.remove();
-  overwritePrompt = null;
-};
+        yesBtn.onclick = () => {
+          upsertSave(nm, buildPayload());
+          setActiveSaveName(nm);
+          flashMessage('💾 Sovrascritto: ' + nm);
+          renderSaveList();
+          saveNameInput.value = '';
+          overwritePrompt.remove();
+          overwritePrompt = null;
+        };
 
         noBtn.onclick = () => {
           overwritePrompt.remove();
@@ -2413,15 +2072,15 @@ yesBtn.onclick = () => {
         return;
       }
 
-upsertSave(nm, buildPayload());
-setActiveSaveName(nm);                            // ⬅️ AGGIUNTA
-flashMessage('💾 Salvato: ' + nm);
-renderSaveList();
-saveNameInput.value = '';
+      upsertSave(nm, buildPayload());
+      setActiveSaveName(nm);
+      flashMessage('💾 Salvato: ' + nm);
+      renderSaveList();
+      saveNameInput.value = '';
     });
   }
 
- if (saveClose){ saveClose.addEventListener('click', closeSaveManager); }
+  if (saveClose){ saveClose.addEventListener('click', closeSaveManager); }
 
   // scorciatoia Ctrl/⌘+S
   window.addEventListener('keydown', (e)=>{
@@ -2442,7 +2101,7 @@ saveNameInput.value = '';
       state.pauseLeftMs = 0;
       pauseBtn.textContent = '⏸️';
       tick();
-refreshPowersUI();
+      refreshPowersUI();
       return;
     }
     if(state.running){
@@ -2451,53 +2110,51 @@ refreshPowersUI();
       state.pauseLeftMs = Math.max(0, state.deadlineTs - now);
       state.running = false;
       pauseBtn.textContent = '▶️';
-tapBuffer = []; // pulisci eventuali tocchi in coda
-refreshPowersUI();
+      tapBuffer = [];
+      refreshPowersUI();
       return;
     }
   }
-// --- S P L A S H  (versione robusta, attiva quando il DOM è pronto) ---
-document.addEventListener('DOMContentLoaded', () => {
-  const splash = document.getElementById('splash');
-  let splashTimer = null;
 
-  function showSplash(){
-    if (!splash) return;
-    splash.classList.remove('hide');
-    splash.classList.add('show');
-  }
-  function hideSplash(){
-    if (!splash) return;
-    splash.classList.add('hide');
-    splash.classList.remove('show');
-  }
-  function skipSplash(){
-    if (splashTimer) { clearTimeout(splashTimer); splashTimer = null; }
-ensureSfx();
+  // --- S P L A S H ---
+  document.addEventListener('DOMContentLoaded', () => {
+    const splash = document.getElementById('splash');
+    let splashTimer = null;
 
-    hideSplash();
-    showIntro(); // apre il tutorial
-  }
+    function showSplash(){
+      if (!splash) return;
+      splash.classList.remove('hide');
+      splash.classList.add('show');
+    }
+    function hideSplash(){
+      if (!splash) return;
+      splash.classList.add('hide');
+      splash.classList.remove('show');
+    }
+    function skipSplash(){
+      if (splashTimer) { clearTimeout(splashTimer); splashTimer = null; }
+      ensureSfx();
+      hideSplash();
+      showIntro();
+    }
 
-  // Consenti di saltare la splash
-  if (splash){
-    splash.addEventListener('click', skipSplash);
-    window.addEventListener('keydown', (e) => {
-      if (!splash || splash.classList.contains('hide')) return;
-      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') skipSplash();
-    });
-  }
+    if (splash){
+      splash.addEventListener('click', skipSplash);
+      window.addEventListener('keydown', (e) => {
+        if (!splash || splash.classList.contains('hide')) return;
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') skipSplash();
+      });
+    }
 
-  // Prepara la griglia e mostra la cover 3s
-  init(0);      // costruisce la griglia "sotto" la splash
-  showSplash(); // assicura che la splash sia visibile
-  splashTimer = setTimeout(() => {
-    hideSplash();
-    showIntro();
-  }, 3000);
-});
+    init(0);
+    showSplash();
+    splashTimer = setTimeout(() => {
+      hideSplash();
+      showIntro();
+    }, 3000);
+  });
 
-  // Migrazione legacy (se presente) → slot "Ultimo"
+  // Migrazione legacy → slot "Ultimo"
   try{
     if(localStorage.getItem(STORAGE_KEY)){
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -2509,6 +2166,7 @@ ensureSfx();
   }catch(e){}
 })();
 </script>
+
 <!-- Splash pre-tutorial (3s) -->
 <div id="splash" class="splash show" role="button" aria-label="Splash iniziale (tocca per saltare)">
   <svg viewBox="0 0 1200 1200" preserveAspectRatio="xMidYMid meet" class="splash-art" aria-hidden="true">
@@ -2521,14 +2179,7 @@ ensureSfx();
     <rect width="1200" height="1200" fill="url(#bg)"/>
   </svg>
   <img src="splash-template.svg" class="splash-art" alt="Skullory" style="position:absolute;">
-
 </div>
 
 </body>
 </html>
-
-
-
-
-
-
