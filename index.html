@@ -96,6 +96,35 @@
   .stats{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center }
   .chip{ padding:8px 12px; border-radius:999px; background:#1a1f37; border:1px solid var(--panel-border); color:#c8cde0; white-space:nowrap }
   .level-chip{ padding:6px 10px; border-radius:999px; background:#1a1f37; border:1px solid var(--panel-border); color:#c8cde0; font-size:14px; white-space:nowrap }
+/* Jackpot chip più grande */
+#jackpotChip{
+  font-size: 18px;            /* testo più grande */
+  padding: 10px 14px;         /* più aria */
+  border-width: 2px;          /* bordo un filo più marcato */
+  border-color: #ffd54f;      /* un accenno “gold” */
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+}
+
+#jackpotChip b{               /* i tre simboli in bold un pelino più grandi */
+  font-size: 1.15em;
+}
+
+#jackpotChip small{           /* il progress 0/3 resta discreto */
+  font-size: .85em;
+  opacity: .85;
+}
+
+/* Facoltativo: su schermi piccoli riduciamo leggermente */
+@media (max-width: 480px){
+  #jackpotChip{ font-size: 16px; padding: 9px 12px; }
+}
+@keyframes jackpotPulse{
+  0%   { transform: scale(1);   }
+  35%  { transform: scale(1.06);}
+  100% { transform: scale(1);   }
+}
+#jackpotChip.pulse { animation: jackpotPulse 300ms ease-out; }
+
   .timer{ font-size:26px; font-weight:700 }
   .grid{
     margin-top:18px; display:grid; grid-template-columns:repeat(var(--cols), minmax(0,1fr));
