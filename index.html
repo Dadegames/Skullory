@@ -583,6 +583,10 @@
 (() => {
   const RED = '💀';
   const YELLOW = '⚡';
+// Durate identiche a quelle già percepite (mismatch ~420ms)
+const MISMATCH_HOLD_MS = 420;
+const MATCH_HOLD_MS = 120; // per coerenza (non serve bloccare l’input)
+
   // --- SIMON: manopole per le durate ---
   const SIMON_CFG = {
     previewMs: 700,
@@ -1225,7 +1229,8 @@ function isPreFrame(){
     state = {
       level: L,
       deck: buildDeck(L),
-      flipped: [], matched: 0, moves: 0,
+      pivot: null, matched: 0, moves: 0,
+hideTimers: new Map(),
       running: false, startTs: 0,
       leftMs: Math.max(0, progress[levelIdx].baseTimeMs + (!progress[levelIdx].unlocked ? (progress[levelIdx].carryBonusMs || 0) : 0)),
       lock: false,
@@ -1380,123 +1385,161 @@ if (saveBtn) saveBtn.style.display = '';
     updateScoreChip();
   }
 
-  function onCardClick(card){
-    ensureSfx();
-    if (sim && sim.active){
-      simonOnTap(card);
+function onCardClick(card){
+  ensureSfx();
+
+  // SIMON attivo → comportamento invariato
+  if (sim && sim.active){
+    simonOnTap(card);
+    return;
+  }
+
+  SFX.play('tap', { volume:.5, rate: 0.98 + Math.random()*0.04 });
+
+  // Pausa / lock (da overlay o potere 👁️) → comportamento invariato
+  if (state.paused) { flashMessage('In pausa ▶'); return; }
+  if (state.lock) {
+    if (tapBuffer.length < TAP_BUFFER_MAX &&
+        card.dataset.state !== 'matched' &&
+        card.dataset.state !== 'revealed') {
+      tapBuffer.push(card);
+    }
+    return;
+  }
+
+  // Niente re-click su carte già visibili / già abbinate
+  if (card.dataset.state === 'matched' || card.dataset.state === 'revealed') return;
+
+  startTimer();
+  flip(card, true);
+
+  // Gestione speciali come prima (aggiuntiva, NON interrompe il confronto)
+  if (card.dataset.symbol === RED){
+    state.redFlips++;
+    refreshPowersUI();
+    SFX.play('skull', { volume:.9, rate: 0.98 });
+    if(state.redFlips >= 2){
+      setTimeout(() => lose('Oh no! 💀', 'Hai rivelato il teschio due volte.'), 220);
+      // Anche in caso di sconfitta lascio il resto fermarsi naturalmente
       return;
-    }
-    SFX.play('tap', { volume:.5, rate: 0.98 + Math.random()*0.04 });
-
-    if (state.paused) { flashMessage('In pausa ▶️'); return; }
-    if (state.lock) {
-      if (tapBuffer.length < TAP_BUFFER_MAX &&
-          card.dataset.state !== 'matched' &&
-          card.dataset.state !== 'revealed') {
-        tapBuffer.push(card);
-      }
-      return;
-    }
-    if(card.dataset.state === 'matched' || card.dataset.state === 'revealed') return;
-    startTimer();
-
-    flip(card, true);
-    SFX.play('flip', { volume:.75, rate: 0.96 + Math.random()*0.08 });
-
-    state.flipped.push(card);
-
-    if(card.dataset.symbol === RED){
-      state.redFlips++;
-      refreshPowersUI();
-      SFX.play('skull', { volume:.9, rate: 0.98 });
-
-      if(state.redFlips >= 2){
-        setTimeout(() => lose('Oh no! 💀', 'Hai rivelato il teschio due volte.'), 220);
-        return;
-      }
-    }
-    if(card.dataset.symbol === YELLOW){
-      state.yellowFlips++;
-      flashMessage('Shuffle!');
-      reshuffleHiddenNonSpecial(); 
-    }
-
-    if(state.flipped.length === 2){
-      state.moves++;
-      movesEl.textContent = `Mosse: ${state.moves}`;
-      checkPair();
     }
   }
+  if (card.dataset.symbol === YELLOW){
+    state.yellowFlips++;
+    flashMessage('Shuffle!');
+    reshuffleHiddenNonSpecial();
+  }
+
+  // --- Confronto "pivot → nuova carta" (mosse per confronto, non per primo flip isolato) ---
+  const prev = state.pivot;
+
+  // Se non esiste un pivot valido, questa carta DIVENTA il pivot e basta
+  if (!prev || prev.getAttribute('data-state') === 'matched'){
+    state.pivot = card;
+    return;
+  }
+
+  // Non confrontare una carta con sé stessa
+  if (prev === card){
+    return;
+  }
+
+  // Qui c'è un confronto: conta 1 mossa
+  state.moves++;
+  if (!state.isZen) movesEl.textContent = `Mosse: ${state.moves}`;
+
+  const aSym = prev.dataset.symbol;
+  const bSym = card.dataset.symbol;
+  const isSpecial = s => (s === RED || s === YELLOW);
+  const isMatch = !isSpecial(aSym) && !isSpecial(bSym) && (aSym === bSym);
+
+  if (isMatch){
+    // Annulla eventuali richiuse pendenti sul pivot
+    cancelHide(prev);
+    cancelHide(card);
+
+    // Bonus tempo & combo come prima
+    const now = performance.now();
+    if (!state.isZen){
+      state.deadlineTs += 1000;            // +1s
+      state.leftMs = Math.max(0, state.deadlineTs - now);
+      updateTime();
+      flashMessage('+1s');
+      SFX.play('bonus1', { volume:.85, rate: 1.02 });
+
+      if (state.streak >= 1 && (now - state.lastMatchTime) < 5000){
+        state.deadlineTs += 5000;          // +5s combo
+        state.leftMs = Math.max(0, state.deadlineTs - performance.now());
+        updateTime();
+        flashMessage('+5s Bonus!');
+        SFX.play('bonus5', { volume:1 });
+      }
+      state.lastMatchTime = now;
+    }
+
+    // Marca la coppia
+    prev.setAttribute('data-state','matched');
+    card.setAttribute('data-state','matched');
+    spawnMatchStars(prev);
+    spawnMatchStars(card);
+    SFX.play('ok', { volume:.9, rate: 0.98 });
+
+    state.matched++;
+    state.streak++;
+    refreshPowersUI();
+
+    // Fine quadro?
+    if(state.matched >= state.level.pairs){
+      win();
+      return;
+    }
+
+    // Dopo un match non c'è pivot
+    state.pivot = null;
+    return;
+  }
+
+  // --- Mismatch: nessun blocco input, ma programmo la richiusa di entrambe ---
+  state.streak = 0;
+  if (!state.isZen){
+    const now = performance.now();
+    state.deadlineTs = state.deadlineTs - 1000; // -1s
+    state.leftMs = Math.max(0, state.deadlineTs - now);
+    updateTime();
+    flashMessage('-1s');
+    SFX.play('fail', { volume:.9 });
+  }
+
+  // Le due carte restano visibili per la solita finestra, poi si richiudono
+  scheduleHidePair(prev, card);
+
+  // Il nuovo pivot diventa l'ultima carta girata (così puoi matchare al terzo flip)
+  state.pivot = card;
+}
 
   function flip(card, reveal){ card.setAttribute('data-state', reveal ? 'revealed' : 'hidden'); }
+function cancelHide(card){
+  const t = state.hideTimers?.get(card);
+  if (t){ clearTimeout(t); state.hideTimers.delete(card); }
+}
 
-  function checkPair(){
-    const [a, b] = state.flipped;
-    if(!a || !b) return;
-    const specialInvolved = (s => s===RED || s===YELLOW);
-    const match = !specialInvolved(a.dataset.symbol) && !specialInvolved(b.dataset.symbol) && (a.dataset.symbol === b.dataset.symbol);
-    state.lock = true;
+function scheduleHide(card, ms){
+  cancelHide(card);
+  const t = setTimeout(() => {
+    if (card.getAttribute('data-state') !== 'matched' &&
+        card.getAttribute('data-state') === 'revealed'){
+      flip(card, false);
+    }
+    state.hideTimers?.delete(card);
+  }, ms);
+  state.hideTimers?.set(card, t);
+}
 
-    if (pendingCheck) { clearTimeout(pendingCheck); refreshPowersUI(); pendingCheck = null; }
-    pendingCheck = setTimeout(() => {
-      if (state.paused) {
-        flip(a,false); flip(b,false);
-        state.flipped.length = 0;
-        state.lock = false;
-        refreshPowersUI();
-        if (tapBuffer.length) {
-          const next = tapBuffer.shift();
-          setTimeout(() => onCardClick(next), 0);
-        }
-        pendingCheck = null;
-        return;
-      }
+function scheduleHidePair(a, b){
+  scheduleHide(a, MISMATCH_HOLD_MS);
+  scheduleHide(b, MISMATCH_HOLD_MS);
+}
 
-      if(match){
-        state.streak++;
-        const now = performance.now();
-        state.deadlineTs += 1000;
-        state.leftMs = Math.max(0, state.deadlineTs - now);
-        updateTime();
-        if (!state.isZen) flashMessage('+1s');
-        SFX.play('bonus1', { volume:.85, rate: 1.02 });
-
-        if(state.streak >= 2 && (now - state.lastMatchTime) < 5000){
-          const now2 = performance.now();
-          state.deadlineTs += 5000;
-          state.leftMs = Math.max(0, state.deadlineTs - now2);
-          updateTime();
-          if (!state.isZen) flashMessage('+5s Bonus!');
-          SFX.play('bonus5', { volume:1 });
-        }
-        state.lastMatchTime = now;
-
-        a.setAttribute('data-state','matched');
-        b.setAttribute('data-state','matched');
-        spawnMatchStars(a);
-        spawnMatchStars(b);
-        SFX.play('ok', { volume:.9, rate: 0.98 });
-
-        state.matched++;
-        refreshPowersUI(); 
-        if(state.matched >= state.level.pairs){ win(); }
-      } else {
-        state.streak = 0;
-        const now = performance.now();
-        state.deadlineTs = state.deadlineTs - 1000;
-        state.leftMs = Math.max(0, state.deadlineTs - now);
-        updateTime();
-        if (!state.isZen) flashMessage('-1s');
-        SFX.play('fail', { volume:.9 });
-
-        flip(a,false); flip(b,false);
-      }
-      state.flipped.length = 0;
-      state.lock = false;
-      refreshPowersUI();
-      pendingCheck = null;
-    }, match ? 120 : 420);
-  }
 
   function reshuffleHiddenNonSpecial(){
     const cards = Array.from(grid.querySelectorAll('.card'));
