@@ -1412,6 +1412,13 @@ function isPreFrame(){
 function chaosSkullPenalty(card){
   try { SFX.play?.('skull', { volume:.95, rate:.98 }); } catch(_) {}
 
+  // ✅ CHIUDI EVENTUALE PIVOT RIVELATO
+  const pivot = state?.pivot;
+  if (isValidPivotEl(pivot)) {
+    scheduleHide(pivot, MISMATCH_HOLD_MS);
+  }
+  state.pivot = null;
+
   const pairs = getMatchedPairs(); // [[symbol,[card1,card2]], ...]
   if (pairs.length){
     const [, cards] = pairs[(Math.random()*pairs.length)|0];
@@ -1423,8 +1430,17 @@ function chaosSkullPenalty(card){
   }
 
   reshuffleHiddenNonSpecial();
-  scheduleHide(card, MISMATCH_HOLD_MS); // richiudi il teschio dopo il feedback
-  state.pivot = null; // evita confronti dopo l’effetto
+  scheduleHide(card, MISMATCH_HOLD_MS); // richiudi il teschio
+  // state.pivot rimane null
+}
+function isSpecialSymbol(sym){ return sym === RED || sym === YELLOW; }
+function isValidPivotEl(el){
+  return !!(el
+    && el.isConnected
+    && !el.classList.contains('placeholder') // niente buchi/placeholder
+    && el.getAttribute('data-state') === 'revealed'
+    && !isSpecialSymbol(el.dataset.symbol)   // niente ⚡/💀 come pivot
+  );
 }
 
   function usePowerReveal(){
@@ -1764,61 +1780,87 @@ function onCardClick(card){
   flip(card, true);
 
   // Gestione speciali come prima (aggiuntiva, NON interrompe il confronto)
+// salva il pivot corrente per poterlo richiudere se tocco una speciale
+const pivotBefore = state.pivot;
+
+// 💀 SKULL
 if (card.dataset.symbol === RED){
   if (state.isChaos){
+    // in Chaos già richiudi dentro chaosSkullPenalty()
     chaosSkullPenalty(card);
-    return; // in Chaos non si confronta e non si muore a 2 teschi
+    return;
   }
 
-  // Arcade e Zen "puro": regola classica (a 2 teschi → sconfitta)
   state.redFlips++;
   refreshPowersUI();
   try { SFX.play('skull', { volume:.9, rate:.98 }); } catch(_) {}
+
+  // se avevo una carta normale scoperta come pivot, richiudila
+  if (isValidPivotEl(pivotBefore)) scheduleHide(pivotBefore, MISMATCH_HOLD_MS);
+  state.pivot = null;
+
   if (state.redFlips >= 2){
     setTimeout(() => {
-      if (state.isZen) {
-        showZenSkullLose();
-      } else {
-        lose('Oh no! 💀', 'Hai rivelato il teschio due volte.');
-      }
+      if (state.isZen) showZenSkullLose();
+      else lose('Oh no! 💀', 'Hai rivelato il teschio due volte.');
     }, 220);
     return;
   }
+
+  // richiudi il teschio dopo il feedback, così può essere rivelato di nuovo
+  scheduleHide(card, MISMATCH_HOLD_MS);
+  return;
 }
 
+// ⚡ LIGHTNING
 if (card.dataset.symbol === YELLOW){
   state.yellowFlips++;
   flashMessage('Shuffle!');
   reshuffleHiddenNonSpecial();
 
-  // SOLO ZEN: conta i reveal della *stessa carta* ⚡ e al 2° crea il buco
+  // se avevo una carta normale scoperta come pivot, richiudila
+  if (isValidPivotEl(pivotBefore)) scheduleHide(pivotBefore, MISMATCH_HOLD_MS);
+  state.pivot = null;
+
   if (state.isChaos){
     const prevCnt = state.yellowReveals.get(card) || 0;
-    const nowCnt = prevCnt + 1;
+    const nowCnt  = prevCnt + 1;
     state.yellowReveals.set(card, nowCnt);
 
+    // al 2° reveal il fulmine diventa buco e la carta viene rimpiazzata
     if (nowCnt >= 2 && (state.holesEls?.length || 0) < 2){
-      // trasforma subito questa carta in un buco (dopo il rimescolo)
       makeHole(card);
-      // questa carta non esiste più ⇒ non può diventare pivot
+      return;
     }
+    // altrimenti richiudi il ⚡ per poterlo rivelare di nuovo
+    scheduleHide(card, MISMATCH_HOLD_MS);
+    return;
   }
+
+  // non-Chaos: richiudi sempre il ⚡ dopo il feedback
+  scheduleHide(card, MISMATCH_HOLD_MS);
+  return;
 }
 
 
+
   // --- Confronto "pivot → nuova carta" (mosse per confronto, non per primo flip isolato) ---
-  const prev = state.pivot;
+let prev = state.pivot;
 
-  // Se non esiste un pivot valido, questa carta DIVENTA il pivot e basta
-  if (!prev || prev.getAttribute('data-state') === 'matched'){
-    state.pivot = card;
-    return;
-  }
+// Invalida pivot non più utilizzabile (disconnesso/placeholder/speciale/matched)
+if (!isValidPivotEl(prev) || prev?.getAttribute('data-state') === 'matched'){
+  prev = null;
+  state.pivot = null;
+}
 
-  // Non confrontare una carta con sé stessa
-  if (prev === card){
-    return;
-  }
+// Se non c'è un pivot valido, questa carta può diventarlo (solo carte “normali” rivelate)
+if (!prev){
+  if (!card.isConnected || card.classList.contains('placeholder')) return;
+  if (isSpecialSymbol(card.dataset.symbol)) return; // niente pivot su ⚡/💀
+  state.pivot = card;
+  return;
+}
+
 
   // Qui c'è un confronto: conta 1 mossa
   state.moves++;
@@ -1896,7 +1938,12 @@ if (state.isChaos && state.matched < state.level.pairs){
 
   // Il nuovo pivot diventa l'ultima carta girata (così puoi matchare al terzo flip)
 // Se la carta è diventata un buco (⚡ al 2° reveal) o è stata rimossa, niente pivot
-state.pivot = (card && card.isConnected && !card.classList.contains('placeholder')) ? card : null;
+state.pivot = (card
+  && card.isConnected
+  && !card.classList.contains('placeholder')
+  && !isSpecialSymbol(card.dataset.symbol)
+) ? card : null;
+
 
 }
 
