@@ -482,6 +482,11 @@
 .tutorial-progress[hidden]{
   display: none;
 }
+/* Solo lettori di schermo */
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 1px 1px);white-space:nowrap;border:0;
+}
 
 </style>
 </head>
@@ -720,6 +725,19 @@ let zenVariant = 'zen'; // 'zen' | 'chaos'
 
   const STORAGE_KEY = 'skullory_save_v1';
   const SAVES_KEY = 'skullory_saves_v2';
+// Limite "soft" di slot (ordine/UX). Puoi alzarlo/abbassarlo.
+const MAX_SAVES = 20;
+
+// Riconosce errori di quota/localStorage off (Safari privato, WebView, ecc)
+function isQuotaExceeded(err){
+  if (!err) return false;
+  return (
+    err.name === 'QuotaExceededError' ||
+    err.name === 'NS_ERROR_DOM_QUOTA_REACHED' || // Firefox
+    err.code === 22 || err.code === 1014        // WebKit/Firefox (legacy)
+  );
+}
+
 
   const LEVELS = [
     { name: '3×3 (no centro)', side: 3, disabled: [4], pairs: 3, red: 0, yellow: 2, timeMs: 20000, unlockMs: [20000, 15000, 10000], postDeltaSec: 1 },
@@ -871,28 +889,29 @@ function fmtShortSecDiff(ms){
     }
   }
 
-  function setMusicMuted(v){
-    musicMuted = !!v;
-    localStorage.setItem('skullory.musicMuted', JSON.stringify(musicMuted));
+function setMusicMuted(v){
+  musicMuted = !!v;
+  try { localStorage.setItem('skullory.musicMuted', JSON.stringify(musicMuted)); } catch(_) {}
 
-    if (window.BGM) {
-      if (musicMuted) {
-        try { BGM.setEnabled(false); } catch(_) {}
-        try { BGM.stop(); } catch(_) {}
-      } else {
-        try { BGM.setEnabled(true); } catch(_) {}
-        try { BGM.start(); } catch(_) {}
-      }
+  if (window.BGM) {
+    if (musicMuted) {
+      try { BGM.setEnabled(false); } catch(_) {}
+      try { BGM.stop(); } catch(_) {}
+    } else {
+      try { BGM.setEnabled(true); } catch(_) {}
+      try { BGM.start(); } catch(_) {}
     }
-    refreshAudioButtons();
   }
+  refreshAudioButtons();
+}
 
-  function setSfxMuted(v){
-    sfxMuted = !!v;
-    localStorage.setItem('skullory.sfxMuted', JSON.stringify(sfxMuted));
-    if (window.SFX && SFX.setSfxMuted) SFX.setSfxMuted(sfxMuted);
-    refreshAudioButtons();
-  }
+function setSfxMuted(v){
+  sfxMuted = !!v;
+  try { localStorage.setItem('skullory.sfxMuted', JSON.stringify(sfxMuted)); } catch(_) {}
+  if (window.SFX && SFX.setSfxMuted) SFX.setSfxMuted(sfxMuted);
+  refreshAudioButtons();
+}
+
 
   // 0 = musica+SFX, 1 = solo SFX, 2 = tutto OFF
   function getAudioMode(){
@@ -1132,13 +1151,19 @@ function updateTutorialUI(){
 }
 
 
-  function showIntro(){
-    intro.classList.remove('hide');
-    intro.classList.add('show');
-    if (slides.length === 0) buildTutorialRefs();
-    setTutorialMode('root');
-  }
-  function hideIntro(){ intro.classList.add('hide'); intro.classList.remove('show'); }
+function showIntro(){
+  intro.classList.remove('hide');
+  intro.classList.add('show');
+  if (slides.length === 0) buildTutorialRefs();
+  setTutorialMode('root');
+  openModal(intro);            // focus-trap anche per l’intro
+}
+function hideIntro(){
+  closeModal(intro);           // ripristina focus al bottone che l’ha aperta
+  intro.classList.add('hide');
+  intro.classList.remove('show');
+}
+
 
   let state;
   let currentLevelIdx = 0;
@@ -1930,14 +1955,14 @@ if (state.lock){
         state.leftMs = Math.max(0, state.deadlineTs - now);
         updateTime();
         flashMessage('+1s');
-        SFX.play('bonus1', { volume:.85, rate: 1.02 });
+        SFX.play?.('bonus1', { volume:.85, rate: 1.02 });
 
         if (state.streak >= 1 && (now - state.lastMatchTime) < 5000){
           state.deadlineTs += 5000;          // +5s combo
           state.leftMs = Math.max(0, state.deadlineTs - performance.now());
           updateTime();
           flashMessage('+5s Bonus!');
-          SFX.play('bonus5', { volume:1 });
+          SFX.play?.('bonus5', { volume:1 });
         }
         state.lastMatchTime = now;
       }
@@ -1946,7 +1971,7 @@ if (state.lock){
       second.setAttribute('data-state','matched');
       spawnMatchStars(first);
       spawnMatchStars(second);
-      SFX.play('ok', { volume:.9, rate: 0.98 });
+      SFX.play?.('ok', { volume:.9, rate: 0.98 });
 
       state.matched++;
       state.streak++;
@@ -1974,7 +1999,7 @@ if (state.isChaos && state.matched < state.level.pairs){
       state.leftMs = Math.max(0, state.deadlineTs - now);
       updateTime();
       flashMessage('-1s');
-      SFX.play('fail', { volume:.9 });
+      SFX.play?.('fail', { volume:.9 });
     }
 
     state.lock = true;
@@ -2185,17 +2210,15 @@ function slideCardIntoHole(cardEl, holeEl){
 // Dopo ogni coppia (solo Zen): attiva al massimo uno shift
 // Dopo ogni coppia (solo Zen): una *catena* di 1..4 scivolamenti dal buco scelto
 async function zenShiftOnce(){
-if (!state?.isChaos) return;
+  if (!state?.isChaos) return;
   const holes = (state.holesEls || []).filter(Boolean);
   if (!holes.length) return;
 
-  // raccogli i buchi che hanno candidate
   const withCands = holes
     .map(h => [h, candidatesAroundHole(h)])
     .filter(([_, arr]) => arr.length > 0);
 
-  if (withCands.length === 0){
-    // feedback "bloccato"
+  if (!withCands.length){
     holes.forEach(h => {
       h.classList.add('hole-shake');
       setTimeout(() => h.classList.remove('hole-shake'), 200);
@@ -2203,48 +2226,47 @@ if (!state?.isChaos) return;
     return;
   }
 
-  // se ce n'è più di uno, scegli a caso il buco
   const [holeEl] = withCands[(Math.random()*withCands.length)|0];
 
-  // telegraph breve (una volta sola)
+  // breve telegraph
   holeEl.classList.add('hole-blink');
   setTimeout(() => holeEl.classList.remove('hole-blink'), 120);
 
-  // lunghezza massima catena: N in {1,2,3,4}
   const maxSteps = (Math.random()*4 | 0) + 1;
 
   let steps = 0;
-  let lastCardIdx = null; // anti-rimbalzo: evita la carta appena mossa
+  let lastCardIdx = null;
+
+  // ⛑️ recinzione input durante la catena
+  const prevLock = state.lock;
+  state.lock = true;
+  tapBuffer = [];
 
   while (steps < maxSteps){
-    // aggiorna candidate attorno al buco corrente, evitando subito il backtracking
     let candidates = candidatesAroundHole(holeEl)
       .filter(el => +el.dataset.index !== lastCardIdx);
 
-    if (candidates.length === 0){
-      // stop anticipato, feedback "bloccato"
+    if (!candidates.length){
       holeEl.classList.add('hole-shake');
       setTimeout(() => holeEl.classList.remove('hole-shake'), 200);
       break;
     }
 
-    // scegli una carta coperta adiacente a caso
     const cardEl = candidates[(Math.random()*candidates.length)|0];
-
-    // SFX per lo scivolamento
     try { SFX.play?.('flip', { volume: .65 }); } catch(_) {}
 
-    // salva l'indice dell'attuale posizione del buco: servirà per evitare backtracking
     const prevHoleIdx = +holeEl.dataset.index;
 
-    // esegui lo scivolamento (attende la fine dell'animazione)
     await slideCardIntoHole(cardEl, holeEl);
 
-    // anti-backtracking: non tornare subito indietro
+    // invalida tap vecchi a ogni spostamento
     lastCardIdx = prevHoleIdx;
-
+    bumpEpoch();
     steps++;
   }
+
+  state.lock = prevLock;
+  drainTapBuffer(); // processa il primo tap valido post-catena
 }
 
 
@@ -2603,12 +2625,12 @@ Punteggio parziale: <b>${totalScore}</b>`;
       ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
     }
 
-    if (activeSaveName) {
-      upsertSave(activeSaveName, buildPayload());
-      flashMessage('💾 Autosalvato: ' + activeSaveName);
-    }
-    updateSaveButton();
+if (activeSaveName) {
+  if (upsertSave(activeSaveName, buildPayload())) {
+    flashMessage('💾 Autosalvato: ' + activeSaveName);
   }
+}
+}
 
   function lose(title, sub){
     const L = LEVELS[currentLevelIdx];
@@ -2638,22 +2660,76 @@ Punteggio parziale: <b>${totalScore}</b>`;
     }
     updateSaveButton();
   }
+// === Modal focus-trap & ESC ===
+const MODAL_STACK = [];
+
+function openModal(overlayEl, initialSelector){
+  const dialog = overlayEl.querySelector('.dialog') || overlayEl;
+  dialog.setAttribute('role','dialog');
+  dialog.setAttribute('aria-modal','true');
+
+  overlayEl.__opener = document.activeElement;        // chi ha aperto
+  overlayEl.classList.add('show');
+  overlayEl.setAttribute('aria-hidden','false');
+
+  // focus iniziale
+  const focusables = overlayEl.querySelectorAll(
+    'button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])'
+  );
+  const first = initialSelector ? overlayEl.querySelector(initialSelector) : focusables[0];
+  (first || dialog).focus();
+
+  // trap del TAB
+  function onKey(e){
+    if (e.key !== 'Tab') return;
+    const items = Array.from(overlayEl.querySelectorAll(
+      'button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])'
+    )).filter(el => !el.disabled && el.offsetParent !== null);
+    if (!items.length) return;
+    const i = items.indexOf(document.activeElement);
+    if (e.shiftKey && (i <= 0)){ e.preventDefault(); items[items.length-1].focus(); }
+    else if (!e.shiftKey && (i === items.length-1)){ e.preventDefault(); items[0].focus(); }
+  }
+  overlayEl.__trap = onKey;
+  overlayEl.addEventListener('keydown', onKey);
+  MODAL_STACK.push(overlayEl);
+}
+
+function closeModal(overlayEl){
+  overlayEl.classList.remove('show');
+  overlayEl.setAttribute('aria-hidden','true');
+  if (overlayEl.__trap) overlayEl.removeEventListener('keydown', overlayEl.__trap);
+  overlayEl.__trap = null;
+  MODAL_STACK.pop();
+  // ripristina focus a chi ha aperto
+  overlayEl.__opener?.focus?.();
+  overlayEl.__opener = null;
+}
+
+// ESC chiude il modale più in alto (su mobile in pratica non si usa, ma è ok)
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const top = MODAL_STACK[MODAL_STACK.length - 1];
+  if (top){ e.preventDefault(); closeModal(top); }
+});
 
 function showOverlay(title, sub){
+  clearAllHideTimers(); // ⬅️ difensivo: cancella richiuse pendenti
+
   ovTitle.textContent = title;
   ovSub.innerHTML = sub;
 
-  // default: la X chiude semplicemente l’overlay
   const x = document.querySelector('#overlay .tutorial-close, #ov-close');
   if (x) x.onclick = () => { hideOverlay(); };
 
-  overlay.classList.add('show');
+  openModal(overlay);
   showSkip(false);
   updateSaveButton();
   refreshPowersUI();
 }
+
 function hideOverlay(){
-  overlay.classList.remove('show');
+  closeModal(overlay);         // ⬅️ invece di togliere la classe a mano
   overlay.setAttribute('aria-hidden','true');
   showSkip(false);
   updateSaveButton?.();
@@ -2735,37 +2811,75 @@ function showZenSkullLose(){
     showSkip(false);
   }
 
-  function openRestartConfirm(){
-    restartConfirm.classList.add('show');
-    restartConfirm.setAttribute('aria-hidden','false');
-    refreshPowersUI();
-  }
-  function closeRestartConfirm(){
-    restartConfirm.classList.remove('show');
-    restartConfirm.setAttribute('aria-hidden','true');
-    refreshPowersUI();
-  }
+function openRestartConfirm(){
+  openModal(restartConfirm);
+  refreshPowersUI();
+}
+function closeRestartConfirm(){
+  closeModal(restartConfirm);
+  refreshPowersUI();
+}
 
-  function flashMessage(text){
-    const msg = document.createElement('div');
-    msg.className = 'flash-msg';
-    msg.textContent = text;
-    document.body.appendChild(msg);
-    setTimeout(() => msg.remove(), 1500);
+
+function flashMessage(text){
+  const msg = document.createElement('div');
+  msg.className = 'flash-msg';
+  msg.textContent = text;
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 1500);
+
+  // annuncio per screen reader
+  const live = document.getElementById('live');
+  if (live){
+    live.textContent = ''; // reset veloce per riannunciare lo stesso messaggio
+    setTimeout(() => { live.textContent = text; }, 10);
   }
+}
 
   // ===== Multi-slot Saves =====
   function readSaves(){
     try{ const raw = localStorage.getItem(SAVES_KEY); return raw ? JSON.parse(raw) : []; }catch(e){ return []; }
   }
-  function writeSaves(list){ try{ localStorage.setItem(SAVES_KEY, JSON.stringify(list)); }catch(e){} }
-  function upsertSave(name, payload){
-    const list = readSaves();
-    const idx = list.findIndex(s => s && s.name === name);
-    const entry = { name, when: Date.now(), data: payload };
-    if(idx>=0) list[idx] = entry; else list.push(entry);
-    writeSaves(list);
+  function writeSaves(list){
+  try{
+    localStorage.setItem(SAVES_KEY, JSON.stringify(list));
+    return true;
+  }catch(e){
+    if (isQuotaExceeded(e)){
+      flashMessage('Limite salvataggi raggiunto: elimina uno slot');
+    }else{
+      flashMessage('Impossibile salvare: storage disabilitato o pieno');
+    }
+    return false;
   }
+}
+
+function upsertSave(name, payload){
+  let list = readSaves();
+  const idx = list.findIndex(s => s && s.name === name);
+  const entry = { name, when: Date.now(), data: payload };
+  if (idx >= 0) list[idx] = entry; else list.push(entry);
+
+  // Applica il limite soft: tieni solo i più recenti
+  if (list.length > MAX_SAVES){
+    list = list.sort((a,b)=> (b.when||0)-(a.when||0)).slice(0, MAX_SAVES);
+  }
+
+  if (writeSaves(list)) return true;
+
+  // Se fallisce comunque, prova a liberare 1 slot vecchio e ripeti una volta
+  try{
+    const trimmed = list.sort((a,b)=> (b.when||0)-(a.when||0)).slice(0, Math.max(0, list.length - 1));
+    if (trimmed.length && writeSaves(trimmed)){
+      flashMessage('Spazio limitato: rimosso automaticamente 1 slot vecchio');
+      return true;
+    }
+  }catch(_){}
+
+  // Niente da fare (Safari privato, storage off, ecc.)
+  return false;
+}
+
   function deleteSave(name){ writeSaves(readSaves().filter(s => s && s.name !== name)); }
 
   function buildPayload(){
@@ -2799,28 +2913,26 @@ function showZenSkullLose(){
     return true;
   }
 
-  function openSaveManager(){
- if (state?.isZen) {                         // ⬅️ AGGIUNGI
+function openSaveManager(){
+  if (state?.isZen) {
     flashMessage('In Zen non si salva 😊');
     return;
   }
-    if(!canSaveNow()){
-      flashMessage('💾 Salva solo a fine quadro o prima di iniziare');
-      return;
-    }
-    renderSaveList();
-    const sc = document.getElementById('saveControls');
-    if (sc) sc.style.display = '';
+  if(!canSaveNow()){
+    flashMessage('💾 Salva solo a fine quadro o prima di iniziare');
+    return;
+  }
+  renderSaveList();
+  const sc = document.getElementById('saveControls');
+  if (sc) sc.style.display = '';
 
-    saveModal.classList.add('show');
-    saveModal.setAttribute('aria-hidden','false');
-    saveNameInput.value = '';
-    saveNameInput.focus();
-  }
-  function closeSaveManager(){
-    saveModal.classList.remove('show');
-    saveModal.setAttribute('aria-hidden','true');
-  }
+  openModal(saveModal, '#saveName'); // focus sull’input
+  saveNameInput.value = '';
+}
+function closeSaveManager(){
+  closeModal(saveModal);
+}
+
   function renderSaveList(){
     const list = readSaves().sort((a,b)=> (b.when||0)-(a.when||0));
     if(!list.length){ saveList.innerHTML = '<div style="color:var(--muted)">Nessun salvataggio.</div>'; return; }
@@ -2997,13 +3109,16 @@ if (exists && !overwritePrompt) {
 
   // Handler (stessa logica di prima)
   yesBtn.onclick = () => {
-    upsertSave(nm, buildPayload());
-    setActiveSaveName(nm);
-    flashMessage('💾 Sovrascritto: ' + nm);
-    renderSaveList();
-    saveNameInput.value = '';
-    overwritePrompt.remove();
-    overwritePrompt = null;
+const ok = upsertSave(nm, buildPayload());
+if (ok) {
+  setActiveSaveName(nm);
+  flashMessage('💾 Sovrascritto: ' + nm);
+  renderSaveList();
+  saveNameInput.value = '';
+}
+overwritePrompt.remove();
+overwritePrompt = null;
+
   };
 
   noBtn.onclick = () => {
@@ -3023,11 +3138,12 @@ if (exists && !overwritePrompt) {
 }
 
 
-      upsertSave(nm, buildPayload());
-      setActiveSaveName(nm);
-      flashMessage('💾 Salvato: ' + nm);
-      renderSaveList();
-      saveNameInput.value = '';
+      if (upsertSave(nm, buildPayload())) {
+        setActiveSaveName(nm);
+        flashMessage('💾 Salvato: ' + nm);
+        renderSaveList();
+        saveNameInput.value = '';
+      }
     });
   }
 
@@ -3132,7 +3248,8 @@ function togglePause(){
   }catch(e){}
 })();
 </script>
-
+<!-- Area live per screen reader (invisibile a schermo) -->
+<div id="live" aria-live="polite" class="sr-only"></div>
 </body>
 </html>
 
