@@ -486,6 +486,20 @@
 </style>
 </head>
 <body class="theme-1">
+<!-- Splash pre-tutorial (3s) -->
+<div id="splash" class="splash show" role="button" aria-label="Splash iniziale (tocca per saltare)">
+  <svg viewBox="0 0 1200 1200" preserveAspectRatio="xMidYMid meet" class="splash-art" aria-hidden="true">
+    <defs>
+      <radialGradient id="bg" cx="50%" cy="40%" r="70%">
+        <stop offset="0%" stop-color="#2b335c"/>
+        <stop offset="100%" stop-color="#141724"/>
+      </radialGradient>
+    </defs>
+    <rect width="1200" height="1200" fill="url(#bg)"/>
+  </svg>
+  <img src="splash-template.svg" class="splash-art" alt="Skullory" style="position:absolute;">
+</div>
+
 <!-- ⬇️ AGGIUNGI QUESTA RIGA PRIMA DEL TUO <script> PRINCIPALE -->
 <script src="sfx.js?v=6"></script>
 <div class="wrap">
@@ -3072,19 +3086,6 @@ function togglePause(){
 })();
 </script>
 
-<!-- Splash pre-tutorial (3s) -->
-<div id="splash" class="splash show" role="button" aria-label="Splash iniziale (tocca per saltare)">
-  <svg viewBox="0 0 1200 1200" preserveAspectRatio="xMidYMid meet" class="splash-art" aria-hidden="true">
-    <defs>
-      <radialGradient id="bg" cx="50%" cy="40%" r="70%">
-        <stop offset="0%" stop-color="#2b335c"/>
-        <stop offset="100%" stop-color="#141724"/>
-      </radialGradient>
-    </defs>
-    <rect width="1200" height="1200" fill="url(#bg)"/>
-  </svg>
-  <img src="splash-template.svg" class="splash-art" alt="Skullory" style="position:absolute;">
-</div>
-
 </body>
 </html>
+
