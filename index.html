@@ -1914,6 +1914,10 @@ function onCardClick(card){
       state.open = [];
       state.pivot = null;
       refreshPowersUI();
+// SOLO CHAOS: dopo l’animazione ✨ prova una catena di shift
+if (state.isChaos && state.matched < state.level.pairs){
+  setTimeout(() => zenShiftOnce(), 620);
+}
 
       // Fine quadro?
       if (state.matched >= state.level.pairs){
@@ -1985,7 +1989,12 @@ function scheduleHidePair(a, b){
   scheduleHide(a, MISMATCH_HOLD_MS);
   scheduleHide(b, MISMATCH_HOLD_MS);
 }
-
+// Annulla TUTTI i timer di richiusa pendenti (evita desync visivo/logico)
+function clearAllHideTimers(){
+  if (!state?.hideTimers) return;
+  for (const [, t] of state.hideTimers) clearTimeout(t);
+  state.hideTimers.clear();
+}
 
   function reshuffleHiddenNonSpecial(){
     const cards = Array.from(grid.querySelectorAll('.card'));
@@ -2181,6 +2190,7 @@ if (!state?.isChaos) return;
 
   function startSimonIntermezzo(){
     ensureSfx();
+ clearAllHideTimers(); // ← NEW: niente “timer zombie” durante il reset
     document.body.classList.add('mode-simon');
     refreshPowersUI();
 
@@ -2807,26 +2817,41 @@ function showZenSkullLose(){
         wrap.style.border = '1px solid var(--panel-border)';
         wrap.style.borderRadius = '10px';
         wrap.style.background = 'linear-gradient(180deg,var(--panel-1),var(--panel-2))';
-        wrap.innerHTML = `
-          <span>Eliminare <b>${entry.name}</b>?</span>
-          <div style="margin-left:auto; display:flex; gap:8px">
-            <button class="primary" id="c-yes">Sì, elimina</button>
-            <button class="primary" id="c-no" style="background:var(--bad); color:#fff">Annulla</button>
-          </div>
-        `;
+const span = document.createElement('span');
+span.append('Eliminare ');
+const b = document.createElement('b');
+b.textContent = entry.name; // ← sicuro: solo testo
+span.append(b, '?');
 
-        row.after(wrap);
+const btnsDiv = document.createElement('div');
+btnsDiv.style.marginLeft = 'auto';
+btnsDiv.style.display = 'flex';
+btnsDiv.style.gap = '8px';
 
-        wrap.querySelector('#c-yes').onclick = () => {
-          deleteSave(entry.name);
-          renderSaveList();
-          restoreToolbar();
-        };
-        wrap.querySelector('#c-no').onclick = () => {
-          wrap.remove();
-          rows.forEach(r => { r.style.display = ''; });
-          restoreToolbar();
-        };
+const yesBtn = document.createElement('button');
+yesBtn.className = 'primary';
+yesBtn.textContent = 'Sì, elimina';
+
+const noBtn = document.createElement('button');
+noBtn.className = 'primary';
+noBtn.style.background = 'var(--bad)';
+noBtn.style.color = '#fff';
+noBtn.textContent = 'Annulla';
+
+btnsDiv.append(yesBtn, noBtn);
+wrap.append(span, btnsDiv);
+row.after(wrap);
+
+yesBtn.onclick = () => {
+  deleteSave(entry.name);
+  renderSaveList();
+  restoreToolbar();
+};
+noBtn.onclick = () => {
+  wrap.remove();
+  rows.forEach(r => { r.style.display = ''; });
+  restoreToolbar();
+};
       };
 
       row.append(name, loadBtn, delBtn);
@@ -2865,56 +2890,77 @@ function showZenSkullLose(){
 
       const exists = readSaves().some(s => s && s.name === nm);
 
-      if (exists && !overwritePrompt) {
-        overwritePrompt = document.createElement('div');
-        overwritePrompt.setAttribute('role', 'dialog');
-        overwritePrompt.setAttribute('aria-label', 'Conferma sovrascrittura salvataggio');
-        overwritePrompt.style.marginTop = '8px';
-        overwritePrompt.style.padding = '10px';
-        overwritePrompt.style.background = 'var(--panel-1)';
-        overwritePrompt.style.border = '1px solid var(--panel-border)';
-        overwritePrompt.style.borderRadius = '12px';
-        overwritePrompt.innerHTML = `
-          <div style="margin-bottom:8px; color:var(--muted)">
-            Sovrascrivere <b>${nm}</b>?
-          </div>
-          <div style="display:flex; gap:8px; justify-content:flex-end">
-            <button class="primary" id="ow-yes" tabindex="0">Sì</button>
-            <button class="primary" id="ow-no" style="background:var(--bad); color:#fff">No</button>
-          </div>
-        `;
+if (exists && !overwritePrompt) {
+  overwritePrompt = document.createElement('div');
+  overwritePrompt.setAttribute('role', 'dialog');
+  overwritePrompt.setAttribute('aria-label', 'Conferma sovrascrittura salvataggio');
+  overwritePrompt.style.marginTop = '8px';
+  overwritePrompt.style.padding = '10px';
+  overwritePrompt.style.background = 'var(--panel-1)';
+  overwritePrompt.style.border = '1px solid var(--panel-border)';
+  overwritePrompt.style.borderRadius = '12px';
 
-        saveNameInput.parentElement.parentElement.appendChild(overwritePrompt);
+  // "Sovrascrivere <b>{nm}</b>?" — senza innerHTML
+  const msg = document.createElement('div');
+  msg.style.marginBottom = '8px';
+  msg.style.color = 'var(--muted)';
+  msg.append('Sovrascrivere ');
+  const b = document.createElement('b');
+  b.textContent = nm;               // ✅ sicuro
+  msg.append(b, '?');
 
-        const yesBtn = overwritePrompt.querySelector('#ow-yes');
-        const noBtn  = overwritePrompt.querySelector('#ow-no');
+  const bar = document.createElement('div');
+  bar.style.display = 'flex';
+  bar.style.gap = '8px';
+  bar.style.justifyContent = 'flex-end';
 
-        requestAnimationFrame(() => yesBtn && yesBtn.focus());
+  const yesBtn = document.createElement('button');
+  yesBtn.className = 'primary';
+  yesBtn.textContent = 'Sì';
+  yesBtn.tabIndex = 0;
 
-        yesBtn.onclick = () => {
-          upsertSave(nm, buildPayload());
-          setActiveSaveName(nm);
-          flashMessage('💾 Sovrascritto: ' + nm);
-          renderSaveList();
-          saveNameInput.value = '';
-          overwritePrompt.remove();
-          overwritePrompt = null;
-        };
+  const noBtn = document.createElement('button');
+  noBtn.className = 'primary';
+  noBtn.style.background = 'var(--bad)';
+  noBtn.style.color = '#fff';
+  noBtn.textContent = 'No';
 
-        noBtn.onclick = () => {
-          overwritePrompt.remove();
-          overwritePrompt = null;
-        };
+  bar.append(yesBtn, noBtn);
+  overwritePrompt.append(msg, bar);
 
-        setTimeout(() => {
-          if (overwritePrompt) {
-            overwritePrompt.remove();
-            overwritePrompt = null;
-          }
-        }, 5000);
+  // Inserisci nel DOM come prima
+  saveNameInput.parentElement.parentElement.appendChild(overwritePrompt);
 
-        return;
-      }
+  // Focus iniziale
+  requestAnimationFrame(() => yesBtn && yesBtn.focus());
+
+  // Handler (stessa logica di prima)
+  yesBtn.onclick = () => {
+    upsertSave(nm, buildPayload());
+    setActiveSaveName(nm);
+    flashMessage('💾 Sovrascritto: ' + nm);
+    renderSaveList();
+    saveNameInput.value = '';
+    overwritePrompt.remove();
+    overwritePrompt = null;
+  };
+
+  noBtn.onclick = () => {
+    overwritePrompt.remove();
+    overwritePrompt = null;
+  };
+
+  // Auto-chiusura dopo 5s
+  setTimeout(() => {
+    if (overwritePrompt) {
+      overwritePrompt.remove();
+      overwritePrompt = null;
+    }
+  }, 5000);
+
+  return;
+}
+
 
       upsertSave(nm, buildPayload());
       setActiveSaveName(nm);
