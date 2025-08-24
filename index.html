@@ -1177,8 +1177,38 @@ function updateTutorialUI(){
   }
 
   let pendingCheck = null;
-  let tapBuffer = [];
-  const TAP_BUFFER_MAX = 2;
+/* --- Tap buffer hardening (epoch/tag) --- */
+let tapBuffer = [];
+const TAP_BUFFER_MAX = 2;
+let boardEpoch = 0;                       // sale quando la board “cambia”
+
+function bumpEpoch(){
+  boardEpoch++;
+  // scarta eventuali tap rimasti dal “vecchio” layout
+  tapBuffer = tapBuffer.filter(e => e.epoch === boardEpoch);
+}
+
+function enqueueTap(card){
+  // accetta solo target ancora validi e coperti
+  if (!card || !card.isConnected || card.classList.contains('placeholder')) return;
+  if (card.getAttribute('data-state') !== 'hidden') return;
+  // evita duplicati sulla stessa carta/epoca
+  if (tapBuffer.find(e => e.el === card && e.epoch === boardEpoch)) return;
+  if (tapBuffer.length >= TAP_BUFFER_MAX) return;
+  tapBuffer.push({ el: card, epoch: boardEpoch });
+}
+
+function drainTapBuffer(){
+  while (tapBuffer.length){
+    const { el, epoch } = tapBuffer.shift();
+    if (epoch !== boardEpoch) continue; // board cambiata → scarta
+    if (el && el.isConnected && el.getAttribute('data-state') === 'hidden'){
+      onCardClick(el);                   // processa UN solo tap valido
+      break;
+    }
+  }
+}
+
   let progress = LEVELS.map(L => ({
     streak: 0,
     unlocked: false,
@@ -1513,10 +1543,7 @@ function isValidPivotEl(el){
     setTimeout(() => {
       cards.forEach(c => c.setAttribute('data-state', prev.get(c)));
       state.lock = prevLock;
-      if (tapBuffer.length){
-        const next = tapBuffer.shift();
-        setTimeout(() => onCardClick(next), 0);
-      }
+drainTapBuffer();
       refreshPowersUI();
     }, 1000);
   }
@@ -1724,7 +1751,7 @@ frameStartTs: 0,     // (già usata altrove, ma teniamola coerente)
     card.setAttribute('data-state','hidden');
     card.setAttribute('role','button');
     card.setAttribute('tabindex','0');
-    card.setAttribute('aria-label','Carta di Slapmory');
+    card.setAttribute('aria-label','Carta di Skullory');
 
     const inner = document.createElement('div'); inner.className = 'inner';
     const back  = document.createElement('div'); back.className  = 'face back';
@@ -1739,6 +1766,7 @@ frameStartTs: 0,     // (già usata altrove, ma teniamola coerente)
   }
 
   grid.appendChild(frag);
+bumpEpoch(); // NEW: nuova board → invalida tap della precedente
   tapBuffer = [];
   updateHud();
   updateScoreChip();
@@ -1802,18 +1830,15 @@ function onCardClick(card){
   // Simon attivo → stessa gestione di prima
   if (sim && sim.active){ simonOnTap(card); return; }
 
-  SFX.play('tap', { volume:.5, rate: 0.98 + Math.random()*0.04 });
+  SFX.play?.('tap', { volume:.5, rate: 0.98 + Math.random()*0.04 });
 
   // Pausa/Lock: bufferizza al massimo 2 tocchi utili
   if (state.paused) { flashMessage('In pausa ▶'); return; }
-  if (state.lock){
-    if (tapBuffer.length < TAP_BUFFER_MAX &&
-        card.dataset.state === 'hidden' &&
-        !card.classList.contains('placeholder')){
-      tapBuffer.push(card);
-    }
-    return;
-  }
+if (state.lock){
+  enqueueTap(card);
+  return;
+}
+
 
   // Ignora click su rivelate/matched
   if (card.dataset.state === 'matched' || card.dataset.state === 'revealed') return;
@@ -1961,13 +1986,7 @@ if (state.isChaos && state.matched < state.level.pairs){
       state.lock = false;
       state.open = [];
       state.pivot = null;
-      if (tapBuffer.length){
-        const next = tapBuffer.shift();
-        // se nel frattempo la carta è ancora valida/copribile
-        if (next && next.isConnected && next.getAttribute('data-state') === 'hidden'){
-          onCardClick(next);
-        }
-      }
+drainTapBuffer();
     }, MISMATCH_HOLD_MS + 5);
 
     return;
@@ -2010,19 +2029,38 @@ function clearAllHideTimers(){
   state.hideTimers.clear();
 }
 
-  function reshuffleHiddenNonSpecial(){
-    const cards = Array.from(grid.querySelectorAll('.card'));
-    const targets = cards.filter(c => c.getAttribute('data-state') === 'hidden' && c.dataset.symbol !== '💀' && c.dataset.symbol !== '⚡');
-    if(targets.length <= 1) return;
-    const symbols = targets.map(c => c.dataset.symbol);
-    for(let i=symbols.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [symbols[i],symbols[j]]=[symbols[j],symbols[i]]; }
-    targets.forEach((c,i) => {
-      c.dataset.symbol = symbols[i];
-      c.querySelector('.symbol').textContent = symbols[i];
-    });
-    flashMessage('🔀 Rimescolo!');
-    SFX.play('reshuffle', { volume:.9 });
+function reshuffleHiddenNonSpecial(){
+  const cards = Array.from(grid.querySelectorAll('.card'));
+  const targets = cards.filter(c =>
+    c.getAttribute('data-state') === 'hidden' &&
+    c.dataset.symbol !== '💀' &&
+    c.dataset.symbol !== '⚡'
+  );
+  if (targets.length <= 1) return;
+
+  // 🔒 micro-lock durante il rimescolo
+  const prevLock = state.lock;
+  state.lock = true;
+
+  const symbols = targets.map(c => c.dataset.symbol);
+  for (let i = symbols.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [symbols[i], symbols[j]] = [symbols[j], symbols[i]];
   }
+  targets.forEach((c, i) => {
+    c.dataset.symbol = symbols[i];
+    c.querySelector('.symbol').textContent = symbols[i];
+  });
+
+  flashMessage('🔀 Rimescolo!');
+  SFX.play?.('reshuffle', { volume:.9 });
+
+  // ⬆️ board cambiata → invalida i tap vecchi, sblocca e processa un tap valido
+  bumpEpoch();
+  state.lock = prevLock;
+  drainTapBuffer();
+}
+
 // --- utils ---
 function randInt(a,b){ return (Math.random()*(b-a+1)|0) + a; }
 function swapNodes(a,b){
@@ -2077,9 +2115,17 @@ if (!state?.isChaos) return;
   // sostituisci nel DOM
   grid.replaceChild(hole, card);
 
+  // NEW — ripulisci riferimenti e invalida tap “vecchi”
+  if (state.open?.length){
+    state.open = state.open.filter(c => c && c.isConnected && c !== card);
+    if (state.pivot === card) state.pivot = state.open[0] || null;
+  }
+  bumpEpoch();
+
   // registra
   state.holesEls = state.holesEls || [];
   state.holesEls.push(hole);
+
 }
 
 // Trova carte coperte adiacenti al buco (no diagonali, no placeholder/matched/rivelate)
@@ -2497,7 +2543,8 @@ function showZenEnd(){
   function win(){
     if (state?.isZen){ showZenEnd(); return; }
     state.running = false;
-    SFX.play('win', { volume:1.0 });
+    SFX.play?.('win', { volume:1.0 });
+
 
     const secondsLeft = Math.floor(state.leftMs/1000);
     const free = freeMovesFor(state.level);
@@ -2567,7 +2614,7 @@ Punteggio parziale: <b>${totalScore}</b>`;
     const L = LEVELS[currentLevelIdx];
     const p = progress[currentLevelIdx];
     state.running = false;
-    SFX.play('lose', { volume:1.0 });
+    SFX.play?.('lose', { volume:1.0 });
 
     if (p.unlocked){
       const next = currentLevelIdx + 1;
