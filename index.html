@@ -1290,6 +1290,34 @@ function fmtStars(n){
       .filter(c => !c.classList.contains('placeholder'));
   }
   function getCardByIndex(idx){ return grid.querySelector(`.card[data-index="${idx}"]`); }
+// Una carta "normale" = non placeholder, non matched, non speciale
+function isNormalCard(c){
+  return !!(c && c.classList.contains('card') &&
+            !c.classList.contains('placeholder') &&
+            c.getAttribute('data-state') !== 'matched' &&
+            c.dataset.symbol !== RED && c.dataset.symbol !== YELLOW);
+}
+
+// Chiudi le eventuali carte normali attualmente aperte (prima/seconda)
+function closeOpen(ms = MISMATCH_HOLD_MS){
+  if (!state.open || !state.open.length) { state.pivot = null; return; }
+  state.open.forEach(c => scheduleHide(c, ms));
+  state.open = [];
+  state.pivot = null;
+}
+
+// Normalizza lo stato “aperto” leggendo il DOM (rete di sicurezza)
+function syncOpenFromDom(){
+  const open = getActiveCards().filter(
+    c => c.getAttribute('data-state') === 'revealed' && isNormalCard(c)
+  );
+  // Al massimo 2 carte aperte; se di più (stato sporco) chiudi le extra
+  if (open.length > 2){
+    open.slice(0, open.length - 2).forEach(c => scheduleHide(c, 0));
+  }
+  state.open = open.slice(-2);
+  state.pivot = state.open[0] || null;
+}
 
   // --- MOSSE & PUNTEGGIO ---
   function freeMovesFor(level){ return level.side * level.side; }
@@ -1410,6 +1438,7 @@ function isPreFrame(){
     return Array.from(map.entries()).filter(([_, arr]) => arr.length === 2);
   }
 function chaosSkullPenalty(card){
+  closeOpen(MISMATCH_HOLD_MS); // <— chiudi eventuali normali aperte
   try { SFX.play?.('skull', { volume:.95, rate:.98 }); } catch(_) {}
 
   // ✅ CHIUDI EVENTUALE PIVOT RIVELATO
@@ -1601,6 +1630,8 @@ function init(levelIdx = currentLevelIdx, opts = {}){
     yellowReveals: new WeakMap(),
     preAppliedBonusMs: 0,
     startBonusMs: 0,
+open: [],            // <— elenco carte normali attualmente aperte (max 2)
+frameStartTs: 0,     // (già usata altrove, ma teniamola coerente)
     // flag/metadati daily:
     isDaily: !!opts.dailyMeta,
     dailyMeta: opts.dailyMeta || null
@@ -1754,198 +1785,183 @@ function init(levelIdx = currentLevelIdx, opts = {}){
 function onCardClick(card){
   ensureSfx();
 
-  // SIMON attivo → comportamento invariato
-  if (sim && sim.active){
-    simonOnTap(card);
-    return;
-  }
+  // Simon attivo → stessa gestione di prima
+  if (sim && sim.active){ simonOnTap(card); return; }
 
   SFX.play('tap', { volume:.5, rate: 0.98 + Math.random()*0.04 });
 
-  // Pausa / lock (da overlay o potere 👁️) → comportamento invariato
+  // Pausa/Lock: bufferizza al massimo 2 tocchi utili
   if (state.paused) { flashMessage('In pausa ▶'); return; }
-  if (state.lock) {
+  if (state.lock){
     if (tapBuffer.length < TAP_BUFFER_MAX &&
-        card.dataset.state !== 'matched' &&
-        card.dataset.state !== 'revealed') {
+        card.dataset.state === 'hidden' &&
+        !card.classList.contains('placeholder')){
       tapBuffer.push(card);
     }
     return;
   }
 
-  // Niente re-click su carte già visibili / già abbinate
+  // Ignora click su rivelate/matched
   if (card.dataset.state === 'matched' || card.dataset.state === 'revealed') return;
 
+  // Avvia timer all'effettivo primo gesto di gioco
   startTimer();
-  flip(card, true);
 
-  // Gestione speciali come prima (aggiuntiva, NON interrompe il confronto)
-// salva il pivot corrente per poterlo richiudere se tocco una speciale
-const pivotBefore = state.pivot;
+  const sym = card.dataset.symbol;
 
-// 💀 SKULL
-if (card.dataset.symbol === RED){
-  if (state.isChaos){
-    // in Chaos già richiudi dentro chaosSkullPenalty()
-    chaosSkullPenalty(card);
-    return;
-  }
+  // --- Speciali: ⚡ / 💀 — chiudi l’eventuale carta “prima” aperta e gestisci
+  if (sym === RED){
+    // Se c'era una normale aperta, chiudila per evitare “singole persistenti”
+    closeOpen(MISMATCH_HOLD_MS);
 
-  state.redFlips++;
-  refreshPowersUI();
-  try { SFX.play('skull', { volume:.9, rate:.98 }); } catch(_) {}
+    state.redFlips++;
+    refreshPowersUI();
+    try { SFX.play('skull', { volume:.9, rate:.98 }); } catch(_) {}
+    flip(card, true);
 
-  // se avevo una carta normale scoperta come pivot, richiudila
-  if (isValidPivotEl(pivotBefore)) scheduleHide(pivotBefore, MISMATCH_HOLD_MS);
-  state.pivot = null;
-
-  if (state.redFlips >= 2){
-    setTimeout(() => {
-      if (state.isZen) showZenSkullLose();
-      else lose('Oh no! 💀', 'Hai rivelato il teschio due volte.');
-    }, 220);
-    return;
-  }
-
-  // richiudi il teschio dopo il feedback, così può essere rivelato di nuovo
-  scheduleHide(card, MISMATCH_HOLD_MS);
-  return;
-}
-
-// ⚡ LIGHTNING
-if (card.dataset.symbol === YELLOW){
-  state.yellowFlips++;
-  flashMessage('Shuffle!');
-  reshuffleHiddenNonSpecial();
-
-  // se avevo una carta normale scoperta come pivot, richiudila
-  if (isValidPivotEl(pivotBefore)) scheduleHide(pivotBefore, MISMATCH_HOLD_MS);
-  state.pivot = null;
-
-  if (state.isChaos){
-    const prevCnt = state.yellowReveals.get(card) || 0;
-    const nowCnt  = prevCnt + 1;
-    state.yellowReveals.set(card, nowCnt);
-
-    // al 2° reveal il fulmine diventa buco e la carta viene rimpiazzata
-    if (nowCnt >= 2 && (state.holesEls?.length || 0) < 2){
-      makeHole(card);
+    if (state.isChaos){
+      chaosSkullPenalty(card);
       return;
     }
-    // altrimenti richiudi il ⚡ per poterlo rivelare di nuovo
+
+    if (state.redFlips >= 2){
+      setTimeout(() => {
+        if (state.isZen) showZenSkullLose();
+        else lose('Oh no! 💀', 'Hai rivelato il teschio due volte.');
+      }, 220);
+      return;
+    }
+
     scheduleHide(card, MISMATCH_HOLD_MS);
     return;
   }
 
-  // non-Chaos: richiudi sempre il ⚡ dopo il feedback
-  scheduleHide(card, MISMATCH_HOLD_MS);
-  return;
-}
+  if (sym === YELLOW){
+    closeOpen(MISMATCH_HOLD_MS); // evita “singole” durante il rimescolo
+    flip(card, true);
+    flashMessage('Shuffle!');
+    reshuffleHiddenNonSpecial();
 
-
-
-  // --- Confronto "pivot → nuova carta" (mosse per confronto, non per primo flip isolato) ---
-let prev = state.pivot;
-
-// Invalida pivot non più utilizzabile (disconnesso/placeholder/speciale/matched)
-if (!isValidPivotEl(prev) || prev?.getAttribute('data-state') === 'matched'){
-  prev = null;
-  state.pivot = null;
-}
-
-// Se non c'è un pivot valido, questa carta può diventarlo (solo carte “normali” rivelate)
-if (!prev){
-  if (!card.isConnected || card.classList.contains('placeholder')) return;
-  if (isSpecialSymbol(card.dataset.symbol)) return; // niente pivot su ⚡/💀
-  state.pivot = card;
-  return;
-}
-
-
-  // Qui c'è un confronto: conta 1 mossa
-  state.moves++;
-  if (!state.isZen) movesEl.textContent = `Mosse: ${state.moves}`;
-
-  const aSym = prev.dataset.symbol;
-  const bSym = card.dataset.symbol;
-  const isSpecial = s => (s === RED || s === YELLOW);
-  const isMatch = !isSpecial(aSym) && !isSpecial(bSym) && (aSym === bSym);
-
-  if (isMatch){
-    // Annulla eventuali richiuse pendenti sul pivot
-    cancelHide(prev);
-    cancelHide(card);
-
-    // Bonus tempo & combo come prima
-    const now = performance.now();
-    if (!state.isZen){
-      state.deadlineTs += 1000;            // +1s
-      state.leftMs = Math.max(0, state.deadlineTs - now);
-      updateTime();
-      flashMessage('+1s');
-      SFX.play('bonus1', { volume:.85, rate: 1.02 });
-
-      if (state.streak >= 1 && (now - state.lastMatchTime) < 5000){
-        state.deadlineTs += 5000;          // +5s combo
-        state.leftMs = Math.max(0, state.deadlineTs - performance.now());
-        updateTime();
-        flashMessage('+5s Bonus!');
-        SFX.play('bonus5', { volume:1 });
+    if (state.isChaos){
+      const prevCnt = state.yellowReveals.get(card) || 0;
+      const nowCnt  = prevCnt + 1;
+      state.yellowReveals.set(card, nowCnt);
+      if (nowCnt >= 2 && (state.holesEls?.length || 0) < 2){
+        makeHole(card);
+        return;
       }
-      state.lastMatchTime = now;
     }
-
-    // Marca la coppia
-    prev.setAttribute('data-state','matched');
-    card.setAttribute('data-state','matched');
-    spawnMatchStars(prev);
-    spawnMatchStars(card);
-    SFX.play('ok', { volume:.9, rate: 0.98 });
-// SOLO CHAOS: dopo l’animazione ✨ prova una catena di shift
-if (state.isChaos && state.matched < state.level.pairs){
-  setTimeout(() => zenShiftOnce(), 620);
-}
-
-
-    state.matched++;
-    state.streak++;
-    refreshPowersUI();
-
-    // Fine quadro?
-    if(state.matched >= state.level.pairs){
-      win();
-      return;
-    }
-
-    // Dopo un match non c'è pivot
-    state.pivot = null;
+    scheduleHide(card, MISMATCH_HOLD_MS);
     return;
   }
 
-  // --- Mismatch: nessun blocco input, ma programmo la richiusa di entrambe ---
-  state.streak = 0;
-  if (!state.isZen){
-    const now = performance.now();
-    state.deadlineTs = state.deadlineTs - 1000; // -1s
-    state.leftMs = Math.max(0, state.deadlineTs - now);
-    updateTime();
-    flashMessage('-1s');
-    SFX.play('fail', { volume:.9 });
+  // --- Normale: applichiamo la regola “max 2 aperte” robusta ---
+  syncOpenFromDom(); // rete di sicurezza (in caso di stati ereditati da prima)
+
+  // Apri la carta cliccata
+  flip(card, true);
+
+  // Caso 1: è la prima normale aperta
+  if (state.open.length === 0){
+    state.open = [card];
+    state.pivot = card;
+    return;
   }
 
-  // Le due carte restano visibili per la solita finestra, poi si richiudono
-  scheduleHidePair(prev, card);
+  // Caso 2: è la seconda normale aperta → confronto
+  if (state.open.length === 1){
+    const first = state.open[0];
+    const second = card;
 
-  // Il nuovo pivot diventa l'ultima carta girata (così puoi matchare al terzo flip)
-// Se la carta è diventata un buco (⚡ al 2° reveal) o è stata rimossa, niente pivot
-state.pivot = (card
-  && card.isConnected
-  && !card.classList.contains('placeholder')
-  && !isSpecialSymbol(card.dataset.symbol)
-) ? card : null;
+    state.moves++;
+    if (!state.isZen) movesEl.textContent = `Mosse: ${state.moves}`;
 
+    const aSym = first.dataset.symbol;
+    const bSym = second.dataset.symbol;
+    const isMatch = (aSym === bSym);
 
+    if (isMatch){
+      // Cancella eventuali richiuse pendenti
+      cancelHide(first); cancelHide(second);
+
+      // Bonus tempo
+      const now = performance.now();
+      if (!state.isZen){
+        state.deadlineTs += 1000;            // +1s
+        state.leftMs = Math.max(0, state.deadlineTs - now);
+        updateTime();
+        flashMessage('+1s');
+        SFX.play('bonus1', { volume:.85, rate: 1.02 });
+
+        if (state.streak >= 1 && (now - state.lastMatchTime) < 5000){
+          state.deadlineTs += 5000;          // +5s combo
+          state.leftMs = Math.max(0, state.deadlineTs - performance.now());
+          updateTime();
+          flashMessage('+5s Bonus!');
+          SFX.play('bonus5', { volume:1 });
+        }
+        state.lastMatchTime = now;
+      }
+
+      first.setAttribute('data-state','matched');
+      second.setAttribute('data-state','matched');
+      spawnMatchStars(first);
+      spawnMatchStars(second);
+      SFX.play('ok', { volume:.9, rate: 0.98 });
+
+      state.matched++;
+      state.streak++;
+      state.open = [];
+      state.pivot = null;
+      refreshPowersUI();
+
+      // Fine quadro?
+      if (state.matched >= state.level.pairs){
+        win();
+        return;
+      }
+      return;
+    }
+
+    // Mismatch → micro-lock finché non si richiudono
+    state.streak = 0;
+    if (!state.isZen){
+      const now = performance.now();
+      state.deadlineTs = state.deadlineTs - 1000; // -1s
+      state.leftMs = Math.max(0, state.deadlineTs - now);
+      updateTime();
+      flashMessage('-1s');
+      SFX.play('fail', { volume:.9 });
+    }
+
+    state.lock = true;
+    scheduleHide(first,  MISMATCH_HOLD_MS);
+    scheduleHide(second, MISMATCH_HOLD_MS);
+
+    // Sblocca input e processa eventuali tap bufferizzati
+    setTimeout(() => {
+      state.lock = false;
+      state.open = [];
+      state.pivot = null;
+      if (tapBuffer.length){
+        const next = tapBuffer.shift();
+        // se nel frattempo la carta è ancora valida/copribile
+        if (next && next.isConnected && next.getAttribute('data-state') === 'hidden'){
+          onCardClick(next);
+        }
+      }
+    }, MISMATCH_HOLD_MS + 5);
+
+    return;
+  }
+
+  // Caso 3 (difensivo): se per qualche motivo risultavano già 2 aperte, chiudi le extra e riparti
+  if (state.open.length >= 2){
+    closeOpen(0);
+    onCardClick(card);
+  }
 }
+
 
   function flip(card, reveal){ card.setAttribute('data-state', reveal ? 'revealed' : 'hidden'); }
 function cancelHide(card){
