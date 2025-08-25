@@ -1580,30 +1580,115 @@ function isPreFrame(){
     return Array.from(map.entries()).filter(([_, arr]) => arr.length === 2);
   }
 function chaosSkullPenalty(card){
-  closeOpen(MISMATCH_HOLD_MS); // <— chiudi eventuali normali aperte
+  // Chiudi eventuali normali aperte e gestisci suoni/UX
+  closeOpen(MISMATCH_HOLD_MS);
   try { SFX.play?.('skull', { volume:.95, rate:.98 }); } catch(_) {}
 
-  // ✅ CHIUDI EVENTUALE PIVOT RIVELATO
+  // Chiudi pivot se era rivelato
   const pivot = state?.pivot;
-  if (isValidPivotEl(pivot)) {
-    scheduleHide(pivot, MISMATCH_HOLD_MS);
-  }
+  if (isValidPivotEl(pivot)) scheduleHide(pivot, MISMATCH_HOLD_MS);
   state.pivot = null;
 
-  const pairs = getMatchedPairs(); // [[symbol,[card1,card2]], ...]
-  if (pairs.length){
-    const [, cards] = pairs[(Math.random()*pairs.length)|0];
-    cards.forEach(c => c.setAttribute('data-state','hidden'));
-    state.matched = Math.max(0, state.matched - 1);
-    flashMessage('💀 −1 pair • 🔀');
-  } else {
-    flashMessage('🔀 Chaos!');
+  // 1) Pulisci riferimenti ai buchi non più nel DOM e leggi i buchi attuali
+  state.holesEls = (state.holesEls || []).filter(h => h && h.isConnected && h.classList.contains('hole'));
+  const holes = state.holesEls.slice();
+
+  // 2) Calcola un simbolo NUOVO rispetto alle coperte non speciali
+  const poolCovered = getHiddenNonSpecialCards(); // carte coperte normali
+  const coveredSyms = new Set(poolCovered.map(c => c.dataset.symbol));
+  const candidates  = EMOJI.filter(s => !coveredSyms.has(s));
+  const newSym = candidates.length
+    ? candidates[(Math.random()*candidates.length)|0]
+    : EMOJI[(Math.random()*EMOJI.length)|0]; // fallback
+
+  // Helper: crea una carta "nuova" in posizione buco (stesso markup di init)
+  function spawnCardInHole(holeEl, symbol){
+    const idx  = +holeEl.dataset.index;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.index  = String(idx);
+    card.dataset.symbol = symbol;
+    card.setAttribute('data-state','hidden');
+    card.setAttribute('role','button');
+    card.setAttribute('tabindex','0');
+    card.setAttribute('aria-label','Carta di Skullory');
+
+    const inner = document.createElement('div'); inner.className = 'inner';
+    const back  = document.createElement('div'); back.className  = 'face back';
+    const front = document.createElement('div'); front.className = 'face front';
+    const sym   = document.createElement('div'); sym.className   = 'symbol'; sym.textContent = symbol;
+    front.appendChild(sym); inner.append(back, front); card.append(inner);
+
+    card.addEventListener('click',   ()  => onCardClick(card));
+    card.addEventListener('keydown', (ev) => { if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); onCardClick(card); } });
+
+    grid.replaceChild(card, holeEl);
+    return card;
   }
 
+  // 3) Se abbiamo almeno DUE buchi → crea la coppia direttamente nei buchi
+  if (holes.length >= 2){
+    const i1 = (Math.random()*holes.length | 0);
+    let   i2 = (Math.random()*holes.length | 0);
+    if (i2 === i1) i2 = (i2 + 1) % holes.length;
+
+spawnCardInHole(holes[i1], newSym);
+spawnCardInHole(holes[i2], newSym);
+
+// ✅ aggiorna il target della board
+state.level.pairs = (state.level.pairs || 0) + 1;
+state._spawnedPairs = (state._spawnedPairs || 0) + 1;
+
+flashMessage('💀 Spawned a new pair in holes!');
+try { SFX.play?.('reshuffle', { volume:.9 }); } catch(_) {}
+
+// 🔀 rimescola le coperte non speciali (inclusa la nuova coppia)
+setTimeout(() => {
+  try { reshuffleHiddenNonSpecial(); } catch(_) {}
+  bumpEpoch();  // la board è cambiata di nuovo: invalida i tap precedenti
+}, 30);
+
+// richiudi il teschio
+scheduleHide(card, MISMATCH_HOLD_MS);
+return;
+  }
+
+  // 4) Fallback: se non ci sono 2 buchi, usa due coperte a caso (comportamento precedente)
+  let pool = getHiddenNonSpecialCards();
+  if (pool.length >= 2){
+    const i1 = (Math.random()*pool.length | 0);
+    let   i2 = (Math.random()*pool.length | 0);
+    if (i2 === i1) i2 = (i2 + 1) % pool.length;
+    const t1 = pool[i1], t2 = pool[i2];
+
+t1.dataset.symbol = newSym; t1.querySelector('.symbol').textContent = newSym;
+t2.dataset.symbol = newSym; t2.querySelector('.symbol').textContent = newSym;
+
+// ✅ aggiorna il target della board
+state.level.pairs = (state.level.pairs || 0) + 1;
+state._spawnedPairs = (state._spawnedPairs || 0) + 1;
+
+flashMessage('💀 Spawned a new pair!');
+try { SFX.play?.('reshuffle', { volume:.9 }); } catch(_) {}
+
+// 🔀 rimescola le coperte non speciali (inclusa la nuova coppia)
+setTimeout(() => {
+  try { reshuffleHiddenNonSpecial(); } catch(_) {}
+  bumpEpoch();  // la board è cambiata di nuovo: invalida i tap precedenti
+}, 30);
+
+// richiudi il teschio
+scheduleHide(card, MISMATCH_HOLD_MS);
+return;
+
+  }
+  // 5) Ultimo fallback: non c’è spazio → rimescola solo per non “sprecare” il tocco
+  flashMessage('💀 Not enough space… 🔀');
   reshuffleHiddenNonSpecial();
-  scheduleHide(card, MISMATCH_HOLD_MS); // richiudi il teschio
-  // state.pivot rimane null
+  scheduleHide(card, MISMATCH_HOLD_MS);
 }
+
+
 function isSpecialSymbol(sym){ return sym === RED || sym === YELLOW; }
 function isValidPivotEl(el){
   return !!(el
@@ -1973,24 +2058,33 @@ if (state.lock){
     return;
   }
 
-  if (sym === YELLOW){
-    closeOpen(MISMATCH_HOLD_MS); // evita “singole” durante il rimescolo
-    flip(card, true);
-    flashMessage('Shuffle!');
-    reshuffleHiddenNonSpecial();
+if (sym === YELLOW){
+  // Chiudi eventuali normali aperte per non “sporcare” la mossa
+  closeOpen(MISMATCH_HOLD_MS);
 
-    if (state.isChaos){
-      const prevCnt = state.yellowReveals.get(card) || 0;
-      const nowCnt  = prevCnt + 1;
-      state.yellowReveals.set(card, nowCnt);
-      if (nowCnt >= 2 && (state.holesEls?.length || 0) < 2){
-        makeHole(card);
-        return;
-      }
-    }
-    scheduleHide(card, MISMATCH_HOLD_MS);
+  // Rivela il fulmine
+  flip(card, true);
+
+  // PRIMO tocco sullo stesso ⚡ → lo “armo” e mescolo
+  if (!card.dataset.yellowArmed){
+    armYellow(card);
+    flashMessage('Shuffle!');
+    reshuffleHiddenNonSpecial();         // mescola solo le non-special coperte
+    scheduleHide(card, MISMATCH_HOLD_MS); // richiude il fulmine dopo il mescolo
     return;
   }
+
+  // SECONDO tocco sullo stesso ⚡ → in Chaos diventa un buco
+  disarmYellow(card);
+  if (state.isChaos){
+    makeHole(card);  // sostituisce la carta con il placeholder-buco
+    return;          // niente scheduleHide perché la carta non c’è più
+  }
+
+  // (fuori da Chaos, al 2° tocco si limita a richiudere)
+  scheduleHide(card, MISMATCH_HOLD_MS);
+  return;
+}
 
   // --- Normale: applichiamo la regola “max 2 aperte” robusta ---
   syncOpenFromDom(); // rete di sicurezza (in caso di stati ereditati da prima)
@@ -2040,17 +2134,25 @@ if (state.lock){
         state.lastMatchTime = now;
       }
 
-      first.setAttribute('data-state','matched');
-      second.setAttribute('data-state','matched');
-      spawnMatchStars(first);
-      spawnMatchStars(second);
-      SFX.play?.('ok', { volume:.9, rate: 0.98 });
+// ⭐ Effetto visivo breve, poi trasformiamo in buchi permanenti
+spawnMatchStars(first);
+spawnMatchStars(second);
+try { SFX.play?.('ok', { volume:.9, rate: 0.98 }); } catch(_) {}
 
-      state.matched++;
-      state.streak++;
-      state.open = [];
-      state.pivot = null;
-      refreshPowersUI();
+// aspetta un attimo per far vedere le ✨ (coerente con MATCH_HOLD_MS)
+setTimeout(() => {
+  // Ogni carta matched viene *rimossa* e diventa un buco permanente
+  makeHole(first);
+  makeHole(second);
+}, MATCH_HOLD_MS);
+
+// Stato logico: la coppia è comunque considerata “fatta”
+state.matched++;
+state.streak++;
+state.open = [];
+state.pivot = null;
+refreshPowersUI();
+
 // SOLO CHAOS: dopo l’animazione ✨ prova una catena di shift
 if (state.isChaos && state.matched < state.level.pairs){
   setTimeout(() => zenShiftOnce(), 620);
@@ -2120,7 +2222,21 @@ function scheduleHidePair(a, b){
   scheduleHide(a, MISMATCH_HOLD_MS);
   scheduleHide(b, MISMATCH_HOLD_MS);
 }
-// Annulla TUTTI i timer di richiusa pendenti (evita desync visivo/logico)
+
+// === Helpers per il fulmine (⚡) — FUORI dalla funzione ===
+function armYellow(card){
+  if (card) card.dataset.yellowArmed = '1';
+}
+function disarmYellow(card){
+  if (!card) return;
+  delete card.dataset.yellowArmed;
+  card.removeAttribute('data-yellow-armed');
+}
+function disarmAllYellows(){
+  grid.querySelectorAll('.card[data-symbol="⚡"][data-yellow-armed]').forEach(disarmYellow);
+}
+
+// (segue) Annulla TUTTI i timer...
 function clearAllHideTimers(){
   if (!state?.hideTimers) return;
   for (const [, t] of state.hideTimers) clearTimeout(t);
@@ -2194,7 +2310,7 @@ function getNeighbors(idx, side){
 function makeHole(card){
 if (!state?.isChaos) return;
   if (!card || !card.classList.contains('card') || card.classList.contains('placeholder')) return;
-  if ((state.holesEls?.length || 0) >= 2) return;
+  
 
   const idx = +card.dataset.index;
   // mini pop/dissolve
