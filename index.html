@@ -487,12 +487,56 @@
   position:absolute;width:1px;height:1px;padding:0;margin:-1px;
   overflow:hidden;clip:rect(0 0 1px 1px);white-space:nowrap;border:0;
 }
+.intro-legal{
+  margin: 8px 0 0;
+  text-align: center;
+}
+.link-like{
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent; /* niente highlight rosso su mobile */
+}
+/* Link Privacy piccolo e discreto nel menu iniziale */
+.intro-legal{
+  font-size: 12px;
+  text-align: center;
+}
+.intro-legal .link-like{
+  font-size: inherit;   /* eredita 12px */
+  opacity: .85;         /* leggermente più soft */
+}
+
+/* NON mostrare contorno sul semplice focus “da tap”… */
+.link-like:focus{
+  outline: none;
+}
+
+/* …mostralo solo quando l’utente usa la tastiera (TAB, ecc.) */
+.link-like:focus-visible{
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* --- Privacy modal: testo centrato --- */
+#privacy .dialog { 
+  text-align: center;               /* centra tutto il testo/inline */
+}
+#privacy .dialog p {
+  max-width: 560px;                 /* riga più corta = più leggibile */
+  margin: 10px auto;                /* centra il paragrafo */
+}
+
 
 </style>
 </head>
 <body class="theme-1">
 <!-- Splash pre-tutorial (3s) -->
-<div id="splash" class="splash show" role="button" aria-label="Splash iniziale (tocca per saltare)">
+<div id="splash" class="splash show" role="button" aria-label="Intro splash (tap to skip)">
+
   <svg viewBox="0 0 1200 1200" preserveAspectRatio="xMidYMid meet" class="splash-art" aria-hidden="true">
     <defs>
       <radialGradient id="bg" cx="50%" cy="40%" r="70%">
@@ -514,15 +558,15 @@
     </div>
     <div class="stats-container">
       <div class="stats">
-        <span class="level-chip" id="levelChip">Livello: —</span>
-        <span class="level-chip" id="statusChip">Stato: —</span>
-        <span class="level-chip" id="moves" aria-live="polite">Mosse: 0</span>
+        <span class="level-chip" id="levelChip">Level: —</span>
+        <span class="level-chip" id="statusChip">Status: —</span>
+        <span class="level-chip" id="moves" aria-live="polite">Moves: 0</span>
         <span class="chip timer" id="timer" aria-live="polite">0:30</span>
-        <span class="chip" id="score" aria-live="polite" style="color:#FFF44F">Punti: 0</span>
+        <span class="chip" id="score" aria-live="polite" style="color:#FFF44F">Score: 0</span>
       </div>
     </div>
 
-    <div class="grid" id="grid" aria-label="Griglia Skullory"></div>
+    <div class="grid" id="grid" aria-label="Skullory grid"></div>
 
     <div class="controls controls-bottom">
       <div class="controls-left">
@@ -534,11 +578,11 @@
 
       <div class="controls-right">
         <button class="primary outline-btn power-btn" id="powerReveal"
-          title="👁️ Svela per 1s (−20% tempo, min −4s, non sotto 3s) · 1×">👁️</button>
+          title="👁️ Reveal all for 1s (−20% time, min −4s, never below 3s) · 1×">👁️</button>
         <button class="primary outline-btn power-btn" id="powerPlus10"
-          title="🦇 +10s (sacrifica 1 coppia a caso, rilocalizzata) · 1×">🦇</button>
+          title="🦇 +10s (sacrifice 1 random matched pair, moved) · 1×">🦇</button>
         <button class="primary outline-btn power-btn" id="powerShift"
-          title="🌀 Sposta 💀 e ⚡, rimescola (come ⚡), +15s · 1×">🌀</button>
+          title="🌀 Move 💀 & ⚡, reshuffle (like ⚡), +15s · 1×">🌀</button>
       </div>
     </div>
 
@@ -547,7 +591,7 @@
       <div class="dialog tutorial-dialog">
         <button class="tutorial-close" id="intro-close" aria-label="Chiudi tutorial">✕</button>
         <div class="tutorial-title">
-  <h2 id="intro-title" style="margin-bottom:8px">Come si gioca</h2>
+  <h2 id="intro-title" style="margin-bottom:8px">How to play</h2>
   <span id="intro-count" class="tutorial-count" hidden>1/3</span>
 </div>
 
@@ -559,79 +603,78 @@
 
   <!-- Slide 0 (scelta modalità) -->
 <div class="tutorial-slide" data-mode="root">
-  <h3 style="color:#FFF44F">Scegli come giocare</h3>
+  <h3 style="color:#FFF44F">Pick a mode</h3>
 
   <div style="
     display:flex; flex-direction:column; gap:10px; align-items:center;
     margin-top:12px; width:100%; max-width:420px; margin-left:auto; margin-right:auto;
   ">
-    <button class="primary" id="intro-chaos-main"  style="width:100%">🧪 Chaos — Sfida del giorno!</button>
-    <button class="primary outline-btn" id="intro-arcade-main" style="width:100%">🎮 Arcade — Scala i livelli!</button>
-    <button class="primary outline-btn" id="intro-zen-main"    style="width:100%">🧘 Zen — Allenati!</button>
+    <button class="primary" id="intro-chaos-main"  style="width:100%">🧪 Chaos — Daily challenge!</button>
+    <button class="primary outline-btn" id="intro-arcade-main" style="width:100%">🎮 Arcade — Climb the levels!</button>
+    <button class="primary outline-btn" id="intro-zen-main"    style="width:100%">🧘 Zen — Practice!</button>
   </div>
 
   <p style="color:var(--muted); margin-top:12px; max-width:520px; margin-left:auto; margin-right:auto;">
-    <b>Chaos</b>: la stessa griglia per tutti ogni giorno.<br/>
-    <b>Arcade</b>: livelli, timer, bonus, poteri.<br/>
-    <b>Zen</b>: puro allenamento e rating finale.
+    <b>Chaos</b>: same grid for everyone each day.<br/>
+    <b>Arcade</b>: levels, timer, bonuses, powers.<br/>
+    <b>Zen</b>: pure practice with a final rating.
   </p>
 </div>
 
   <!-- Slide Arcade 1 -->
-  <div class="tutorial-slide" data-mode="arcade">
-    <h3 style="color:#FFF44F">Obiettivo</h3>
-    <ul>
-      <li>Trova tutte le <b>coppie</b> ribaltando le carte, ma <b>occhio al tempo!</b></li>
-      <li><b>Sblocco livello</b>: completa lo stesso livello <b>3 volte di fila</b>!</li>
-      <li>Dopo lo sblocco resti sul livello <b>per fare punti</b>.</li>
-      <li><b>Al primo errore</b>, sali al livello successivo.</li>
-    </ul>
-  </div>
+<div class="tutorial-slide" data-mode="arcade">
+  <h3 style="color:#FFF44F">Goal</h3>
+  <ul>
+    <li>Match all <b>pairs</b> before the <b>time runs out!</b></li>
+    <li><b>Unlock</b>: clear the same level <b>3 times in a row</b>!</li>
+    <li>After unlocking, stay on the level <b>to score more</b>.</li>
+    <li><b>On your first mistake</b>, you move to the next level.</li>
+  </ul>
+</div>
 
   <!-- Slide Arcade 2 -->
   <div class="tutorial-slide" data-mode="arcade" hidden>
-    <h3 style="color:#FFF44F">Carte speciali</h3>
+    <h3 style="color:#FFF44F">Special cards</h3>
     <div style="display:flex; gap:18px; align-items:center; justify-content:center; margin:10px 0 6px">
       <div class="big-symbol" aria-hidden="true">⚡</div>
       <div class="big-symbol" aria-hidden="true">💀</div>
     </div>
     <ul>
-      <li>⚡ rimescola tutte le carte coperte (tranne 💀 e ⚡).</li>
-      <li>💀 se rivelato due volte: <b>sconfitta!</b></li>
+      <li>⚡ reshuffles all covered cards (except 💀 and ⚡).</li>
+      <li>💀 if revealed twice: <b>you lose!</b></li>
     </ul>
   </div>
 
   <!-- Slide Arcade 3 -->
   <div class="tutorial-slide" data-mode="arcade" hidden>
-    <h3 style="color:#FFF44F">Bonus, penalità e punteggio</h3>
-    <ul>
-      <li><b>Bonus 1</b>: ogni coppia trovata = <b>+1s</b></li>
-      <li><b>Bonus 2</b>: 2 coppie di fila entro 5s = <b>+5s</b></li>
-      <li><b>Penalità</b>: ogni errore <b>−1s</b></li>
-      <li><b>Punteggio</b>: secondi risparmiati <b>x</b> efficienza mosse.</li>
-    </ul>
+<h3 style="color:#FFF44F">Bonuses, penalties & scoring</h3>
+<ul>
+  <li><b>Bonus 1</b>: each match = <b>+1s</b></li>
+  <li><b>Bonus 2</b>: 2 matches within 5s = <b>+5s</b></li>
+  <li><b>Penalty</b>: each miss <b>−1s</b></li>
+  <li><b>Score</b>: seconds saved <b>×</b> move efficiency.</li>
+</ul>
   </div>
 
   <!-- Slide Zen -->
   <div class="tutorial-slide" data-mode="zen" hidden>
-    <h3 style="color:#FFF44F">Gioca in relax!</h3>
-    <ul>
-      <li>Nessun timer, nessun punteggio a schermo.</li>
-      <li>Giochi tranquillo: niente poteri, niente carte speciali.</li>
-      <li>Alla fine vedi il report: <b>tempo</b>, <b>mosse</b>, <b>efficienza</b> e ⭐.</li>
-    </ul>
+<h3 style="color:#FFF44F">Play chill!</h3>
+<ul>
+  <li>No timer, no on-screen score.</li>
+  <li>Just play: no powers, no special cards.</li>
+  <li>End report: <b>time</b>, <b>moves</b>, <b>efficiency</b>, and ⭐.</li>
+</ul>
   </div>
 
 <!-- Slide Chaos -->
 <div class="tutorial-slide" data-mode="chaos" hidden>
-  <h3 style="color:#FFF44F">Sfida gli amici a fare meglio!</h3>
-  <ul>
-    <li>Ogni giorno una griglia identica per tutti!.</li>
-    <li>Condividi il tuo punteggio migliore!</li>
-    <li>⚡ : rimescola le coperte; ma <b>se lo clicchi 2 volte</b> diventa un <b>buco</b>!</li>
-    <li><b>💀 </b>: annulla una <b>coppia trovata</b> (se c’è) e <b>rimescola le carte coperte</b>!</li>
-    <li>Quando fai una coppia, il buco attira <b>1–4 carte coperte</b> adiacenti!</li>
-  </ul>
+<h3 style="color:#FFF44F">Challenge friends to beat you!</h3>
+<ul>
+  <li>Same daily grid for everyone. <b>Share your best score!</b></li>
+ <li>⚡ reshuffles covered cards; <b>tap it twice and you’ll create a hole!</b></li>
+  <li><b>💀</b> cancels a <b>matched pair</b> (if any) and <b>reshuffles covered cards</b>!</li>
+  <li>On a match, the hole pulls in <b>1–4 adjacent covered cards</b>!</li>
+</ul>
 </div>
 
 </div>
@@ -641,59 +684,69 @@
         <button class="tutorial-arrow next" id="intro-next" aria-label="Slide successiva">›</button>
 
         <div class="tutorial-dots" id="intro-dots" role="tablist" aria-label="Pagine tutorial"></div>
-<div class="tutorial-hint" id="intro-hint" hidden>3 pagine — scorri o usa le frecce ›</div>
+<div class="tutorial-hint" id="intro-hint" hidden>3 pages — swipe or use the arrows ›</div>
 
 
         <div class="actions" style="margin-top:14px; display:flex; justify-content:center; gap:10px">
-          <button class="primary" id="intro-play">Gioca</button>
+          <button class="primary" id="intro-play">Play</button>
         </div>
-      </div>
-    </div>
+     <p class="intro-legal">
+      <button type="button" data-open-privacy class="link-like">Privacy</button>
+    </p>
+  </div> <!-- chiusura .dialog -->
+</div>   <!-- chiusura #intro -->
 
     <!-- Gestore Salvataggi (Modal) -->
     <!-- Conferma Ricomincia -->
     <div class="overlay" id="restartConfirm" aria-hidden="true">
       <div class="dialog">
-        <h2>Vuoi ricominciare ?</h2>
-        <p style="margin-top:4px; color:var(--muted)">Perderai lo stato del quadro corrente.</p>
+        <h2>Restart game?</h2>
+        <p style="margin-top:4px; color:var(--muted)">Current progress will be lost.</p>
         <div style="display:flex; gap:10px; justify-content:center; margin-top:8px">
-          <button class="primary" id="restart-yes">Sì, ricomincia</button>
-          <button class="primary" id="restart-no" style="background:var(--bad); color:#fff">Annulla</button>
+          <button class="primary" id="restart-yes">Yes, restart</button>
+          <button class="primary" id="restart-no" style="background:var(--bad); color:#fff">Cancel</button>
         </div>
       </div>
     </div>
 
     <div class="overlay" id="saveModal" aria-hidden="true">
-      <div class="dialog" style="text-align:left; position:relative">
-        <button class="save-close" id="save-close" aria-label="Chiudi salvataggi">✕</button>
-        <h2 style="text-align:center; margin-top:2px">Salvataggi</h2>
+      <div class="dialog" style="position:relative">
+        <button class="save-close" id="save-close" aria-label="Close saves">✕</button>
+        <h2 style="text-align:center; margin-top:2px">Saves</h2>
         <div id="saveList" style="max-height:46vh; overflow:auto; margin:8px 0 12px"></div>
 
         <div id="saveControls" style="display:flex; gap:8px; align-items:center; margin-top:6px">
-          <input id="saveName" placeholder="Nome partita…"
+          <input id="saveName" placeholder="Save name…"
             style="width:150px; padding:10px 12px; border-radius:10px;
                    border:1px solid var(--panel-border); background:var(--panel-2);
                    color:var(--text)"/>
-          <button class="primary" id="doSave">Salva</button>
+          <button class="primary" id="doSave">Save</button>
         </div>
 
         <p style="color:var(--muted); margin-top:10px">
-          I salvataggi sono consentiti <b>solo a fine quadro</b> o <b>prima di iniziare</b> il prossimo.
+          You can save <b>only at the end of a board</b> or <b>before starting.
         </p>
       </div>
     </div>
+<!-- Privacy -->
+<div class="overlay" id="privacy" aria-hidden="true" style="z-index:1100">
+  <div class="dialog" style="position:relative">
+<button class="tutorial-close" id="privacy-close" aria-label="Close">✕</button>
+<h2 id="privacy-title">Privacy</h2>
+<p><b>No tracking.</b> The game uses no cookies or analytics.</p>
+<p><b>Data stays on device.</b> Your state and saves never leave your phone.</p>
+ 
+  </div>
+</div>
 
     <!-- Overlay di fine quadro -->
 <div class="overlay" id="overlay">
   <div class="dialog" style="position:relative">
     <button class="tutorial-close" id="ov-close" aria-label="Chiudi">✕</button>
-    <h2 id="ov-title">Hai vinto!</h2>
-
-        <p id="ov-sub">Tempo rimasto: —</p>
-
-        <div class="ov-actions" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-          <button class="primary" id="ov-btn">Continua</button>
-          <button class="primary outline-btn" id="ov-btn-skip" style="display:none">Salta</button>
+<h2 id="ov-title">You win!</h2>
+<p id="ov-sub">Time left: —</p>
+<button class="primary" id="ov-btn">Continue</button>
+<button class="primary outline-btn" id="ov-btn-skip">Skip</button>
         </div>
       </div>
     </div>
@@ -740,7 +793,7 @@ function isQuotaExceeded(err){
 
 
   const LEVELS = [
-    { name: '3×3 (no centro)', side: 3, disabled: [4], pairs: 3, red: 0, yellow: 2, timeMs: 20000, unlockMs: [20000, 15000, 10000], postDeltaSec: 1 },
+    { name: '3×3 (no centro)', side: 3, disabled: [4], pairs: 3, red: 1, yellow: 1, timeMs: 20000, unlockMs: [20000, 15000, 10000], postDeltaSec: 1 },
     { name: '3×3', side: 3, disabled: [], pairs: 4, red: 1, yellow: 0, timeMs: 40000, unlockMs: [40000, 35000, 30000], postDeltaSec: 2 },
     { name: '4×4 (–angoli)', side: 4, disabled: [0,3,12,15], pairs: 5, red: 1, yellow: 1, timeMs: 45000, unlockMs: [45000, 40000, 35000], postDeltaSec: 2 },
     { name: '4×4', side: 4, disabled: [], pairs: 7, red: 1, yellow: 1, timeMs: 60000, unlockMs: [60000, 55000, 50000], postDeltaSec: 2 },
@@ -978,6 +1031,23 @@ function setSfxMuted(v){
 
   const intro = document.getElementById('intro');
   const introBtn = document.getElementById('intro-play');
+const privacy = document.getElementById('privacy');
+const privacyClose = document.getElementById('privacy-close');
+
+// Apri il modale quando tocchi il link/bottone "Privacy" nell'Intro
+document.querySelectorAll('[data-open-privacy]').forEach(btn => {
+  btn.addEventListener('click', () => openModal(privacy));
+});
+
+// Chiudi con la X
+if (privacyClose){
+  privacyClose.addEventListener('click', () => {
+    const opener = privacy.__opener;   // chi ha aperto il modale
+    closeModal(privacy);               // chiudi come prima
+    opener?.blur?.();                  // e poi togli il focus dal bottone "Privacy"
+  });
+}
+
 
   // ===== TUTORIAL =====
   let currentSlide = 0;
@@ -1020,9 +1090,9 @@ let countBadge, progressWrap, progressBar, hintEl;
     } else {
       introTitle.style.display = '';
     introTitle.textContent =
-      mode === 'arcade' ? 'Arcade - Scala i livelli' :
-      mode === 'zen'    ? 'Zen - Allenamento' :
-      mode === 'chaos'  ? 'Chaos - Sfida del Giorno' :
+      mode === 'arcade' ? 'Climb the levels' :
+      mode === 'zen'    ? 'Zen - Practice' :
+      mode === 'chaos'  ? 'Chaos - Daily Challenge' :
                            '';
 
     }
@@ -1031,15 +1101,15 @@ let countBadge, progressWrap, progressBar, hintEl;
   // usa la variabile globale già definita in alto: const introBtn = document.getElementById('intro-play');
   if (introBtn){
     if (mode === 'arcade'){
-      introBtn.textContent = 'Gioca (Arcade)';
+      introBtn.textContent = 'Play (Arcade)';
       introBtn.onclick = () => { ensureSfx(); modeZen = false; currentLevelIdx = 0; hideIntro(); startArcade(); };
       introBtn.style.display = '';
     } else if (mode === 'zen'){
-      introBtn.textContent = 'Gioca (Zen)';
+      introBtn.textContent = 'Play (Zen)';
       introBtn.onclick = () => { ensureSfx(); modeZen = true; hideIntro(); startZen('zen'); };
       introBtn.style.display = '';
    } else if (mode === 'chaos'){
-  introBtn.textContent = 'Gioca (Sfida del giorno)';
+  introBtn.textContent = 'Play (Daily challenge)';
   introBtn.onclick = () => { ensureSfx(); startDailyChaos(); };
   introBtn.style.display = '';
     } else {
@@ -1049,8 +1119,11 @@ let countBadge, progressWrap, progressBar, hintEl;
       introBtn.style.display = 'none';
     }
   }
-}
+  // Mostra il link "Privacy" solo nel menu iniziale (root)
+  const introLegal = document.querySelector('.intro-legal');
+  if (introLegal) introLegal.style.display = (mode === 'root') ? '' : 'none';
 
+}
 
 function buildTutorialRefs(){
   dotsWrap = document.getElementById('intro-dots');
@@ -1340,7 +1413,7 @@ function fmtStars(n){
     const extra = !p.unlocked ? (p.carryBonusMs || 0) : 0;
     const baseSec = Math.max(0, p.baseTimeMs + extra) / 1000 | 0;
     if(!p.unlocked){
-      statusChip.textContent = `Sbloc ${p.streak}/3 · ${baseSec}s`;
+      statusChip.textContent = `Unlock ${p.streak}/3 · ${baseSec}s`;
     } else {
       statusChip.textContent = `Grind ${p.postUnlockWins} · ${baseSec}s`;
     }
@@ -1400,7 +1473,7 @@ function syncOpenFromDom(){
     }
   }
   function roundNearest(n){ return Math.round(n); }
-  function updateScoreChip(){ if(scoreChip) scoreChip.textContent = `Punti: ${totalScore}`; }
+  function updateScoreChip(){ if(scoreChip) scoreChip.textContent = `Score: ${totalScore}`; }
 
   function canSaveNow(){
   if (state?.isZen) return false; 
@@ -1522,7 +1595,7 @@ function chaosSkullPenalty(card){
     const [, cards] = pairs[(Math.random()*pairs.length)|0];
     cards.forEach(c => c.setAttribute('data-state','hidden'));
     state.matched = Math.max(0, state.matched - 1);
-    flashMessage('💀 −1 coppia • 🔀');
+    flashMessage('💀 −1 pair • 🔀');
   } else {
     flashMessage('🔀 Chaos!');
   }
@@ -1554,7 +1627,7 @@ function isValidPivotEl(el){
     ensureSfx();
     state.powerUsed.reveal = true;
     takeTimeMs(cost);
-    flashMessage(`👁️ Svela tutto (−${Math.ceil(cost/1000)}s)`);
+    flashMessage(`👁️ Reveal all (−${Math.ceil(cost/1000)}s)`);
     SFX.play?.('flip', { volume:.85 });
 
     const cards = getActiveCards();
@@ -1605,7 +1678,7 @@ drainTapBuffer();
       cardsSac[1].dataset.symbol = t2Sym; cardsSac[1].querySelector('.symbol').textContent = t2Sym;
     }
     addTimeMs(10000);
-    flashMessage('+10s • Coppia annullata');
+    flashMessage('+10s • Pair undone');
     SFX.play?.('bonus5', { volume:1.0 });
 
     refreshPowersUI();
@@ -1641,7 +1714,7 @@ drainTapBuffer();
     state.redFlips = 0;
 
     addTimeMs(15000);
-    flashMessage('🌀 Speciali spostate • +15s');
+    flashMessage('🌀 Specials moved • +15s');
     SFX.play?.('reshuffle', { volume:.9 });
 
     refreshPowersUI();
@@ -1675,7 +1748,7 @@ function init(levelIdx = currentLevelIdx, opts = {}){
   const L = LEVELS[levelIdx];
   currentLevelIdx = levelIdx;
   setCols(L.side);
-  levelChip.textContent = `Livello: ${levelIdx+1}/${LEVELS.length}`;
+  levelChip.textContent = `Level: ${levelIdx+1}/${LEVELS.length}`;
   updateStatusChip();
 
   if (pendingCheck) { clearTimeout(pendingCheck); pendingCheck = null; }
@@ -1831,7 +1904,7 @@ bumpEpoch(); // NEW: nuova board → invalida tap della precedente
     const now = performance.now();
     state.leftMs = Math.max(0, state.deadlineTs - now);
     updateTime();
-    if(state.leftMs<=0){ state.running=false; lose('Tempo scaduto ⏰'); return; }
+    if(state.leftMs<=0){ state.running=false; lose('Time’s up ⏰'); return; }
     requestAnimationFrame(tick);
   }
 
@@ -1842,7 +1915,7 @@ bumpEpoch(); // NEW: nuova board → invalida tap della precedente
 
   function updateHud(){
     if (!state?.isZen){
-      movesEl.textContent = `Mosse: ${state.moves}`;
+      movesEl.textContent = `Moves: ${state.moves}`;
       timerEl.textContent = fmt(state.leftMs);
     }
     updateStatusChip();
@@ -1858,7 +1931,7 @@ function onCardClick(card){
   SFX.play?.('tap', { volume:.5, rate: 0.98 + Math.random()*0.04 });
 
   // Pausa/Lock: bufferizza al massimo 2 tocchi utili
-  if (state.paused) { flashMessage('In pausa ▶'); return; }
+  if (state.paused) { flashMessage('Paused ▶'); return; }
 if (state.lock){
   enqueueTap(card);
   return;
@@ -1938,7 +2011,7 @@ if (state.lock){
     const second = card;
 
     state.moves++;
-    if (!state.isZen) movesEl.textContent = `Mosse: ${state.moves}`;
+    if (!state.isZen) movesEl.textContent = `Moves: ${state.moves}`;
 
     const aSym = first.dataset.symbol;
     const bSym = second.dataset.symbol;
@@ -2077,7 +2150,7 @@ function reshuffleHiddenNonSpecial(){
     c.querySelector('.symbol').textContent = symbols[i];
   });
 
-  flashMessage('🔀 Rimescolo!');
+  flashMessage('🔀 Shuffling!');
   SFX.play?.('reshuffle', { volume:.9 });
 
   // ⬆️ board cambiata → invalida i tap vecchi, sblocca e processa un tap valido
@@ -2290,7 +2363,7 @@ async function zenShiftOnce(){
       sim = { active: true, busy: false, order, round: startLen - 1, pos: 0, maxLen };
 
       if (pauseBtn) pauseBtn.disabled = true;
-      flashMessage('👻 Simon: ripeti la sequenza');
+      flashMessage('👻 Simon: repeat the sequence');
       simNextRound();
     });
   }
@@ -2401,11 +2474,11 @@ async function zenShiftOnce(){
     }
 
     const finalMsg = bonusSec > 0
-      ? `Hai guadagnato <b>+${bonusSec}s</b> per il prossimo livello!`
-      : 'Nessun bonus ottenuto.';
+      ? `You earned <b>+${bonusSec}s</b> for the next level!`
+      : 'No bonus earned.';
 
-    showOverlay('Intermezzo Simon concluso', `${finalMsg}`);
-    ovBtn.textContent = 'Vai al livello successivo';
+    showOverlay('Simon interlude over', `${finalMsg}`);
+    ovBtn.textContent = 'Go to next level';
     ovBtn.onclick = () => { hideOverlay(); init(next); };
   }
 
@@ -2440,12 +2513,12 @@ function buildZenShareText(){
   const modeLabel = state?.isChaos ? 'la Chaos' : 'la Zen';
   // in alternativa, più neutro: const modeLabel = `la modalità ${state?.isChaos ? 'Chaos' : 'Zen'}`;
 
-  return `Ho completato ${modeLabel} in Skullory con:
-Mosse: ${moves}
-Tempo: ${fmt(elapsedMs)}
-Valutazione: ${fmtStars(stars)}/5
+  return `I finished ${modeLabel} in Skullory with:
+Moves: ${moves}
+Time: ${fmt(elapsedMs)}
+Rating: ${fmtStars(stars)}/5
 
-Prova a battermi!
+Beat my score!
 ${GAME_URL}`;
 }
 
@@ -2470,13 +2543,13 @@ async function shareZen(){
   try{
     if (navigator.clipboard && window.isSecureContext){
       await navigator.clipboard.writeText(text);
-      flashMessage('✅ Copiato: incolla dove vuoi!');
+      flashMessage('✅ Copied — paste anywhere!');
       return;
     }
   }catch(_) {}
 
   // Ultimo fallback: mailto
-  const mailto = `mailto:?subject=${encodeURIComponent('Il mio risultato Zen su Skullory')}&body=${encodeURIComponent(text)}`;
+  const mailto = `mailto:?subject=${encodeURIComponent('My Zen result on Skullory')}&body=${encodeURIComponent(text)}`;
   window.location.href = mailto;
 }
 
@@ -2489,21 +2562,21 @@ function showZenEnd(){
   const level = LEVELS[currentLevelIdx];
   const stars = computeZenStars(moves, elapsedMs, level);
 
-  ovTitle.textContent = 'Griglia completata!';
+  ovTitle.textContent = 'Grid complete!';
 
   // Header daily (se applicabile)
   let header = '';
   if (state.isDaily){
     const d = state.dailyMeta?.date || todayStr();
-    header = `🗓️ Sfida del Giorno <small>(${d})</small><br/>`;
+    header = `🗓️ Daily Challenge <small>(${d})</small><br/>`;
   }
 
   // Ordine mostrato: mosse → tempo → stelle
   ovSub.innerHTML =
     `${header}` +
-    `🎯 Mosse: <b>${moves}</b><br/>` +
-    `⏱️ Tempo: <b>${fmt(elapsedMs)}</b><br/>` +
-    `⭐ Valutazione: <b>${fmtStars(stars)}/5</b>`;
+    `🎯 Moves: <b>${moves}</b><br/>` +
+    `⏱️ Time: <b>${fmt(elapsedMs)}</b><br/>` +
+    `⭐ Rating: <b>${fmtStars(stars)}/5</b>`;
 
   // Record della daily (locale)
   if (state.isDaily){
@@ -2514,25 +2587,25 @@ function showZenEnd(){
 
     if (better){
       writeDailyRecord(date, nowRec);
-      ovSub.innerHTML += `<br/><br/>🏆 <b>Nuovo record giornaliero!</b>`;
+      ovSub.innerHTML += `<br/><br/>🏆 <b>New daily record!</b>`;
       try { SFX.play?.('win', { volume: 0.9 }); } catch(_){}
     } else if (prev){
       let msg = 'Record invariato';
       if (moves > prev.moves){
         const need = moves - prev.moves;
-        msg = `Record invariato (ti servono −${need} mosse)`;
+        msg = `Record unchanged (you need −${need} moves)`;
       } else if (moves === prev.moves && elapsedMs > prev.timeMs){
         const need = fmtShortSecDiff(elapsedMs - prev.timeMs);
-        msg = `Record invariato (ti servono −${need})`;
+        msg = `Record unchanged (you need −${need})`;
       } else if (moves === prev.moves && elapsedMs === prev.timeMs && stars < prev.stars){
-        msg = `Record invariato (ti serve +⭐)`;
+        msg = `Record unchanged (you need +⭐)`;
       }
       ovSub.innerHTML += `<br/><br/>${msg}`;
     }
   }
 
   // Bottoni
-  ovBtn.textContent = 'Gioca ancora';
+  ovBtn.textContent = 'Play again';
   ovBtn.onclick = () => {
     hideOverlay();
     if (state.isDaily) {
@@ -2543,7 +2616,7 @@ function showZenEnd(){
   };
 
   showSkip(true);
-  ovBtnSkip.textContent = 'Torna al menu';
+  ovBtnSkip.textContent = 'Back to menu';
   ovBtnSkip.onclick = () => { hideOverlay(); showIntro(); };
 
   // Pulsante Condividi
@@ -2553,7 +2626,7 @@ function showZenEnd(){
     const shareBtn = document.createElement('button');
     shareBtn.id = 'shareTextBtn';
     shareBtn.className = 'primary outline-btn';
-    shareBtn.textContent = 'Condividi';
+    shareBtn.textContent = 'Share';
     shareBtn.onclick = () => shareZen();
     actions.appendChild(shareBtn);
   }
@@ -2578,16 +2651,16 @@ function showZenEnd(){
     const L = LEVELS[currentLevelIdx];
     const p = progress[currentLevelIdx];
 
-    const detailRow = `Tempo: ${secondsLeft}s · Mosse: ${state.moves}<br>
-Punti quadro = <b>${frameScore}</b><br>
-Punteggio parziale: <b>${totalScore}</b>`;
+    const detailRow = `Time: ${secondsLeft}s · Moves: ${state.moves}<br>
+Board points = <b>${frameScore}</b><br>
+Partial score: <b>${totalScore}</b>`;
 
     if(!p.unlocked){
       p.streak += 1;
       if(p.streak < 3){
         p.baseTimeMs = L.unlockMs[p.streak];
-        showOverlay('Quadro completato ✔️', `Sblocco: ${p.streak}/3<br>${detailRow}<br><small>Prossimo tentativo: tempo base ${Math.floor(p.baseTimeMs/1000)}s</small>`);
-        ovBtn.textContent = 'Continua a giocare';
+        showOverlay('Board complete ✔️', `Unlock: ${p.streak}/3<br>${detailRow}<br><small>Next attempt: base time ${Math.floor(p.baseTimeMs/1000)}s</small>`);
+        ovBtn.textContent = 'Keep playing';
         ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
       } else {
         p.unlocked = true;
@@ -2597,13 +2670,13 @@ Punteggio parziale: <b>${totalScore}</b>`;
         const next = currentLevelIdx + 1;
 
         showOverlay(
-          'Sblocco conquistato! 🏆',
-          `Hai completato 3 quadri di fila.<br>
+          'Unlock achieved! 🏆',
+          `You cleared 3 boards in a row!<br>
            ${detailRow}<br><br>
-           <b>Cosa vuoi fare adesso?</b>`
+           <b>What do you want to do now?</b>`
         );
 
-        ovBtn.textContent = 'Continua qui (fai punti)';
+        ovBtn.textContent = 'Continue here (score more)';
         ovBtn.onclick = () => {
           hideOverlay();
           init(currentLevelIdx);
@@ -2611,7 +2684,7 @@ Punteggio parziale: <b>${totalScore}</b>`;
 
         if (next < LEVELS.length){
           showSkip(true);
-          ovBtnSkip.textContent = 'Livello successivo';
+          ovBtnSkip.textContent = 'Next level';
           ovBtnSkip.onclick = () => { openSimonChoice(next); };
         } else {
           showSkip(false);
@@ -2620,14 +2693,14 @@ Punteggio parziale: <b>${totalScore}</b>`;
     } else {
       p.postUnlockWins += 1;
       p.baseTimeMs = Math.max(0, p.baseTimeMs - L.postDeltaSec*1000);
-      showOverlay('Quadro completato ✔️', `Post-sblocco: ${p.postUnlockWins} completati<br>${detailRow}<br><small>Prossimo tentativo: tempo base ${Math.floor(p.baseTimeMs/1000)}s</small>`);
-      ovBtn.textContent = 'Continua a giocare';
+      showOverlay('Board complete ✔️', `Post-unlock: ${p.postUnlockWins} completati<br>${detailRow}<br><small>Next attempt: base time ${Math.floor(p.baseTimeMs/1000)}s</small>`);
+      ovBtn.textContent = 'Keep playing';
       ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
     }
 
 if (activeSaveName) {
   if (upsertSave(activeSaveName, buildPayload())) {
-    flashMessage('💾 Autosalvato: ' + activeSaveName);
+    flashMessage('💾 Autosaved: ' + activeSaveName);
   }
 }
 }
@@ -2651,11 +2724,11 @@ if (activeSaveName) {
       updateScoreChip();
 
       showOverlay(
-        title || 'Hai perso',
-        (sub || 'Ritenta!') +
-        `<br><small>Sblocco: ${p.streak}/3 – tempo base ripristinato a ${Math.floor(p.baseTimeMs/1000)}s</small>`
+        title || 'You lost!',
+        (sub || 'Try again!') +
+        `<br><small>Unlock: ${p.streak}/3 – base time reset to ${Math.floor(p.baseTimeMs/1000)}s</small>`
       );
-      ovBtn.textContent = 'Riprova questo livello';
+      ovBtn.textContent = 'Retry this level';
       ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
     }
     updateSaveButton();
@@ -2745,10 +2818,10 @@ function showZenSkullLose(){
   try { SFX.play('lose', { volume: 1.0 }); } catch(_) {}
 
   // Mostra il popup (qui la X viene mappata di default a hideOverlay)
-  showOverlay('Oh no! 💀', 'Hai rivelato il teschio due volte.');
+  showOverlay('Oh no! 💀', 'You revealed the skull twice.');
 
   // Rendi il bottone principale: rigioca subito la Zen
-  ovBtn.textContent = 'Rigioca la Zen';
+  ovBtn.textContent = 'Play Zen again';
   ovBtn.onclick = () => { hideOverlay(); modeZen = true; startZen(); };
 
   // Nessun secondo bottone
@@ -2762,12 +2835,12 @@ function showZenSkullLose(){
 
   function openSimonChoice(next){
     showOverlay(
-      'Intermezzo bonus tempo 👻',
-      '<b>Bravo!</b> Prima di accedere al livello successivo puoi provare a guadagnare <b>secondi bonus</b> con un mini-gioco cliccando i fantasmini nella giusta sequenza.<br><br>' +
-      '<small>Ogni passo corretto = <b>+1s</b> al prossimo livello. Se riveli il teschio il mini-gioco termina.</small>'
+      'Time bonus interlude 👻',
+      '<b>Nice! Before the next level you can earn bonus seconds with a mini-game: click the little ghosts in the right order.<br><br>' +
+      '<small>Each correct step = +1s for the next level. Revealing the skull ends the mini-game.</small>'
     );
 
-    ovBtn.textContent = 'Prova il Bonus';
+    ovBtn.textContent = 'Try the bonus';
     ovBtn.onclick = () => {
       hideOverlay();
       startSimonIntermezzo();
@@ -2775,7 +2848,7 @@ function showZenSkullLose(){
 
     showSkip(true);
     if (ovBtnSkip) {
-      ovBtnSkip.textContent = 'Prosegui senza Bonus';
+      ovBtnSkip.textContent = 'Continue without bonus';
       ovBtnSkip.onclick = () => {
         hideOverlay();
         if (next < LEVELS.length) {
@@ -2791,20 +2864,20 @@ function showZenSkullLose(){
     let title = '', desc = '', avail = '';
 
     if (which === 'reveal'){
-      title = '👁️ Sbirciatina!';
-      desc  = 'Svela tutte le carte per 1s ma costa il 20% del tempo rimanente.';
-      avail = 'Disponibile dopo aver fatto almeno 1 coppia.';
+      title = '👁️ Peek!';
+      desc  = 'Reveal all cards for 1s at the cost of 20% remaining time.';
+      avail = 'Available after at least one match.';
     } else if (which === 'plus10'){
-      title = '🦇 Guadagna 10s!';
-      desc  = '+10 secondi, ma una coppia già trovata torna coperta e viene rilocalizzata.';
-      avail = 'Disponibile dopo aver fatto almeno 1 coppia.';
+      title = '🦇 +10s!';
+      desc  = '+10s, but one matched pair is hidden again and relocated.';
+      avail = 'Available after at least one match.';
     } else if (which === 'shift'){
-      title = '🌀 Guadagna 15s!';
-      desc  = '+15 secondi, ma rimescola tutto, anche 💀 e ⚡.';
-      avail = 'Disponibile dopo aver svelato almeno un 💀.';
+      title = '🌀 +15s!!';
+      desc  = '+15s, but reshuffles everything, including 💀 and ⚡.';
+      avail = 'Available after revealing at least one 💀.';
     }
 
-    const html = `${desc}<br><small>${avail}</small><br><small>Utilizzabile solo durante la manche.</small>`;
+    const html = `${desc}<br><small>${avail}</small><br><small>Usable only during the round.</small>`;
     showOverlay(title, html);
     ovBtn.textContent = 'Ok';
     ovBtn.onclick = () => { hideOverlay(); };
@@ -2846,9 +2919,9 @@ function flashMessage(text){
     return true;
   }catch(e){
     if (isQuotaExceeded(e)){
-      flashMessage('Limite salvataggi raggiunto: elimina uno slot');
+      flashMessage('Save limit reached: delete a slot');
     }else{
-      flashMessage('Impossibile salvare: storage disabilitato o pieno');
+      flashMessage('Can’t save: storage disabled or full');
     }
     return false;
   }
@@ -2871,7 +2944,7 @@ function upsertSave(name, payload){
   try{
     const trimmed = list.sort((a,b)=> (b.when||0)-(a.when||0)).slice(0, Math.max(0, list.length - 1));
     if (trimmed.length && writeSaves(trimmed)){
-      flashMessage('Spazio limitato: rimosso automaticamente 1 slot vecchio');
+      flashMessage('Low space: removed one old slot automatically');
       return true;
     }
   }catch(_){}
@@ -2915,7 +2988,7 @@ function upsertSave(name, payload){
 
 function openSaveManager(){
   if (state?.isZen) {
-    flashMessage('In Zen non si salva 😊');
+    flashMessage('Can’t save in Zen 😊');
     return;
   }
   if(!canSaveNow()){
@@ -2935,7 +3008,7 @@ function closeSaveManager(){
 
   function renderSaveList(){
     const list = readSaves().sort((a,b)=> (b.when||0)-(a.when||0));
-    if(!list.length){ saveList.innerHTML = '<div style="color:var(--muted)">Nessun salvataggio.</div>'; return; }
+    if(!list.length){ saveList.innerHTML = '<div style="color:var(--muted)">No saves.</div>'; return; }
     saveList.innerHTML = '';
     list.forEach(entry => {
       const row = document.createElement('div');
@@ -2955,20 +3028,20 @@ function closeSaveManager(){
       const loadBtn = document.createElement('button');
       loadBtn.className = 'icon-btn';
       loadBtn.innerHTML = '📤';
-      loadBtn.title = 'Carica questo salvataggio';
+      loadBtn.title = 'Load this save';
       loadBtn.setAttribute('aria-label','Carica questo salvataggio');
 
       const delBtn = document.createElement('button');
       delBtn.className = 'icon-btn';
       delBtn.innerHTML = '🗑️';
-      delBtn.title = 'Elimina questo salvataggio';
+      delBtn.title = 'Delete this save';
       delBtn.setAttribute('aria-label','Elimina questo salvataggio');
 
       loadBtn.onclick = () => {
         loadPayload(entry.data);
         setActiveSaveName(entry.name);
         closeSaveManager();
-        flashMessage('📂 Caricato: ' + entry.name);
+        flashMessage('📂 Loaded: ' + entry.name);
       };
       delBtn.onclick = () => {
         document.querySelectorAll('.inline-confirm').forEach(el => el.remove());
@@ -2991,7 +3064,7 @@ function closeSaveManager(){
         wrap.style.borderRadius = '10px';
         wrap.style.background = 'linear-gradient(180deg,var(--panel-1),var(--panel-2))';
 const span = document.createElement('span');
-span.append('Eliminare ');
+span.append('Delete ');
 const b = document.createElement('b');
 b.textContent = entry.name; // ← sicuro: solo testo
 span.append(b, '?');
@@ -3003,13 +3076,13 @@ btnsDiv.style.gap = '8px';
 
 const yesBtn = document.createElement('button');
 yesBtn.className = 'primary';
-yesBtn.textContent = 'Sì, elimina';
+yesBtn.textContent = 'Yes, delete';
 
 const noBtn = document.createElement('button');
 noBtn.className = 'primary';
 noBtn.style.background = 'var(--bad)';
 noBtn.style.color = '#fff';
-noBtn.textContent = 'Annulla';
+noBtn.textContent = 'Cancel';
 
 btnsDiv.append(yesBtn, noBtn);
 wrap.append(span, btnsDiv);
@@ -3058,26 +3131,26 @@ noBtn.onclick = () => {
 
     doSaveBtn.addEventListener('click', () => {
       const nm = (saveNameInput.value || '').trim();
-      if (!nm) { flashMessage('Inserisci un nome'); return; }
-      if (!canSaveNow()) { flashMessage('Puoi salvare solo a fine quadro o prima di iniziare'); return; }
+      if (!nm) { flashMessage('Enter a name'); return; }
+      if (!canSaveNow()) { flashMessage('You can save only at the end of a board or before starting'); return; }
 
       const exists = readSaves().some(s => s && s.name === nm);
 
 if (exists && !overwritePrompt) {
   overwritePrompt = document.createElement('div');
   overwritePrompt.setAttribute('role', 'dialog');
-  overwritePrompt.setAttribute('aria-label', 'Conferma sovrascrittura salvataggio');
+  overwritePrompt.setAttribute('aria-label', 'Confirm save overwrite');
   overwritePrompt.style.marginTop = '8px';
   overwritePrompt.style.padding = '10px';
   overwritePrompt.style.background = 'var(--panel-1)';
   overwritePrompt.style.border = '1px solid var(--panel-border)';
   overwritePrompt.style.borderRadius = '12px';
 
-  // "Sovrascrivere <b>{nm}</b>?" — senza innerHTML
+  // "Overwrite <b>{nm}</b>?" — senza innerHTML
   const msg = document.createElement('div');
   msg.style.marginBottom = '8px';
   msg.style.color = 'var(--muted)';
-  msg.append('Sovrascrivere ');
+  msg.append('Overwrite ');
   const b = document.createElement('b');
   b.textContent = nm;               // ✅ sicuro
   msg.append(b, '?');
@@ -3140,7 +3213,7 @@ overwritePrompt = null;
 
       if (upsertSave(nm, buildPayload())) {
         setActiveSaveName(nm);
-        flashMessage('💾 Salvato: ' + nm);
+        flashMessage('💾 Salvato ' + nm);
         renderSaveList();
         saveNameInput.value = '';
       }
@@ -3243,7 +3316,7 @@ function togglePause(){
       const data = raw ? JSON.parse(raw) : null;
       if(data) upsertSave('Ultimo', { version:3, themeIndex, totalScore:0, currentLevelIdx:0, progress });
       localStorage.removeItem(STORAGE_KEY);
-      flashMessage('Importato salvataggio legacy in "Ultimo"');
+      flashMessage('Imported legacy save into “Last”');
     }
   }catch(e){}
 })();
