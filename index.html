@@ -661,7 +661,7 @@
 <h3 style="color:#FFF44F">Play chill!</h3>
 <ul>
   <li>No timer, no on-screen score.</li>
-  <li>Just play: no powers, no special cards.</li>
+  <li>Just play: no powers, no points.</li>
   <li>End report: <b>time</b>, <b>moves</b>, <b>efficiency</b>, and ⭐.</li>
 </ul>
   </div>
@@ -745,9 +745,11 @@
     <button class="tutorial-close" id="ov-close" aria-label="Chiudi">✕</button>
 <h2 id="ov-title">You win!</h2>
 <p id="ov-sub">Time left: —</p>
-<button class="primary" id="ov-btn">Continue</button>
-<button class="primary outline-btn" id="ov-btn-skip">Skip</button>
-        </div>
+
+<div class="ov-actions" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+  <button class="primary" id="ov-btn">Continue</button>
+  <button class="primary outline-btn" id="ov-btn-skip" style="display:none">Skip</button>
+</div>
       </div>
     </div>
   </div>
@@ -1627,7 +1629,7 @@ function chaosSkullPenalty(card){
   }
 
   // 3) Se abbiamo almeno DUE buchi → crea la coppia direttamente nei buchi
-  if (holes.length >= 2){
+  if (holes.length >= 4){
     const i1 = (Math.random()*holes.length | 0);
     let   i2 = (Math.random()*holes.length | 0);
     if (i2 === i1) i2 = (i2 + 1) % holes.length;
@@ -1653,35 +1655,12 @@ scheduleHide(card, MISMATCH_HOLD_MS);
 return;
   }
 
-  // 4) Fallback: se non ci sono 2 buchi, usa due coperte a caso (comportamento precedente)
-  let pool = getHiddenNonSpecialCards();
-  if (pool.length >= 2){
-    const i1 = (Math.random()*pool.length | 0);
-    let   i2 = (Math.random()*pool.length | 0);
-    if (i2 === i1) i2 = (i2 + 1) % pool.length;
-    const t1 = pool[i1], t2 = pool[i2];
-
-t1.dataset.symbol = newSym; t1.querySelector('.symbol').textContent = newSym;
-t2.dataset.symbol = newSym; t2.querySelector('.symbol').textContent = newSym;
-
-// ✅ aggiorna il target della board
-state.level.pairs = (state.level.pairs || 0) + 1;
-state._spawnedPairs = (state._spawnedPairs || 0) + 1;
-
-flashMessage('💀 Spawned a new pair!');
-try { SFX.play?.('reshuffle', { volume:.9 }); } catch(_) {}
-
-// 🔀 rimescola le coperte non speciali (inclusa la nuova coppia)
-setTimeout(() => {
-  try { reshuffleHiddenNonSpecial(); } catch(_) {}
-  bumpEpoch();  // la board è cambiata di nuovo: invalida i tap precedenti
-}, 30);
-
-// richiudi il teschio
+// 4) Fallback (nuova regola): niente nuova coppia; solo reshuffle per non “sprecare” il tocco
+flashMessage('💀 🔀');
+try { reshuffleHiddenNonSpecial(); } catch(_) {}
 scheduleHide(card, MISMATCH_HOLD_MS);
 return;
 
-  }
   // 5) Ultimo fallback: non c’è spazio → rimescola solo per non “sprecare” il tocco
   flashMessage('💀 Not enough space… 🔀');
   reshuffleHiddenNonSpecial();
@@ -2024,12 +2003,21 @@ if (state.lock){
 
 
   // Ignora click su rivelate/matched
-  if (card.dataset.state === 'matched' || card.dataset.state === 'revealed') return;
+  // Consenti il tap su special rivelati; blocca solo le normali già rivelate
+if (card.dataset.state === 'matched') return;
+if (card.dataset.state === 'revealed' && !isSpecialSymbol(card.dataset.symbol)) return;
 
   // Avvia timer all'effettivo primo gesto di gioco
   startTimer();
 
   const sym = card.dataset.symbol;
+// Safety: se c'è in giro qualche special (⚡/💀) rivelato diverso da quello cliccato, richiudilo
+getActiveCards()
+  .filter(el => el !== card && el.getAttribute('data-state') === 'revealed' && isSpecialSymbol(el.dataset.symbol))
+  .forEach(el => {
+
+    scheduleHide(el, 0); // chiudi subito
+  });
 
   // --- Speciali: ⚡ / 💀 — chiudi l’eventuale carta “prima” aperta e gestisci
   if (sym === RED){
@@ -2062,29 +2050,38 @@ if (sym === YELLOW){
   // Chiudi eventuali normali aperte per non “sporcare” la mossa
   closeOpen(MISMATCH_HOLD_MS);
 
-  // Rivela il fulmine
-  flip(card, true);
+  // 🔢 In CHAOS contiamo i tap sullo stesso ⚡ (indipendente da yellowArmed)
+  if (state.isChaos){
+    state.yellowReveals = state.yellowReveals || new Map();
+    const prev = state.yellowReveals.get(card) || 0;
+    const now  = prev + 1;
+    state.yellowReveals.set(card, now);
 
-  // PRIMO tocco sullo stesso ⚡ → lo “armo” e mescolo
-  if (!card.dataset.yellowArmed){
-    armYellow(card);
+    // Rivela e mescola
+    flip(card, true);
     flashMessage('Shuffle!');
-    reshuffleHiddenNonSpecial();         // mescola solo le non-special coperte
-    scheduleHide(card, MISMATCH_HOLD_MS); // richiude il fulmine dopo il mescolo
+    reshuffleHiddenNonSpecial();
+
+    if (now >= 2){
+      // 2º tap sullo stesso ⚡ → diventa buco (come in "Chaos ok")
+      makeHole(card);
+      return; // niente scheduleHide: la carta non c’è più
+    }
+
+    // 1º tap: richiudi dopo il mescolo
+    scheduleHide(card, MISMATCH_HOLD_MS);
     return;
   }
 
-  // SECONDO tocco sullo stesso ⚡ → in Chaos diventa un buco
-  disarmYellow(card);
-  if (state.isChaos){
-    makeHole(card);  // sostituisce la carta con il placeholder-buco
-    return;          // niente scheduleHide perché la carta non c’è più
-  }
-
-  // (fuori da Chaos, al 2° tocco si limita a richiudere)
-  scheduleHide(card, MISMATCH_HOLD_MS);
-  return;
+  // --- Arcade / Zen (comportamento attuale, che è già ok) ---
+// --- Arcade / Zen — always reshuffle, no arm/disarm ---
+flip(card, true);
+flashMessage('Shuffle!');
+reshuffleHiddenNonSpecial();
+scheduleHide(card, MISMATCH_HOLD_MS);
+return;
 }
+
 
   // --- Normale: applichiamo la regola “max 2 aperte” robusta ---
   syncOpenFromDom(); // rete di sicurezza (in caso di stati ereditati da prima)
@@ -2112,59 +2109,68 @@ if (sym === YELLOW){
     const isMatch = (aSym === bSym);
 
     if (isMatch){
-      // Cancella eventuali richiuse pendenti
-      cancelHide(first); cancelHide(second);
+  // Cancella eventuali richiuse pendenti
+  cancelHide(first); cancelHide(second);
 
-      // Bonus tempo
-      const now = performance.now();
-      if (!state.isZen){
-        state.deadlineTs += 1000;            // +1s
-        state.leftMs = Math.max(0, state.deadlineTs - now);
-        updateTime();
-        flashMessage('+1s');
-        SFX.play?.('bonus1', { volume:.85, rate: 1.02 });
+  // Bonus tempo (lascia com'era)
+  const now = performance.now();
+  if (!state.isZen){
+    state.deadlineTs += 1000;            // +1s
+    state.leftMs = Math.max(0, state.deadlineTs - now);
+    updateTime();
+    flashMessage('+1s');
+    SFX.play?.('bonus1', { volume:.85, rate: 1.02 });
 
-        if (state.streak >= 1 && (now - state.lastMatchTime) < 5000){
-          state.deadlineTs += 5000;          // +5s combo
-          state.leftMs = Math.max(0, state.deadlineTs - performance.now());
-          updateTime();
-          flashMessage('+5s Bonus!');
-          SFX.play?.('bonus5', { volume:1 });
-        }
-        state.lastMatchTime = now;
-      }
+    if (state.streak >= 1 && (now - state.lastMatchTime) < 5000){
+      state.deadlineTs += 5000;          // +5s combo
+      state.leftMs = Math.max(0, state.deadlineTs - performance.now());
+      updateTime();
+      flashMessage('+5s Bonus!');
+      SFX.play?.('bonus5', { volume:1 });
+    }
+    state.lastMatchTime = now;
+  }
 
-// ⭐ Effetto visivo breve, poi trasformiamo in buchi permanenti
-spawnMatchStars(first);
-spawnMatchStars(second);
-try { SFX.play?.('ok', { volume:.9, rate: 0.98 }); } catch(_) {}
+  // --- Divergenza per modalità ---
+  if (state.isChaos){
+    // CHAOS: mostra ✨ e poi trasforma entrambe in buchi (come in "Chaos ok")
+    spawnMatchStars(first);
+    spawnMatchStars(second);
+    try { SFX.play?.('ok', { volume:.9, rate: 0.98 }); } catch(_) {}
+    setTimeout(() => {
+      makeHole(first);
+      makeHole(second);
+    }, MATCH_HOLD_MS);
+  } else {
+    // Arcade / Zen: comportati come ora (restano matched)
+    first.setAttribute('data-state','matched');
+    second.setAttribute('data-state','matched');
+    spawnMatchStars(first);
+    spawnMatchStars(second);
+    SFX.play?.('ok', { volume:.9, rate: 0.98 });
+  }
 
-// aspetta un attimo per far vedere le ✨ (coerente con MATCH_HOLD_MS)
-setTimeout(() => {
-  // Ogni carta matched viene *rimossa* e diventa un buco permanente
-  makeHole(first);
-  makeHole(second);
-}, MATCH_HOLD_MS);
+  // Stato logico comune
+  state.matched++;
+  state.streak++;
+  state.open = [];
+  state.pivot = null;
+  refreshPowersUI();
 
-// Stato logico: la coppia è comunque considerata “fatta”
-state.matched++;
-state.streak++;
-state.open = [];
-state.pivot = null;
-refreshPowersUI();
+  // SOLO CHAOS: dopo l’animazione ✨ prova una micro-catena di shift
+  if (state.isChaos && state.matched < state.level.pairs){
+    setTimeout(() => zenShiftOnce(), 620);
+  }
 
-// SOLO CHAOS: dopo l’animazione ✨ prova una catena di shift
-if (state.isChaos && state.matched < state.level.pairs){
-  setTimeout(() => zenShiftOnce(), 620);
+  // Fine quadro?
+  if (state.matched >= state.level.pairs){
+    win();
+    return;
+  }
+  return;
 }
 
-      // Fine quadro?
-      if (state.matched >= state.level.pairs){
-        win();
-        return;
-      }
-      return;
-    }
+
 
     // Mismatch → micro-lock finché non si richiudono
     state.streak = 0;
@@ -2209,10 +2215,11 @@ function cancelHide(card){
 function scheduleHide(card, ms){
   cancelHide(card);
   const t = setTimeout(() => {
-    if (card.getAttribute('data-state') !== 'matched' &&
-        card.getAttribute('data-state') === 'revealed'){
-      flip(card, false);
-    }
+if (card.getAttribute('data-state') !== 'matched' &&
+    card.getAttribute('data-state') === 'revealed'){
+
+  flip(card, false);
+}
     state.hideTimers?.delete(card);
   }, ms);
   state.hideTimers?.set(card, t);
@@ -2596,6 +2603,7 @@ async function zenShiftOnce(){
     showOverlay('Simon interlude over', `${finalMsg}`);
     ovBtn.textContent = 'Go to next level';
     ovBtn.onclick = () => { hideOverlay(); init(next); };
+mapCloseTo(ovBtn);
   }
 
   function spawnMatchStars(card){
@@ -2734,6 +2742,7 @@ function showZenEnd(){
   showSkip(true);
   ovBtnSkip.textContent = 'Back to menu';
   ovBtnSkip.onclick = () => { hideOverlay(); showIntro(); };
+mapCloseTo(ovBtnSkip);
 
   // Pulsante Condividi
   const actions = document.querySelector('.ov-actions');
@@ -2778,6 +2787,7 @@ Partial score: <b>${totalScore}</b>`;
         showOverlay('Board complete ✔️', `Unlock: ${p.streak}/3<br>${detailRow}<br><small>Next attempt: base time ${Math.floor(p.baseTimeMs/1000)}s</small>`);
         ovBtn.textContent = 'Keep playing';
         ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
+mapCloseTo(ovBtn);
       } else {
         p.unlocked = true;
         p.postUnlockWins = 0;
@@ -2797,7 +2807,7 @@ Partial score: <b>${totalScore}</b>`;
           hideOverlay();
           init(currentLevelIdx);
         };
-
+mapCloseTo(ovBtn);
         if (next < LEVELS.length){
           showSkip(true);
           ovBtnSkip.textContent = 'Next level';
@@ -2812,6 +2822,7 @@ Partial score: <b>${totalScore}</b>`;
       showOverlay('Board complete ✔️', `Post-unlock: ${p.postUnlockWins} completati<br>${detailRow}<br><small>Next attempt: base time ${Math.floor(p.baseTimeMs/1000)}s</small>`);
       ovBtn.textContent = 'Keep playing';
       ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
+mapCloseTo(ovBtn);
     }
 
 if (activeSaveName) {
@@ -2846,6 +2857,7 @@ if (activeSaveName) {
       );
       ovBtn.textContent = 'Retry this level';
       ovBtn.onclick = () => { hideOverlay(); init(currentLevelIdx); };
+mapCloseTo(ovBtn);
     }
     updateSaveButton();
   }
@@ -2916,7 +2928,13 @@ function showOverlay(title, sub){
   updateSaveButton();
   refreshPowersUI();
 }
-
+// Helper: fa sì che la X (in alto a destra) esegua la stessa azione del bottone passato
+function mapCloseTo(btnEl){
+  const x = document.querySelector('#ov-close, #overlay .tutorial-close');
+  if (x && btnEl && typeof btnEl.onclick === 'function'){
+    x.onclick = btnEl.onclick;
+  }
+}
 function hideOverlay(){
   closeModal(overlay);         // ⬅️ invece di togliere la classe a mano
   overlay.setAttribute('aria-hidden','true');
@@ -2975,7 +2993,7 @@ function showZenSkullLose(){
       };
     }
   }
-
+mapCloseTo(ovBtnSkip);
   function explainPower(which){
     let title = '', desc = '', avail = '';
 
