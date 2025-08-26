@@ -529,6 +529,11 @@
   max-width: 560px;                 /* riga più corta = più leggibile */
   margin: 10px auto;                /* centra il paragrafo */
 }
+/* === Teleport FX (Zen specials) === */
+.tp-glow-yellow { box-shadow: 0 0 18px rgba(255,213,79,.55), inset 0 0 32px rgba(255,213,79,.25); }
+.tp-glow-red    { box-shadow: 0 0 18px rgba(244,96,108,.55), inset 0 0 32px rgba(244,96,108,.25); }
+
+.tp-animating { will-change: transform; } /* per animazione FLIP */
 
 
 </style>
@@ -2037,11 +2042,19 @@ getActiveCards()
     if (state.redFlips >= 2){
       setTimeout(() => {
         if (state.isZen) showZenSkullLose();
-        else lose('Oh no! 💀', 'Hai rivelato il teschio due volte.');
+        else lose('Oh no! 💀', 'Hai rivelato il teschio due volte.'); // fallback modalità arcade
       }, 220);
       return;
     }
 
+    // ⬇️ SOLO ZEN: il teschio si sposta dopo l'attivazione, poi si richiude
+    if (state.isZen){
+      flashOnce('tip_tp_red', '💀 moved!');
+      teleportAfterReveal(card, { kind: 'red' });
+      return;
+    }
+
+    // altre modalità: comportamento invariato
     scheduleHide(card, MISMATCH_HOLD_MS);
     return;
   }
@@ -2075,11 +2088,22 @@ if (sym === YELLOW){
 
   // --- Arcade / Zen (comportamento attuale, che è già ok) ---
 // --- Arcade / Zen — always reshuffle, no arm/disarm ---
-flip(card, true);
-flashMessage('Shuffle!');
-reshuffleHiddenNonSpecial();
-scheduleHide(card, MISMATCH_HOLD_MS);
-return;
+  // --- Arcade / Zen — rimescola sempre le coperte non speciali
+  flip(card, true);
+  flashMessage('Shuffle!');
+  reshuffleHiddenNonSpecial();
+
+  // ⬇️ SOLO ZEN: dopo l'attivazione il fulmine si sposta, poi si richiude
+  if (state.isZen){
+    flashOnce('tip_tp_yellow', '⚡ moved!');
+    teleportAfterReveal(card, { kind: 'yellow' });
+    return;
+  }
+
+  // altre modalità: comportamento invariato
+  scheduleHide(card, MISMATCH_HOLD_MS);
+  return;
+
 }
 
 
@@ -2230,19 +2254,6 @@ function scheduleHidePair(a, b){
   scheduleHide(b, MISMATCH_HOLD_MS);
 }
 
-// === Helpers per il fulmine (⚡) — FUORI dalla funzione ===
-function armYellow(card){
-  if (card) card.dataset.yellowArmed = '1';
-}
-function disarmYellow(card){
-  if (!card) return;
-  delete card.dataset.yellowArmed;
-  card.removeAttribute('data-yellow-armed');
-}
-function disarmAllYellows(){
-  grid.querySelectorAll('.card[data-symbol="⚡"][data-yellow-armed]').forEach(disarmYellow);
-}
-
 // (segue) Annulla TUTTI i timer...
 function clearAllHideTimers(){
   if (!state?.hideTimers) return;
@@ -2311,6 +2322,99 @@ function getNeighbors(idx, side){
   // des
   if (c<side-1) res.push(idx + 1);
   return res;
+}
+/* === ZEN — Teletrasporto speciali (⚡/💀) ============================= */
+/* Prende una carta coperta non speciale, diversa da 'exceptEl' */
+function getCoveredNormalCards(){
+  return getActiveCards().filter(c =>
+    isCoveredCard(c) && !isSpecialSymbol(c.dataset.symbol)
+  );
+}
+
+/* Una sola volta: flash di aiuto */
+function flashOnce(key, text){
+  try {
+    const K = `skullory_${key}`;
+    if (!localStorage.getItem(K)) { flashMessage(text); localStorage.setItem(K, '1'); }
+  } catch(_) {}
+}
+
+/* FLIP swap tra due card: scambia nel DOM, aggiorna data-index, anima entrambe */
+function teleportSwap(a, b, { dur=200, kind='yellow' } = {}){
+  return new Promise((resolve) => {
+    if (!a || !b || !a.isConnected || !b.isConnected) return resolve();
+
+    const aFrom = a.getBoundingClientRect();
+    const bFrom = b.getBoundingClientRect();
+    const aIdx  = +a.dataset.index;
+    const bIdx  = +b.dataset.index;
+
+    // swap in DOM
+    swapNodes(a, b);
+
+    // aggiorna gli indici (fondamentale per tutte le query per data-index)
+    a.dataset.index = String(bIdx);
+    b.dataset.index = String(aIdx);
+
+    // calcola delta
+    const aTo = a.getBoundingClientRect();
+    const bTo = b.getBoundingClientRect();
+    const aDx = aFrom.left - aTo.left, aDy = aFrom.top - aTo.top;
+    const bDx = bFrom.left - bTo.left, bDy = bFrom.top - bTo.top;
+
+    // setup animazione
+    [a, b].forEach(el => {
+      el.classList.add('tp-animating');
+      el.style.transform  = `translate(${el===a?aDx:bDx}px, ${el===a?aDy:bDy}px)`;
+      el.style.transition = 'transform 0ms';
+      if (el === a){
+        el.classList.add(kind === 'red' ? 'tp-glow-red' : 'tp-glow-yellow');
+      }
+    });
+
+    // reflow
+    a.getBoundingClientRect();
+
+    requestAnimationFrame(() => {
+      [a, b].forEach(el => {
+        el.style.transition = `transform ${dur}ms cubic-bezier(.2,.7,.1,1)`;
+        el.style.transform  = 'translate(0,0)';
+      });
+      const cleanup = () => {
+        [a, b].forEach(el => {
+          el.classList.remove('tp-animating','tp-glow-red','tp-glow-yellow');
+          el.style.transition = ''; el.style.transform  = '';
+        });
+        a.removeEventListener('transitionend', cleanup);
+        resolve();
+      };
+      a.addEventListener('transitionend', cleanup);
+    });
+  });
+}
+
+/* Sposta la carta speciale rivelata verso una posizione coperta casuale, poi richiude */
+function teleportAfterReveal(card, { kind='yellow' } = {}){
+  if (!state?.isZen || state?.isChaos) { scheduleHide(card, MISMATCH_HOLD_MS); return; }
+
+  const pool = getCoveredNormalCards().filter(c => c !== card);
+  if (!pool.length){ scheduleHide(card, MISMATCH_HOLD_MS); return; }
+
+  const target = pool[(Math.random()*pool.length)|0];
+
+  // micro-recinto input (come nei tuoi rimescoli)
+  const prevLock = state.lock;
+  state.lock = true;
+  tapBuffer = [];
+
+  try { SFX.play?.('flip', { volume:.7 }); } catch(_) {}
+
+  teleportSwap(card, target, { dur: 200, kind }).then(() => {
+    bumpEpoch();               // la board è cambiata
+    scheduleHide(card, MISMATCH_HOLD_MS);
+    state.lock = prevLock;
+    drainTapBuffer();
+  });
 }
 
 // Crea un buco nella cella di 'card' (⚡ rivelato 2 volte) — SOLO ZEN
