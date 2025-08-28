@@ -535,6 +535,20 @@
 
 .tp-animating { will-change: transform; } /* per animazione FLIP */
 
+.banners {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;   /* banner uno sotto l’altro */
+  align-items: center;
+  width: 100%;              /* stessa larghezza del contenitore logo */
+}
+
+.banners img {
+  display: block;
+  width: 100%;              /* si allargano a tutta la larghezza del logo */
+  height: auto;             /* mantengono le proporzioni */
+  max-height: none;         /* niente limite di altezza artificiale */
+}
 
 </style>
 </head>
@@ -559,8 +573,9 @@
 <div class="wrap">
   <div class="top">
     <div class="brand">
-      <img src="skullory-logo.svg" alt="Skullory">
-    </div>
+  <img src="skullory-logo.svg" alt="Skullory">
+  <div id="mode-banners" class="banners"></div>
+</div>
     <div class="stats-container">
       <div class="stats">
         <span class="level-chip" id="levelChip">Level: —</span>
@@ -987,9 +1002,9 @@ function setSfxMuted(v){
   function cycleAudioMode(){
     const next = (getAudioMode() + 1) % 3;
     setAudioMode(next);
-    if (next === 0)      flashMessage('Audio: musica + effetti');
-    else if (next === 1) flashMessage('Audio: solo effetti');
-    else                 flashMessage('Audio: spento');
+    if (next === 0)      flashMessage('Audio: music + SFX');
+    else if (next === 1) flashMessage('Audio: SFX only (music OFF)');
+    else                 flashMessage('Audio: muted');
     refreshAudioButtons();
   }
 
@@ -1008,6 +1023,26 @@ function setSfxMuted(v){
   const levelChip = document.getElementById('levelChip');
   const statusChip = document.getElementById('statusChip');
   const scoreChip = document.getElementById('score');
+function updateBanners(mode) {
+  const container = document.getElementById('mode-banners');
+  if (!container) return;
+
+  // Svuota sempre
+  container.innerHTML = '';
+
+  // Mostra solo in Zen o Chaos
+  if (mode === 'zen') {
+    const img = document.createElement('img');
+    img.src = 'zen_.svg';
+    img.alt = 'Zen banner';
+    container.appendChild(img);
+  } else if (mode === 'chaos') {
+    const img = document.createElement('img');
+    img.src = 'chaos_.svg';
+    img.alt = 'Chaos banner';
+    container.appendChild(img);
+  }
+}
 
   const powerRevealBtn = document.getElementById('powerReveal');
   const powerPlus10Btn = document.getElementById('powerPlus10');
@@ -1087,6 +1122,7 @@ let countBadge, progressWrap, progressBar, hintEl;
 
   function setTutorialMode(mode){
   tutorialMode = mode;
+updateBanners(mode);
   rebuildDots();
   goToSlide(0);
 
@@ -1267,15 +1303,15 @@ function hideIntro(){
 
       if (mode === 0){
         audioBtn.textContent = '🎵';
-        audioBtn.title = 'Audio: musica + effetti';
+        audioBtn.title = 'Audio: music + SFX';
         audioBtn.setAttribute('aria-label','Audio: musica + effetti');
       } else if (mode === 1){
         audioBtn.textContent = '🔊';
-        audioBtn.title = 'Audio: solo effetti (musica OFF)';
+        audioBtn.title = 'Audio: SFX only (music OFF)';
         audioBtn.setAttribute('aria-label','Audio: solo effetti (musica OFF)');
       } else {
         audioBtn.textContent = '🔇';
-        audioBtn.title = 'Audio: spento';
+        audioBtn.title = 'Audio: muted';
         audioBtn.setAttribute('aria-label','Audio: spento');
       }
     }
@@ -1495,14 +1531,14 @@ function updateSaveButton(){
     // In modalità Zen non si salva mai
     saveBtn.disabled = true;
     saveBtn.style.opacity = '0.6';
-    saveBtn.title = 'In Zen non si salva';
+    saveBtn.title = 'Saving is disabled in Zen';
     return;
   }
 
   const ok = canSaveNow();
   saveBtn.disabled = !ok;
   saveBtn.style.opacity = ok ? '1' : '0.6';
-  saveBtn.title = ok ? 'Salva' : 'Salva disponibile solo a fine quadro o prima di iniziare';
+  saveBtn.title = 'Save available only at the end of a board or before starting';
 }
 
 function isPreFrame(){
@@ -1792,6 +1828,7 @@ drainTapBuffer();
   function startArcade(){ init(currentLevelIdx || 0); }
 
 function startZen(variant = 'zen'){
+updateBanners('zen');
   zenVariant = (variant === 'chaos') ? 'chaos' : 'zen';
   const idx5base = LEVELS.findIndex(L => L.side === 5 && (!L.disabled || L.disabled.length === 0));
   const idx5any  = LEVELS.findIndex(L => L.side === 5);
@@ -1799,6 +1836,7 @@ function startZen(variant = 'zen'){
   init(target);
 }
 function startDailyChaos(){
+updateBanners('chaos');
   // Daily = Zen 'chaos' + deck deterministica del giorno
   zenVariant = 'chaos';
   modeZen = true;
@@ -2042,7 +2080,7 @@ getActiveCards()
     if (state.redFlips >= 2){
       setTimeout(() => {
         if (state.isZen) showZenSkullLose();
-        else lose('Oh no! 💀', 'Hai rivelato il teschio due volte.'); // fallback modalità arcade
+        else lose('Oh no! 💀', 'You revealed the skull twice!'); // fallback modalità arcade
       }, 220);
       return;
     }
@@ -2704,7 +2742,7 @@ async function zenShiftOnce(){
       ? `You earned <b>+${bonusSec}s</b> for the next level!`
       : 'No bonus earned.';
 
-    showOverlay('Simon interlude over', `${finalMsg}`);
+    showOverlay('Bonus interlude over', `${finalMsg}`);
     ovBtn.textContent = 'Go to next level';
     ovBtn.onclick = () => { hideOverlay(); init(next); };
 mapCloseTo(ovBtn);
@@ -3230,7 +3268,7 @@ function openSaveManager(){
     return;
   }
   if(!canSaveNow()){
-    flashMessage('💾 Salva solo a fine quadro o prima di iniziare');
+    flashMessage('💾 Save only at the end of a board or before starting');
     return;
   }
   renderSaveList();
@@ -3400,7 +3438,7 @@ if (exists && !overwritePrompt) {
 
   const yesBtn = document.createElement('button');
   yesBtn.className = 'primary';
-  yesBtn.textContent = 'Sì';
+  yesBtn.textContent = 'Yes';
   yesBtn.tabIndex = 0;
 
   const noBtn = document.createElement('button');
@@ -3423,7 +3461,7 @@ if (exists && !overwritePrompt) {
 const ok = upsertSave(nm, buildPayload());
 if (ok) {
   setActiveSaveName(nm);
-  flashMessage('💾 Sovrascritto: ' + nm);
+  flashMessage('💾 Overwritten: ' + nm);
   renderSaveList();
   saveNameInput.value = '';
 }
@@ -3451,7 +3489,7 @@ overwritePrompt = null;
 
       if (upsertSave(nm, buildPayload())) {
         setActiveSaveName(nm);
-        flashMessage('💾 Salvato ' + nm);
+        flashMessage('💾 Saved ' + nm);
         renderSaveList();
         saveNameInput.value = '';
       }
