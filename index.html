@@ -678,23 +678,33 @@
 
   <!-- Slide Zen -->
   <div class="tutorial-slide" data-mode="zen" hidden>
-<h3 style="color:#FFF44F">Play chill!</h3>
-<ul>
-  <li>No timer, no on-screen score.</li>
-  <li>Just play: no powers, no points.</li>
-  <li>End report: <b>time</b>, <b>moves</b>, <b>efficiency</b>, and ⭐.</li>
-</ul>
+    <h3 style="color:#FFF44F">Play chill!</h3>
+    <ul>
+      <li>No timer, no on-screen score.</li>
+      <li>Just play: no powers, no points.</li>
+      <li>End report: <b>time</b>, <b>moves</b>, <b>efficiency</b>, and ⭐.</li>
+    </ul>
+
+    <h3 style="color:#FFF44F; margin-top:14px">Special cards</h3>
+    <ul>
+      <li>⚡ reshuffles all covered cards (except 💀 and ⚡).</li>
+      <li>💀 if revealed twice: <b>you lose!</b></li>
+    </ul>
   </div>
 
 <!-- Slide Chaos -->
 <div class="tutorial-slide" data-mode="chaos" hidden>
-<h3 style="color:#FFF44F">Challenge friends to beat you!</h3>
-<ul>
-  <li>Same daily grid for everyone. <b>Share your best score!</b></li>
- <li>⚡ reshuffles covered cards; <b>tap it twice and you’ll create a hole!</b></li>
-  <li><b>💀</b> cancels a <b>matched pair</b> (if any) and <b>reshuffles covered cards</b>!</li>
-  <li>On a match, the hole pulls in <b>1–4 adjacent covered cards</b>!</li>
-</ul>
+  <h3 style="color:#FFF44F">Challenge friends to beat you!</h3>
+  <ul>
+    <li>Same daily grid for everyone. <b>Share your best score!</b></li>
+  </ul>
+
+  <h3 style="color:#FFF44F; margin-top:14px">Special cards</h3>
+  <ul>
+    <li>⚡ reshuffles covered cards; <b>tap it twice and you’ll create a hole!</b></li>
+    <li><b>💀</b> cancels a <b>matched pair</b> (if any) and <b>reshuffles covered cards</b>!</li>
+    <li>On a match, the hole pulls in <b>1–4 adjacent covered cards</b>!</li>
+  </ul>
 </div>
 
 </div>
@@ -2897,7 +2907,8 @@ mapCloseTo(ovBtnSkip);
     shareBtn.onclick = () => shareZen();
     actions.appendChild(shareBtn);
   }
-
+const xbtn = document.getElementById('ov-close');
+if (xbtn) xbtn.style.display = 'none';
   overlay.classList.add('show');
   updateSaveButton();
 }
@@ -3064,7 +3075,8 @@ function showOverlay(title, sub){
 
   const x = document.querySelector('#overlay .tutorial-close, #ov-close');
   if (x) x.onclick = () => { hideOverlay(); };
-
+const xbtn = document.getElementById('ov-close');
+if (xbtn) xbtn.style.display = '';
   openModal(overlay);
   showSkip(false);
   updateSaveButton();
