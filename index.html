@@ -1175,6 +1175,7 @@ updateBanners(mode);
   // Mostra il link "Privacy" solo nel menu iniziale (root)
   const introLegal = document.querySelector('.intro-legal');
   if (introLegal) introLegal.style.display = (mode === 'root') ? '' : 'none';
+if (closeBtn) closeBtn.style.display = (mode === 'root') ? 'none' : '';
 
 }
 
