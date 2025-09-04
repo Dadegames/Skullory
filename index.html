@@ -3667,9 +3667,37 @@ if ('serviceWorker' in navigator) {
   window.NativeAds = { setInterstitialUnitId, showInterstitialSafe, maybeShowArcadeAd };
 </script>
 <!-- === /Native Ads bridge === -->
+<!-- DEBUG: pulsante per testare l'interstitial -->
+<style>
+  #testAdBtn {
+    position: fixed; right: 12px; bottom: 12px; z-index: 99999;
+    padding: 10px 14px; border-radius: 8px; border: 1px solid #999;
+    background:#fff; font: 14px system-ui; box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  }
+</style>
+<button id="testAdBtn" type="button">Test Ad</button>
+<script>
+  (function(){
+    const btn = document.getElementById('testAdBtn');
+    btn.addEventListener('click', async () => {
+      try {
+        if (!window.Capacitor) { alert('Capacitor NON presente'); return; }
+        if (!window.Capacitor.Plugins?.Ads) { alert('Plugin Ads NON registrato'); return; }
+        // Prova preload + show
+        try { await window.Capacitor.Plugins.Ads.preload({}); } catch(e) { /* ok se fallisce, vediamo show */ }
+        await window.Capacitor.Plugins.Ads.show({});
+        alert('Ad mostrato / chiuso');
+      } catch(e) {
+        alert('Errore show: ' + (e?.message || e));
+      }
+    });
+  })();
+</script>
+<!-- /DEBUG -->
 
 </body>
 </html>
+
 
 
 
