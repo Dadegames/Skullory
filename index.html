@@ -2924,7 +2924,7 @@ if (xbtn) xbtn.style.display = 'none';
     if (state?.isZen){ showZenEnd(); return; }
     state.running = false;
     SFX.play?.('win', { volume:1.0 });
-  try { window.NativeAds?.maybeShowArcadeAd?.(); } catch(e) {}
+try { window.maybeShowArcadeAd(); } catch(e) {}
 
 
     const secondsLeft = Math.floor(state.leftMs/1000);
