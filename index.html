@@ -3681,37 +3681,29 @@ if ('serviceWorker' in navigator) {
 <script>
   (function(){
     const btn = document.getElementById('testAdBtn');
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', () => {
+      if (!window.JsAds) { alert('JsAds NON disponibile'); return; }
       try {
-        if (!window.Capacitor) { alert('Capacitor NON presente'); return; }
-
-        // 🔑 crea il proxy JS del plugin nativo (nome: "Ads")
-        const Ads = (window.Capacitor.registerPlugin
-          ? window.Capacitor.registerPlugin('Ads')
-          : (window.Capacitor.Plugins && window.Capacitor.Plugins.Ads));
-
-        if (!Ads) { alert('Plugin Ads NON registrato lato JS'); return; }
-
-        // opzionale: mostra i plugin web già visibili
-        const keys = Object.keys(window.Capacitor.Plugins || {});
-        console.log('Plugins noti:', keys.join(', '));
-
-        // prova preload + show
-        try { await Ads.preload({}); } catch(e) {}
-        await Ads.show({});
-        alert('Ad mostrato / chiuso');
+        // carica l’interstitial
+        window.JsAds.preload();
+        // prova a mostrarlo dopo un attimo
+        setTimeout(() => {
+          try { window.JsAds.show(); } catch(e) { alert('Errore show: ' + e); }
+        }, 800);
       } catch(e) {
-        alert('Errore show: ' + (e?.message || e));
+        alert('Errore preload/show: ' + e);
       }
     });
   })();
 </script>
 
 
+
 <!-- /DEBUG -->
 
 </body>
 </html>
+
 
 
 
