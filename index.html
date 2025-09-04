@@ -3406,15 +3406,16 @@ noBtn.onclick = () => {
 
   restartBtn.addEventListener('click', () => { openRestartConfirm(); });
 if (restartYes) {
-  restartYes.addEventListener('click', async () => {
+  restartYes.addEventListener('click', () => {
     closeRestartConfirm();
     hideOverlay();
-    // 👇 prova a mostrare un interstitial (se non è pronto, ignora e continua)
-    try { await window.NativeAds?.showInterstitialSafe?.(); } catch(e) {}
+    // 👇 prova a mostrare un interstitial (non blocca se non è pronto)
+    try { window.showInterstitialSafe(); } catch(e) {}
     currentLevelIdx = 0;
     showIntro();
   });
 }
+
   if (restartNo) {
     restartNo.addEventListener('click', () => { closeRestartConfirm(); });
   }
@@ -3728,6 +3729,7 @@ if ('serviceWorker' in navigator) {
 
 </body>
 </html>
+
 
 
 
