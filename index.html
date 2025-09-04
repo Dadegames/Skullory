@@ -3621,8 +3621,49 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<!-- === Native Ads bridge (Capacitor) === -->
+<script type="module">
+  const isNative = typeof window.Capacitor !== 'undefined';
+
+  async function call(plugin, method, args = {}) {
+    if (!isNative) throw new Error('Not native');
+    return window.Capacitor.Plugins[plugin][method](args);
+  }
+
+  // ID interstitial reale: lo imposterai solo quando vai in produzione
+  async function setInterstitialUnitId(id) {
+    if (!isNative) return;
+    try { await call('Ads','setUnitId',{ id }); } catch(e){}
+  }
+
+  // Mostra interstitial, ma se non è pronto non blocca il gioco
+  async function showInterstitialSafe() {
+    if (!isNative) return;
+    try {
+      await call('Ads','preload').catch(()=>{});
+      await call('Ads','show');
+    } catch(e) {
+      /* nessun ad disponibile → ignora */
+    }
+  }
+
+  // Contatore Arcade: 1 ad ogni 2 vittorie
+  window.__arcadeWins = 0;
+  async function maybeShowArcadeAd() {
+    if (!isNative) return;
+    window.__arcadeWins++;
+    if (window.__arcadeWins % 2 === 0) {
+      try { await showInterstitialSafe(); } catch(e){}
+    }
+  }
+
+  // Espongo in window per usarle nel tuo codice
+  window.NativeAds = { setInterstitialUnitId, showInterstitialSafe, maybeShowArcadeAd };
+</script>
+<!-- === /Native Ads bridge === -->
 
 </body>
 </html>
+
 
 
