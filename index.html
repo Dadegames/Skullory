@@ -3682,10 +3682,17 @@ if ('serviceWorker' in navigator) {
     btn.addEventListener('click', async () => {
       try {
         if (!window.Capacitor) { alert('Capacitor NON presente'); return; }
-        if (!window.Capacitor.Plugins?.Ads) { alert('Plugin Ads NON registrato'); return; }
-        // Prova preload + show
-        try { await window.Capacitor.Plugins.Ads.preload({}); } catch(e) { /* ok se fallisce, vediamo show */ }
-        await window.Capacitor.Plugins.Ads.show({});
+
+        const plugins = window.Capacitor.Plugins || {};
+        const keys = Object.keys(plugins);
+        alert('Plugin registrati: ' + (keys.length ? keys.join(', ') : '(nessuno)'));
+
+        // prova sia "Ads" che "AdsPlugin"
+        const name = plugins.Ads ? 'Ads' : (plugins.AdsPlugin ? 'AdsPlugin' : null);
+        if (!name) { alert('Plugin Ads NON registrato'); return; }
+
+        try { await plugins[name].preload({}); } catch(e) {}
+        await plugins[name].show({});
         alert('Ad mostrato / chiuso');
       } catch(e) {
         alert('Errore show: ' + (e?.message || e));
@@ -3693,10 +3700,12 @@ if ('serviceWorker' in navigator) {
     });
   })();
 </script>
+
 <!-- /DEBUG -->
 
 </body>
 </html>
+
 
 
 
