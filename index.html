@@ -3700,9 +3700,35 @@ if ('serviceWorker' in navigator) {
 
 
 <!-- /DEBUG -->
+<!-- Helpers per interstitial via JsAds -->
+<script>
+  // Mostra un interstitial senza bloccare se non è pronto
+  window.showInterstitialSafe = function () {
+    if (!window.JsAds) return;
+    try {
+      // carica subito…
+      window.JsAds.preload();
+      // …e prova a mostrarlo dopo un attimo
+      setTimeout(() => {
+        try { window.JsAds.show(); } catch(e){}
+      }, 600);
+    } catch(e){}
+  };
+
+  // Arcade: 1 interstitial ogni 2 vittorie
+  window.__arcadeWins = 0;
+  window.maybeShowArcadeAd = function () {
+    if (!window.JsAds) return;
+    window.__arcadeWins++;
+    if (window.__arcadeWins % 2 === 0) {
+      window.showInterstitialSafe();
+    }
+  };
+</script>
 
 </body>
 </html>
+
 
 
 
