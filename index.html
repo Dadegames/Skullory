@@ -2887,17 +2887,16 @@ function showZenEnd(){
 
   // Bottoni
 ovBtn.textContent = 'Play again';
-ovBtn.onclick = async () => {
+ovBtn.onclick = () => {
   hideOverlay();
-  // 👇 prova a mostrare un interstitial (se non è pronto, ignora e continua)
-  try { await window.NativeAds?.showInterstitialSafe?.(); } catch(e) {}
+  // 👇 prova a mostrare un interstitial (non blocca se non è pronto)
+  try { window.showInterstitialSafe(); } catch(e) {}
   if (state.isDaily) {
-    startDailyChaos(); // rigioca la stessa daily (stessa griglia del giorno)
+    startDailyChaos(); // rigioca la daily
   } else {
     startZen(state.isChaos ? 'chaos' : 'zen');
   }
 };
-
 
   showSkip(true);
   ovBtnSkip.textContent = 'Back to menu';
