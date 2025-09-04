@@ -3683,16 +3683,20 @@ if ('serviceWorker' in navigator) {
       try {
         if (!window.Capacitor) { alert('Capacitor NON presente'); return; }
 
-        const plugins = window.Capacitor.Plugins || {};
-        const keys = Object.keys(plugins);
-        alert('Plugin registrati: ' + (keys.length ? keys.join(', ') : '(nessuno)'));
+        // 🔑 crea il proxy JS del plugin nativo (nome: "Ads")
+        const Ads = (window.Capacitor.registerPlugin
+          ? window.Capacitor.registerPlugin('Ads')
+          : (window.Capacitor.Plugins && window.Capacitor.Plugins.Ads));
 
-        // prova sia "Ads" che "AdsPlugin"
-        const name = plugins.Ads ? 'Ads' : (plugins.AdsPlugin ? 'AdsPlugin' : null);
-        if (!name) { alert('Plugin Ads NON registrato'); return; }
+        if (!Ads) { alert('Plugin Ads NON registrato lato JS'); return; }
 
-        try { await plugins[name].preload({}); } catch(e) {}
-        await plugins[name].show({});
+        // opzionale: mostra i plugin web già visibili
+        const keys = Object.keys(window.Capacitor.Plugins || {});
+        console.log('Plugins noti:', keys.join(', '));
+
+        // prova preload + show
+        try { await Ads.preload({}); } catch(e) {}
+        await Ads.show({});
         alert('Ad mostrato / chiuso');
       } catch(e) {
         alert('Errore show: ' + (e?.message || e));
@@ -3701,10 +3705,12 @@ if ('serviceWorker' in navigator) {
   })();
 </script>
 
+
 <!-- /DEBUG -->
 
 </body>
 </html>
+
 
 
 
