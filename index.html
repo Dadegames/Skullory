@@ -2884,15 +2884,18 @@ function showZenEnd(){
   }
 
   // Bottoni
-  ovBtn.textContent = 'Play again';
-  ovBtn.onclick = () => {
-    hideOverlay();
-    if (state.isDaily) {
-      startDailyChaos(); // rigioca la stessa daily (stessa griglia del giorno)
-    } else {
-      startZen(state.isChaos ? 'chaos' : 'zen');
-    }
-  };
+ovBtn.textContent = 'Play again';
+ovBtn.onclick = async () => {
+  hideOverlay();
+  // 👇 prova a mostrare un interstitial (se non è pronto, ignora e continua)
+  try { await window.NativeAds?.showInterstitialSafe?.(); } catch(e) {}
+  if (state.isDaily) {
+    startDailyChaos(); // rigioca la stessa daily (stessa griglia del giorno)
+  } else {
+    startZen(state.isChaos ? 'chaos' : 'zen');
+  }
+};
+
 
   showSkip(true);
   ovBtnSkip.textContent = 'Back to menu';
@@ -3399,14 +3402,16 @@ noBtn.onclick = () => {
   if (introBtn){ /* handler impostato da setTutorialMode() */ }
 
   restartBtn.addEventListener('click', () => { openRestartConfirm(); });
-  if (restartYes) {
-    restartYes.addEventListener('click', () => {
-      closeRestartConfirm();
-      hideOverlay();
-      currentLevelIdx = 0;
-      showIntro();
-    });
-  }
+if (restartYes) {
+  restartYes.addEventListener('click', async () => {
+    closeRestartConfirm();
+    hideOverlay();
+    // 👇 prova a mostrare un interstitial (se non è pronto, ignora e continua)
+    try { await window.NativeAds?.showInterstitialSafe?.(); } catch(e) {}
+    currentLevelIdx = 0;
+    showIntro();
+  });
+}
   if (restartNo) {
     restartNo.addEventListener('click', () => { closeRestartConfirm(); });
   }
@@ -3664,6 +3669,7 @@ if ('serviceWorker' in navigator) {
 
 </body>
 </html>
+
 
 
 
