@@ -1167,8 +1167,8 @@ if (introBtn){
         try { typeof flashMessage === 'function' && flashMessage('Premium required to play Arcade'); } catch(e) {}
       }
     };
-    // aggiorna/mostra il lucchetto su Play (Arcade)
-    refreshArcadePlayLock();
+    // 👇 aggiungi/subito aggiorna il lucchetto
+    try { refreshArcadePlayLock(); } catch(e){}
     introBtn.style.display = '';
   } else if (mode === 'zen'){
     introBtn.textContent = 'Play (Zen)';
@@ -3827,8 +3827,11 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
     };
   })();
 </script>
-
-
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    try { refreshArcadePlayLock(); } catch(e){}
+  });
+</script>
 
 </body>
 </html>
