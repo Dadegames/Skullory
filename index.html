@@ -3665,6 +3665,7 @@ if ('serviceWorker' in navigator) {
 <script>
   // Mostra un interstitial senza bloccare se non è pronto
   window.showInterstitialSafe = function () {
+if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
     if (!window.JsAds) return;
     try {
       // carica subito…
@@ -3679,6 +3680,7 @@ if ('serviceWorker' in navigator) {
   // Arcade: 1 interstitial ogni 2 vittorie
   window.__arcadeWins = 0;
   window.maybeShowArcadeAd = function () {
+  if (window.__isPremium === true) return; // <-- niente ads se premium
     if (!window.JsAds) return;
     window.__arcadeWins++;
     if (window.__arcadeWins % 2 === 0) {
@@ -3686,9 +3688,43 @@ if ('serviceWorker' in navigator) {
     }
   };
 </script>
+<!-- === Billing bridge helpers (Premium) === -->
+<script>
+  // flag premium lato web
+  window.__isPremium = false;
+
+  // callback che Android chiamerà quando cambia lo stato
+  window.onPremiumUpdated = function (value) {
+    window.__isPremium = !!value;
+    // qui puoi aggiornare UI (es: togli lock arcade) se vuoi
+  };
+
+  // inizializza Billing all’avvio della pagina
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
+      if (window.JsBilling) {
+        window.JsBilling.init(); // connette BillingClient e legge acquisti esistenti
+        // sincronizza il flag locale alla partenza
+        try {
+          window.__isPremium = (window.JsBilling.isPremium() === 'true');
+        } catch(e){}
+      }
+    } catch(e){}
+  });
+
+  // funzioni che userai dalla UI
+  window.purchasePremium = function() {
+    try { window.JsBilling && window.JsBilling.purchasePremium(); } catch(e){}
+  };
+  window.restorePremium = function() {
+    try { window.JsBilling && window.JsBilling.restorePurchases(); } catch(e){}
+  };
+</script>
+<!-- === /Billing bridge helpers === -->
 
 </body>
 </html>
+
 
 
 
