@@ -3787,12 +3787,14 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
 <!-- === /UI Premium === -->
 <style>
   /* il tasto centrale "intro-play" ospita il badge */
-  #intro-play { position: relative; }
+  #intro-play { position: relative; overflow: visible; }
+
+  /* badge esterno (pseudo-elemento) */
   #intro-play.locked::after {
     content: '🔒';
     position: absolute;
-    top: -6px;
-    right: -6px;
+    top: -4px;
+    right: -4px;
     width: 22px;
     height: 22px;
     font-size: 14px;
@@ -3802,31 +3804,48 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
     border: 1px solid #aaa;
     border-radius: 50%;
     box-shadow: 0 2px 6px rgba(0,0,0,.2);
+    z-index: 9999; /* davanti a tutto */
+    pointer-events: none;
   }
+
+  /* leggera attenuazione visiva quando è bloccato (facoltativo) */
   #intro-play.locked { opacity: .95; }
 </style>
 <script>
-  // Mostra/nasconde il lucchetto sul tasto "Play (Arcade)" del tutorial
   function refreshArcadePlayLock() {
     const b = document.getElementById('intro-play');
-    // "tutorialMode" è la variabile già usata nel tuo tutorial
-    const locked = (typeof tutorialMode !== 'undefined' && tutorialMode === 'arcade' && window.__isPremium !== true);
-    if (b) {
-      b.classList.toggle('locked', locked);
-      b.setAttribute('aria-label', locked ? 'Play Arcade (Premium required)' : 'Play Arcade');
+    if (!b) return;
+
+    // Sei nella schermata Arcade? Usa tutorialMode se c'è, altrimenti
+    // controlla il testo del bottone (Play (Arcade))
+    const isArcadeScreen =
+      (typeof tutorialMode !== 'undefined' ? tutorialMode === 'arcade'
+                                           : /Play\s*\(Arcade\)/i.test(b.textContent || ''));
+
+    const locked = isArcadeScreen && window.__isPremium !== true;
+
+    // Classe per lo pseudo-elemento
+    b.classList.toggle('locked', locked);
+    b.setAttribute('aria-label', locked ? 'Play Arcade (Premium required)' : 'Play Arcade');
+
+    // Fallback: aggiungi/rimuovi un badge interno <span> 🔒
+    let badge = document.getElementById('arcade-lock-badge');
+    if (locked && !badge) {
+      badge = document.createElement('span');
+      badge.id = 'arcade-lock-badge';
+      badge.textContent = ' 🔒';
+      badge.style.marginLeft = '8px';
+      badge.style.userSelect = 'none';
+      badge.style.pointerEvents = 'none';
+      b.appendChild(badge);
+    } else if (!locked && badge) {
+      badge.remove();
     }
   }
 
-  // Quando cambia lo stato Premium, aggiorna il lucchetto
-  (function(){
-    const prev = window.onPremiumUpdated;
-    window.onPremiumUpdated = function(v){
-      if (typeof prev === 'function') { try { prev(v); } catch(e){} }
-      window.__isPremium = !!v;
-      try { refreshArcadePlayLock(); } catch(e){}
-    };
-  })();
+  // resta uguale il resto del tuo script (onPremiumUpdated, DOMContentLoaded, ecc.)
 </script>
+
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     try { refreshArcadePlayLock(); } catch(e){}
