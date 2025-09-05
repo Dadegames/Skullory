@@ -1157,7 +1157,7 @@ function setTutorialMode(mode){
   }
 
   // Bottone centrale "Play"
-  const introBtn = document.getElementById('intro-play'); // sicuro che esista
+  const introBtn = document.getElementById('intro-play');
   if (introBtn){
     if (mode === 'arcade'){
       introBtn.textContent = 'Play (Arcade)';
@@ -1165,11 +1165,9 @@ function setTutorialMode(mode){
         if (window.__isPremium === true) {
           ensureSfx(); modeZen = false; currentLevelIdx = 0; hideIntro(); startArcade();
         } else {
-          // Apri il paywall solo se non Premium
           if (typeof window.openPremiumModal === 'function') window.openPremiumModal();
         }
       };
-      // Aggiorna il lucchetto sul bottone Play (Arcade)
       try { refreshArcadePlayLock(); } catch(e){}
       introBtn.style.display = '';
     } else if (mode === 'zen'){
@@ -1187,17 +1185,18 @@ function setTutorialMode(mode){
     }
   }
 
-  // In ogni caso, prova a riallineare il lucchetto quando cambia modalità
+  // 🔒 Riallinea il lucchetto quando cambia modalità
   try { refreshArcadePlayLock(); } catch(e){}
-}
 
-
-  // Mostra il link "Privacy" solo nel menu iniziale (root)
+  // 👇 QUESTE DUE RIGHE DEVONO STARE DENTRO la funzione (usano "mode")
+  // Mostra il link "Privacy" solo nel menu iniziale (root) e nasconde la X
   const introLegal = document.querySelector('.intro-legal');
   if (introLegal) introLegal.style.display = (mode === 'root') ? '' : 'none';
-if (closeBtn) closeBtn.style.display = (mode === 'root') ? 'none' : '';
-
+  if (typeof closeBtn !== 'undefined' && closeBtn) closeBtn.style.display = (mode === 'root') ? 'none' : '';
 }
+
+
+
 
 function buildTutorialRefs(){
   dotsWrap = document.getElementById('intro-dots');
