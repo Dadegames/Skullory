@@ -3785,6 +3785,60 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
   })();
 </script>
 <!-- === /UI Premium === -->
+<style>
+  /* il bottone Arcade dev'essere posizionato per ospitare il badge */
+  #btnArcadeMain { position: relative; }
+
+  /* quando non sei premium mostriamo un piccolo lucchetto */
+  #btnArcadeMain.locked::after {
+    content: '🔒';
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 22px;
+    height: 22px;
+    font-size: 14px;
+    line-height: 22px;
+    text-align: center;
+    background: #fff;
+    border: 1px solid #aaa;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,.2);
+  }
+
+  /* leggera attenuazione visiva quando è bloccato (facoltativo) */
+  #btnArcadeMain.locked { opacity: 0.9; }
+</style>
+<script>
+  (function(){
+    function refreshArcadeLock() {
+      const b = document.getElementById('btnArcadeMain');
+      if (!b) return;
+      if (window.__isPremium === true) {
+        b.classList.remove('locked');
+        b.setAttribute('aria-label', 'Arcade');
+      } else {
+        b.classList.add('locked');
+        b.setAttribute('aria-label', 'Arcade (Premium required)');
+      }
+    }
+
+    // all'avvio pagina
+    document.addEventListener('DOMContentLoaded', refreshArcadeLock);
+
+    // quando Android ci notifica un cambio di stato premium, agganciamoci SENZA
+    // rompere eventuali handler già esistenti
+    const prev = window.onPremiumUpdated;
+    window.onPremiumUpdated = function(v){
+      if (typeof prev === 'function') { try { prev(v); } catch(e){} }
+      window.__isPremium = !!v;
+      refreshArcadeLock();
+    };
+
+    // piccolo fallback se Billing risponde in ritardo
+    setTimeout(refreshArcadeLock, 700);
+  })();
+</script>
 
 </body>
 </html>
