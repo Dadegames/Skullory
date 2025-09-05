@@ -1134,56 +1134,63 @@ let countBadge, progressWrap, progressBar, hintEl;
     if (dotsWrap) dotsWrap.style.display = multi ? '' : 'none';
   }
 
-  function setTutorialMode(mode){
+function setTutorialMode(mode){
   tutorialMode = mode;
-updateBanners(mode);
+  updateBanners(mode);
   rebuildDots();
   goToSlide(0);
 
+  // Titolo del tutorial
   const introTitle = document.getElementById('intro-title');
   if (introTitle){
     if (mode === 'root') {
       introTitle.style.display = 'none';
+      introTitle.textContent = '';
     } else {
       introTitle.style.display = '';
-    introTitle.textContent =
-      mode === 'arcade' ? 'Climb the levels' :
-      mode === 'zen'    ? 'Zen - Practice' :
-      mode === 'chaos'  ? 'Chaos - Daily Challenge' :
-                           '';
-
+      introTitle.textContent =
+        mode === 'arcade' ? 'Climb the levels' :
+        mode === 'zen'    ? 'Zen - Practice' :
+        mode === 'chaos'  ? 'Chaos - Daily Challenge' :
+                            '';
     }
   }
 
- // usa la variabile globale già definita in alto: const introBtn = document.getElementById('intro-play');
-if (introBtn){
-  if (mode === 'arcade'){
-    introBtn.textContent = 'Play (Arcade)';
-    introBtn.onclick = () => {
-      if (window.__isPremium === true) {
-        ensureSfx(); modeZen = false; currentLevelIdx = 0; hideIntro(); startArcade();
-      } else {
-        try { window.purchasePremium && window.purchasePremium(); } catch(e) {}
-        try { typeof flashMessage === 'function' && flashMessage('Premium required to play Arcade'); } catch(e) {}
-      }
-    };
-    // 👇 aggiungi/subito aggiorna il lucchetto
-    try { refreshArcadePlayLock(); } catch(e){}
-    introBtn.style.display = '';
-  } else if (mode === 'zen'){
-    introBtn.textContent = 'Play (Zen)';
-    introBtn.onclick = () => { ensureSfx(); modeZen = true; hideIntro(); startZen('zen'); };
-    introBtn.style.display = '';
-  } else if (mode === 'chaos'){
-    introBtn.textContent = 'Play (Daily challenge)';
-    introBtn.onclick = () => { ensureSfx(); startDailyChaos(); };
-    introBtn.style.display = '';
-  } else {
-    introBtn.textContent = 'Gioca';
-    introBtn.onclick = () => {};
-    introBtn.style.display = 'none';
+  // Bottone centrale "Play"
+  const introBtn = document.getElementById('intro-play'); // sicuro che esista
+  if (introBtn){
+    if (mode === 'arcade'){
+      introBtn.textContent = 'Play (Arcade)';
+      introBtn.onclick = () => {
+        if (window.__isPremium === true) {
+          ensureSfx(); modeZen = false; currentLevelIdx = 0; hideIntro(); startArcade();
+        } else {
+          // Apri il paywall solo se non Premium
+          if (typeof window.openPremiumModal === 'function') window.openPremiumModal();
+        }
+      };
+      // Aggiorna il lucchetto sul bottone Play (Arcade)
+      try { refreshArcadePlayLock(); } catch(e){}
+      introBtn.style.display = '';
+    } else if (mode === 'zen'){
+      introBtn.textContent = 'Play (Zen)';
+      introBtn.onclick = () => { ensureSfx(); modeZen = true; hideIntro(); startZen('zen'); };
+      introBtn.style.display = '';
+    } else if (mode === 'chaos'){
+      introBtn.textContent = 'Play (Daily challenge)';
+      introBtn.onclick = () => { ensureSfx(); startDailyChaos(); };
+      introBtn.style.display = '';
+    } else {
+      introBtn.textContent = 'Play';
+      introBtn.onclick = () => {};
+      introBtn.style.display = 'none';
+    }
   }
+
+  // In ogni caso, prova a riallineare il lucchetto quando cambia modalità
+  try { refreshArcadePlayLock(); } catch(e){}
 }
+
 
   // Mostra il link "Privacy" solo nel menu iniziale (root)
   const introLegal = document.querySelector('.intro-legal');
@@ -3730,61 +3737,7 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
   };
 </script>
 <!-- === /Billing bridge helpers === -->
-<!-- === UI Premium (acquisto + ripristino) === -->
-<style>
-  .premium-fab { position: fixed; right: 12px; bottom: 60px; z-index: 99997;
-    background:#fff; border:1px solid #aaa; border-radius:10px; padding:10px 12px;
-    font: 14px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, Arial; box-shadow:0 2px 10px rgba(0,0,0,.2); }
-  .premium-fab button { margin:4px 0; width: 220px; padding:8px 10px; border-radius:8px; border:1px solid #888; background:#f7f7f7; }
-  .premium-fab .ok { background:#e8ffe8; border-color:#3a9f3a; }
-  .hidden { display:none !important; }
-</style>
-<div id="premiumPanel" class="premium-fab hidden">
-  <div id="premiumStatus" style="margin-bottom:6px;">Rimuovi ads & sblocca Arcade</div>
-  <button id="btnBuyPremium">Premium 1,99 €</button>
-  <button id="btnRestore">Ripristina acquisto</button>
-</div>
-<script>
-  (function(){
-    const panel   = document.getElementById('premiumPanel');
-    const status  = document.getElementById('premiumStatus');
-    const btnBuy  = document.getElementById('btnBuyPremium');
-    const btnRest = document.getElementById('btnRestore');
 
-    function refreshPremiumUI() {
-      if (window.__isPremium === true) {
-        status.textContent = '✅ Premium attivo';
-        panel.classList.remove('hidden');
-        btnBuy.classList.add('hidden');
-        btnRest.classList.remove('hidden');
-      } else {
-        status.textContent = 'Rimuovi ads & sblocca Arcade';
-        panel.classList.remove('hidden');
-        btnBuy.classList.remove('hidden');
-        btnRest.classList.remove('hidden');
-      }
-    }
-
-    // mostra il pannellino quando la pagina è pronta
-    document.addEventListener('DOMContentLoaded', refreshPremiumUI);
-
-    // quando Android ci avvisa che lo stato è cambiato
-    const prevCb = window.onPremiumUpdated;
-    window.onPremiumUpdated = function(v){
-      if (typeof prevCb === 'function') try { prevCb(v); } catch(e){}
-      window.__isPremium = !!v;
-      refreshPremiumUI();
-    };
-
-    // click: compra / ripristina
-    btnBuy?.addEventListener('click', () => { try { window.purchasePremium && window.purchasePremium(); } catch(e){} });
-    btnRest?.addEventListener('click', () => { try { window.restorePremium && window.restorePremium(); } catch(e){} });
-
-    // avvia UI anche se Billing non ha ancora risposto
-    setTimeout(refreshPremiumUI, 500);
-  })();
-</script>
-<!-- === /UI Premium === -->
 <style>
   /* il tasto centrale "intro-play" ospita il badge */
   #intro-play { position: relative; overflow: visible; }
@@ -3850,6 +3803,97 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
   document.addEventListener('DOMContentLoaded', function () {
     try { refreshArcadePlayLock(); } catch(e){}
   });
+</script>
+<!-- === Premium Paywall Modal (Arcade only) === -->
+<div id="premiumModal" class="pm pm--hidden" role="dialog" aria-modal="true" aria-labelledby="pmTitle">
+  <div class="pm__backdrop" data-close></div>
+  <div class="pm__card">
+    <button class="pm__close" aria-label="Close paywall" data-close>&times;</button>
+    <h2 id="pmTitle" class="pm__title">Unlock Arcade</h2>
+    <p class="pm__subtitle">Get access to Arcade mode and remove ads. One-time purchase.</p>
+    <ul class="pm__bullets">
+      <li>Arcade mode unlocked</li>
+      <li>No ads during gameplay</li>
+      <li>Support Skullory’s development</li>
+    </ul>
+    <div class="pm__price">€1.99 one-time</div>
+    <button id="pmBuy" class="pm__btn pm__btn--primary">Unlock for €1.99</button>
+    <button id="pmRestore" class="pm__btn pm__btn--link">Restore purchase</button>
+    <button id="pmLater" class="pm__btn pm__btn--ghost" data-close>Not now</button>
+    <div class="pm__foot">Secure payment with Google Play.</div>
+  </div>
+</div>
+<!-- === /Premium Paywall Modal === -->
+<style>
+  .pm--hidden { display:none; }
+  .pm__backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  }
+  .pm__card {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    width: min(92vw, 480px); background: #fff; color: #111;
+    border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.35);
+    padding: 20px 18px 16px; max-height: 90vh; overflow: auto;
+  }
+  .pm__close {
+    position: absolute; right: 10px; top: 8px; border: 0; background: transparent;
+    font-size: 24px; line-height: 1; cursor: pointer;
+  }
+  .pm__title { font: 700 20px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin: 0 28px 6px 0; }
+  .pm__subtitle { margin: 0 0 10px 0; color: #333; }
+  .pm__bullets { margin: 6px 0 10px 18px; }
+  .pm__bullets li { margin: 4px 0; }
+  .pm__price { font-weight: 700; margin: 6px 0 12px; }
+  .pm__btn { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #aaa; background: #f7f7f7; margin: 6px 0; }
+  .pm__btn--primary { background: #111; color: #fff; border-color: #111; }
+  .pm__btn--link { background: transparent; border: 0; color: #0066cc; text-decoration: underline; }
+  .pm__btn--ghost { background: #fff; }
+  .pm__foot { font-size: 12px; color: #666; text-align: center; margin-top: 6px; }
+  body.pm--lock { overflow: hidden; } /* blocca lo scroll quando il modale è aperto */
+</style>
+<script>
+  (function(){
+    const modal    = document.getElementById('premiumModal');
+    const btnBuy   = document.getElementById('pmBuy');
+    const btnRest  = document.getElementById('pmRestore');
+
+    function openPremiumModal(){
+      if (!modal) return;
+      modal.classList.remove('pm--hidden');
+      document.body.classList.add('pm--lock');
+    }
+    function closePremiumModal(){
+      if (!modal) return;
+      modal.classList.add('pm--hidden');
+      document.body.classList.remove('pm--lock');
+    }
+
+    // chiusure (X, backdrop, "Not now")
+    modal?.addEventListener('click', (ev)=>{
+      if (ev.target?.hasAttribute?.('data-close')) closePremiumModal();
+    });
+
+    // azioni: acquisto / ripristino
+    btnBuy?.addEventListener('click', ()=>{
+      try { window.purchasePremium && window.purchasePremium(); } catch(e){}
+    });
+    btnRest?.addEventListener('click', ()=>{
+      try { window.restorePremium && window.restorePremium(); } catch(e){}
+    });
+
+    // se diventi Premium, chiudi il modale e aggiorna UI (lucchetto ecc.)
+    const prevCb = window.onPremiumUpdated;
+    window.onPremiumUpdated = function(v){
+      if (typeof prevCb === 'function') try { prevCb(v); } catch(e){}
+      if (v === true) {
+        try { closePremiumModal(); } catch(e){}
+      }
+    };
+
+    // Esponi l'apertura in window per usarla dal click "Play (Arcade)"
+    window.openPremiumModal = openPremiumModal;
+    window.closePremiumModal = closePremiumModal;
+  })();
 </script>
 
 </body>
