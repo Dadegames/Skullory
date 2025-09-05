@@ -3721,6 +3721,61 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
   };
 </script>
 <!-- === /Billing bridge helpers === -->
+<!-- === UI Premium (acquisto + ripristino) === -->
+<style>
+  .premium-fab { position: fixed; right: 12px; bottom: 60px; z-index: 99997;
+    background:#fff; border:1px solid #aaa; border-radius:10px; padding:10px 12px;
+    font: 14px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, Arial; box-shadow:0 2px 10px rgba(0,0,0,.2); }
+  .premium-fab button { margin:4px 0; width: 220px; padding:8px 10px; border-radius:8px; border:1px solid #888; background:#f7f7f7; }
+  .premium-fab .ok { background:#e8ffe8; border-color:#3a9f3a; }
+  .hidden { display:none !important; }
+</style>
+<div id="premiumPanel" class="premium-fab hidden">
+  <div id="premiumStatus" style="margin-bottom:6px;">Rimuovi ads & sblocca Arcade</div>
+  <button id="btnBuyPremium">Premium 1,99 €</button>
+  <button id="btnRestore">Ripristina acquisto</button>
+</div>
+<script>
+  (function(){
+    const panel   = document.getElementById('premiumPanel');
+    const status  = document.getElementById('premiumStatus');
+    const btnBuy  = document.getElementById('btnBuyPremium');
+    const btnRest = document.getElementById('btnRestore');
+
+    function refreshPremiumUI() {
+      if (window.__isPremium === true) {
+        status.textContent = '✅ Premium attivo';
+        panel.classList.remove('hidden');
+        btnBuy.classList.add('hidden');
+        btnRest.classList.remove('hidden');
+      } else {
+        status.textContent = 'Rimuovi ads & sblocca Arcade';
+        panel.classList.remove('hidden');
+        btnBuy.classList.remove('hidden');
+        btnRest.classList.remove('hidden');
+      }
+    }
+
+    // mostra il pannellino quando la pagina è pronta
+    document.addEventListener('DOMContentLoaded', refreshPremiumUI);
+
+    // quando Android ci avvisa che lo stato è cambiato
+    const prevCb = window.onPremiumUpdated;
+    window.onPremiumUpdated = function(v){
+      if (typeof prevCb === 'function') try { prevCb(v); } catch(e){}
+      window.__isPremium = !!v;
+      refreshPremiumUI();
+    };
+
+    // click: compra / ripristina
+    btnBuy?.addEventListener('click', () => { try { window.purchasePremium && window.purchasePremium(); } catch(e){} });
+    btnRest?.addEventListener('click', () => { try { window.restorePremium && window.restorePremium(); } catch(e){} });
+
+    // avvia UI anche se Billing non ha ancora risposto
+    setTimeout(refreshPremiumUI, 500);
+  })();
+</script>
+<!-- === /UI Premium === -->
 
 </body>
 </html>
