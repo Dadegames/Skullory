@@ -3787,10 +3787,10 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
 <!-- === /UI Premium === -->
 <style>
   /* il bottone Arcade dev'essere posizionato per ospitare il badge */
-  #btnArcadeMain { position: relative; }
+  #intro-arcade-main { position: relative; }
 
   /* quando non sei premium mostriamo un piccolo lucchetto */
-  #btnArcadeMain.locked::after {
+  #intro-arcade-main.locked::after {
     content: '🔒';
     position: absolute;
     top: -6px;
@@ -3806,13 +3806,13 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
     box-shadow: 0 2px 6px rgba(0,0,0,.2);
   }
 
-  /* leggera attenuazione visiva quando è bloccato (facoltativo) */
-  #btnArcadeMain.locked { opacity: 0.9; }
+  /* attenuazione quando è bloccato (facoltativo) */
+  #intro-arcade-main.locked { opacity: 0.9; }
 </style>
 <script>
   (function(){
     function refreshArcadeLock() {
-      const b = document.getElementById('btnArcadeMain');
+      const b = document.getElementById('intro-arcade-main'); // <- QUI
       if (!b) return;
       if (window.__isPremium === true) {
         b.classList.remove('locked');
@@ -3823,11 +3823,8 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
       }
     }
 
-    // all'avvio pagina
     document.addEventListener('DOMContentLoaded', refreshArcadeLock);
 
-    // quando Android ci notifica un cambio di stato premium, agganciamoci SENZA
-    // rompere eventuali handler già esistenti
     const prev = window.onPremiumUpdated;
     window.onPremiumUpdated = function(v){
       if (typeof prev === 'function') { try { prev(v); } catch(e){} }
@@ -3835,10 +3832,10 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
       refreshArcadeLock();
     };
 
-    // piccolo fallback se Billing risponde in ritardo
     setTimeout(refreshArcadeLock, 700);
   })();
 </script>
+
 
 </body>
 </html>
