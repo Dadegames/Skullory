@@ -3825,15 +3825,26 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
 <!-- === /Premium Paywall Modal === -->
 <style>
   .pm--hidden { display:none; }
+
+  /* backdrop + card in cima a tutto */
+  .pm__backdrop,
+  .pm__card { position: fixed; }
+
   .pm__backdrop {
-    position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 2147483646; /* dietro alla card, ma sopra tutto il resto */
   }
+
   .pm__card {
-    position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%);
-    width: min(92vw, 480px); background: #fff; color: #111;
+    left: 50%; top: 50%; transform: translate(-50%,-50%);
+    width: min(92vw, 480px);
+    background: #fff; color: #111;
     border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.35);
     padding: 20px 18px 16px; max-height: 90vh; overflow: auto;
+    z-index: 2147483647; /* sopra a QUALSIASI overlay */
   }
+
   .pm__close {
     position: absolute; right: 10px; top: 8px; border: 0; background: transparent;
     font-size: 24px; line-height: 1; cursor: pointer;
@@ -3848,8 +3859,11 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
   .pm__btn--link { background: transparent; border: 0; color: #0066cc; text-decoration: underline; }
   .pm__btn--ghost { background: #fff; }
   .pm__foot { font-size: 12px; color: #666; text-align: center; margin-top: 6px; }
-  body.pm--lock { overflow: hidden; } /* blocca lo scroll quando il modale è aperto */
+
+  /* blocca lo scroll del fondo quando il modale è aperto */
+  body.pm--lock { overflow: hidden; }
 </style>
+
 <script>
   (function(){
     const modal    = document.getElementById('premiumModal');
@@ -3858,21 +3872,24 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
 
     function openPremiumModal(){
       if (!modal) return;
+      // Se per errore è annidato dentro un container col transform/z-index, spostalo nel body
+      if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+      }
       modal.classList.remove('pm--hidden');
       document.body.classList.add('pm--lock');
     }
+
     function closePremiumModal(){
       if (!modal) return;
       modal.classList.add('pm--hidden');
       document.body.classList.remove('pm--lock');
     }
 
-    // chiusure (X, backdrop, "Not now")
     modal?.addEventListener('click', (ev)=>{
       if (ev.target?.hasAttribute?.('data-close')) closePremiumModal();
     });
 
-    // azioni: acquisto / ripristino
     btnBuy?.addEventListener('click', ()=>{
       try { window.purchasePremium && window.purchasePremium(); } catch(e){}
     });
@@ -3880,20 +3897,17 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
       try { window.restorePremium && window.restorePremium(); } catch(e){}
     });
 
-    // se diventi Premium, chiudi il modale e aggiorna UI (lucchetto ecc.)
     const prevCb = window.onPremiumUpdated;
     window.onPremiumUpdated = function(v){
       if (typeof prevCb === 'function') try { prevCb(v); } catch(e){}
-      if (v === true) {
-        try { closePremiumModal(); } catch(e){}
-      }
+      if (v === true) { try { closePremiumModal(); } catch(e){} }
     };
 
-    // Esponi l'apertura in window per usarla dal click "Play (Arcade)"
     window.openPremiumModal = openPremiumModal;
     window.closePremiumModal = closePremiumModal;
   })();
 </script>
+
 
 </body>
 </html>
