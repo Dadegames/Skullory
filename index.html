@@ -3645,37 +3645,6 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
-<!-- DEBUG: pulsante per testare l'interstitial -->
-<style>
-  #testAdBtn {
-    position: fixed; right: 12px; bottom: 12px; z-index: 99999;
-    padding: 10px 14px; border-radius: 8px; border: 1px solid #999;
-    background:#fff; font: 14px system-ui; box-shadow: 0 2px 8px rgba(0,0,0,.15);
-  }
-</style>
-<button id="testAdBtn" type="button">Test Ad</button>
-<script>
-  (function(){
-    const btn = document.getElementById('testAdBtn');
-    btn.addEventListener('click', () => {
-      if (!window.JsAds) { alert('JsAds NON disponibile'); return; }
-      try {
-        // carica l’interstitial
-        window.JsAds.preload();
-        // prova a mostrarlo dopo un attimo
-        setTimeout(() => {
-          try { window.JsAds.show(); } catch(e) { alert('Errore show: ' + e); }
-        }, 800);
-      } catch(e) {
-        alert('Errore preload/show: ' + e);
-      }
-    });
-  })();
-</script>
-
-
-
-<!-- /DEBUG -->
 <!-- Helpers per interstitial via JsAds -->
 <script>
   // Mostra un interstitial senza bloccare se non è pronto
@@ -3911,6 +3880,7 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
 
 </body>
 </html>
+
 
 
 
