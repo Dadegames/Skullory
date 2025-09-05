@@ -1155,27 +1155,36 @@ updateBanners(mode);
     }
   }
 
-  // usa la variabile globale già definita in alto: const introBtn = document.getElementById('intro-play');
-  if (introBtn){
-    if (mode === 'arcade'){
-      introBtn.textContent = 'Play (Arcade)';
-      introBtn.onclick = () => { ensureSfx(); modeZen = false; currentLevelIdx = 0; hideIntro(); startArcade(); };
-      introBtn.style.display = '';
-    } else if (mode === 'zen'){
-      introBtn.textContent = 'Play (Zen)';
-      introBtn.onclick = () => { ensureSfx(); modeZen = true; hideIntro(); startZen('zen'); };
-      introBtn.style.display = '';
-   } else if (mode === 'chaos'){
-  introBtn.textContent = 'Play (Daily challenge)';
-  introBtn.onclick = () => { ensureSfx(); startDailyChaos(); };
-  introBtn.style.display = '';
-    } else {
-      // root e zen-choose: niente tasto play centrale (si usano i bottoni nella slide)
-      introBtn.textContent = 'Gioca';
-      introBtn.onclick = () => {};
-      introBtn.style.display = 'none';
-    }
+ // usa la variabile globale già definita in alto: const introBtn = document.getElementById('intro-play');
+if (introBtn){
+  if (mode === 'arcade'){
+    introBtn.textContent = 'Play (Arcade)';
+    introBtn.onclick = () => {
+      if (window.__isPremium === true) {
+        ensureSfx(); modeZen = false; currentLevelIdx = 0; hideIntro(); startArcade();
+      } else {
+        try { window.purchasePremium && window.purchasePremium(); } catch(e) {}
+        try { typeof flashMessage === 'function' && flashMessage('Premium required to play Arcade'); } catch(e) {}
+      }
+    };
+    // aggiorna/mostra il lucchetto su Play (Arcade)
+    refreshArcadePlayLock();
+    introBtn.style.display = '';
+  } else if (mode === 'zen'){
+    introBtn.textContent = 'Play (Zen)';
+    introBtn.onclick = () => { ensureSfx(); modeZen = true; hideIntro(); startZen('zen'); };
+    introBtn.style.display = '';
+  } else if (mode === 'chaos'){
+    introBtn.textContent = 'Play (Daily challenge)';
+    introBtn.onclick = () => { ensureSfx(); startDailyChaos(); };
+    introBtn.style.display = '';
+  } else {
+    introBtn.textContent = 'Gioca';
+    introBtn.onclick = () => {};
+    introBtn.style.display = 'none';
   }
+}
+
   // Mostra il link "Privacy" solo nel menu iniziale (root)
   const introLegal = document.querySelector('.intro-legal');
   if (introLegal) introLegal.style.display = (mode === 'root') ? '' : 'none';
@@ -1219,16 +1228,7 @@ hintEl       = document.getElementById('intro-hint');
   const btnZenMain    = document.getElementById('intro-zen-main');
 
   if (btnChaosMain)  btnChaosMain.addEventListener('click',  () => setTutorialMode('chaos'));
- if (btnArcadeMain) btnArcadeMain.addEventListener('click', () => {
-  // Se Premium attivo → entra in Arcade
-  if (window.__isPremium === true) {
-    setTutorialMode('arcade');
-    return;
-  }
-  // Altrimenti: proponi l'acquisto e mostra un messaggio
-  try { window.purchasePremium && window.purchasePremium(); } catch(e) {}
-  try { typeof flashMessage === 'function' && flashMessage('Premium required to play Arcade'); } catch(e) {}
-});
+if (btnArcadeMain) btnArcadeMain.addEventListener('click', () => setTutorialMode('arcade'));  // ← sempre tutorial
   if (btnZenMain)    btnZenMain.addEventListener('click',    () => setTutorialMode('zen'));
 
 
@@ -3786,11 +3786,9 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
 </script>
 <!-- === /UI Premium === -->
 <style>
-  /* il bottone Arcade dev'essere posizionato per ospitare il badge */
-  #intro-arcade-main { position: relative; }
-
-  /* quando non sei premium mostriamo un piccolo lucchetto */
-  #intro-arcade-main.locked::after {
+  /* il tasto centrale "intro-play" ospita il badge */
+  #intro-play { position: relative; }
+  #intro-play.locked::after {
     content: '🔒';
     position: absolute;
     top: -6px;
@@ -3805,36 +3803,31 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
     border-radius: 50%;
     box-shadow: 0 2px 6px rgba(0,0,0,.2);
   }
-
-  /* attenuazione quando è bloccato (facoltativo) */
-  #intro-arcade-main.locked { opacity: 0.9; }
+  #intro-play.locked { opacity: .95; }
 </style>
 <script>
-  (function(){
-    function refreshArcadeLock() {
-      const b = document.getElementById('intro-arcade-main'); // <- QUI
-      if (!b) return;
-      if (window.__isPremium === true) {
-        b.classList.remove('locked');
-        b.setAttribute('aria-label', 'Arcade');
-      } else {
-        b.classList.add('locked');
-        b.setAttribute('aria-label', 'Arcade (Premium required)');
-      }
+  // Mostra/nasconde il lucchetto sul tasto "Play (Arcade)" del tutorial
+  function refreshArcadePlayLock() {
+    const b = document.getElementById('intro-play');
+    // "tutorialMode" è la variabile già usata nel tuo tutorial
+    const locked = (typeof tutorialMode !== 'undefined' && tutorialMode === 'arcade' && window.__isPremium !== true);
+    if (b) {
+      b.classList.toggle('locked', locked);
+      b.setAttribute('aria-label', locked ? 'Play Arcade (Premium required)' : 'Play Arcade');
     }
+  }
 
-    document.addEventListener('DOMContentLoaded', refreshArcadeLock);
-
+  // Quando cambia lo stato Premium, aggiorna il lucchetto
+  (function(){
     const prev = window.onPremiumUpdated;
     window.onPremiumUpdated = function(v){
       if (typeof prev === 'function') { try { prev(v); } catch(e){} }
       window.__isPremium = !!v;
-      refreshArcadeLock();
+      try { refreshArcadePlayLock(); } catch(e){}
     };
-
-    setTimeout(refreshArcadeLock, 700);
   })();
 </script>
+
 
 
 </body>
