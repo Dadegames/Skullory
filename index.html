@@ -1219,7 +1219,16 @@ hintEl       = document.getElementById('intro-hint');
   const btnZenMain    = document.getElementById('intro-zen-main');
 
   if (btnChaosMain)  btnChaosMain.addEventListener('click',  () => setTutorialMode('chaos'));
-  if (btnArcadeMain) btnArcadeMain.addEventListener('click', () => setTutorialMode('arcade'));
+ if (btnArcadeMain) btnArcadeMain.addEventListener('click', () => {
+  // Se Premium attivo → entra in Arcade
+  if (window.__isPremium === true) {
+    setTutorialMode('arcade');
+    return;
+  }
+  // Altrimenti: proponi l'acquisto e mostra un messaggio
+  try { window.purchasePremium && window.purchasePremium(); } catch(e) {}
+  try { typeof flashMessage === 'function' && flashMessage('Premium required to play Arcade'); } catch(e) {}
+});
   if (btnZenMain)    btnZenMain.addEventListener('click',    () => setTutorialMode('zen'));
 
 
