@@ -886,11 +886,9 @@ function buildDeckWithRng(level, rng){
   const pool = shuffleWithRng(EMOJI, rng);
   const unique = pool.slice(0, level.pairs);
   const pairs = unique.concat(unique);
-  const specials = [
-    ...Array(level.red).fill(RED),
-    ...Array(level.yellow).fill(YELLOW)
-  ];
-  const deck = pairs.concat(specials);
+const deck = pairs
+  .concat(Array(level.red).fill(RED))
+  .concat(Array(level.yellow).fill(YELLOW));
   return shuffleWithRng(deck, rng);
 }
 
@@ -1496,8 +1494,9 @@ function fmtStars(n){
     const pool = EMOJI.slice();
     const unique = shuffle(pool).slice(0, level.pairs);
     const pairs = unique.concat(unique);
-    const specials = [ ...Array(level.red).fill(RED), ...Array(level.yellow).fill(YELLOW) ];
-    const deck = pairs.concat(specials);
+const deck = pairs
+  .concat(Array(level.red).fill(RED))
+  .concat(Array(level.yellow).fill(YELLOW));
     return shuffle(deck);
   }
   function getActiveCards(){
@@ -1511,6 +1510,13 @@ function isNormalCard(c){
             !c.classList.contains('placeholder') &&
             c.getAttribute('data-state') !== 'matched' &&
             c.dataset.symbol !== RED && c.dataset.symbol !== YELLOW);
+}
+function maybeWinBySpecials(){
+  if (!state?.isChaos) return false;
+  // Se non rimane nessuna carta normale attiva → vittoria
+  const haveNormals = getActiveCards().some(isNormalCard);
+  if (!haveNormals){ win(); return true; }
+  return false;
 }
 
 // Chiudi le eventuali carte normali attualmente aperte (prima/seconda)
@@ -1652,6 +1658,56 @@ function isPreFrame(){
     });
     return Array.from(map.entries()).filter(([_, arr]) => arr.length === 2);
   }
+// Safety net: assicura che le coperte NON speciali restino in coppie
+function fixParityHiddenNonSpecial(){
+  const cards = getHiddenNonSpecialCards(); // già esiste
+  // Raggruppa per simbolo
+  const groups = new Map();
+  for (const c of cards){
+    const s = c.dataset.symbol;
+    if (!groups.has(s)) groups.set(s, []);
+    groups.get(s).push(c);
+  }
+  // Trova simboli con conteggio dispari
+  let odd = [];
+  for (const [s, arr] of groups){
+    if ((arr.length % 2) === 1) odd.push(s);
+  }
+  // Finché ci sono almeno due "dispari", sposta 1 carta dal simbolo B ad A
+  while (odd.length >= 2){
+    const a = odd[0];
+    const b = odd[odd.length - 1];
+    const fromArr = groups.get(b);
+    const card = fromArr.pop();
+    // Cambia il simbolo della carta per pareggiare A
+    card.dataset.symbol = a;
+    const frontSym = card.querySelector('.face.front .symbol');
+    if (frontSym) frontSym.textContent = a;
+    // Aggiorna i gruppi
+    if (!groups.has(a)) groups.set(a, []);
+    groups.get(a).push(card);
+    // Ricalcola lo stato di parità per A e B
+    if ((groups.get(a).length % 2) === 0){ odd.shift(); }
+    if ((fromArr.length % 2) === 0){ odd.pop(); }
+    else { odd[odd.length - 1] = b; }
+  }
+  // Se resta ancora 1 simbolo dispari (caso raro), prendi una carta da un simbolo con almeno 2
+  if (odd.length === 1){
+    const target = odd[0];
+    let donorSym = null;
+    for (const [s, arr] of groups){
+      if (s !== target && arr.length >= 2){ donorSym = s; break; }
+    }
+    if (donorSym){
+      const arr = groups.get(donorSym);
+      const card = arr.pop();
+      card.dataset.symbol = target;
+      const frontSym = card.querySelector('.face.front .symbol');
+      if (frontSym) frontSym.textContent = target;
+    }
+  }
+}
+
 function chaosSkullPenalty(card){
   // Chiudi eventuali normali aperte e gestisci suoni/UX
   closeOpen(MISMATCH_HOLD_MS);
@@ -1726,16 +1782,20 @@ scheduleHide(card, MISMATCH_HOLD_MS);
 return;
   }
 
-// 4) Fallback (nuova regola): niente nuova coppia; solo reshuffle per non “sprecare” il tocco
+// 4) Fallback: niente nuova coppia; solo reshuffle
 flashMessage('💀 🔀');
 try { reshuffleHiddenNonSpecial(); } catch(_) {}
+try { fixParityHiddenNonSpecial(); } catch(_) {}   // 👈 AGGIUNGI QUESTA
 scheduleHide(card, MISMATCH_HOLD_MS);
 return;
 
-  // 5) Ultimo fallback: non c’è spazio → rimescola solo per non “sprecare” il tocco
-  flashMessage('💀 Not enough space… 🔀');
-  reshuffleHiddenNonSpecial();
-  scheduleHide(card, MISMATCH_HOLD_MS);
+
+// 5) Ultimo fallback: non c’è spazio → rimescola
+flashMessage('💀 Not enough space… 🔀');
+reshuffleHiddenNonSpecial();
+try { fixParityHiddenNonSpecial(); } catch(_) {}   // 👈 AGGIUNGI QUESTA
+scheduleHide(card, MISMATCH_HOLD_MS);
+
 }
 
 
@@ -2259,7 +2319,8 @@ if (sym === YELLOW){
     win();
     return;
   }
-  return;
+// NEW — Chaos: vittoria se restano solo speciali
+if (maybeWinBySpecials()) return;
 }
 
 
@@ -2518,6 +2579,8 @@ if (!state?.isChaos) return;
   // registra
   state.holesEls = state.holesEls || [];
   state.holesEls.push(hole);
+// NEW — vittoria se restano solo speciali (Chaos)
+maybeWinBySpecials();
 
 }
 
@@ -3880,7 +3943,6 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
 
 </body>
 </html>
-
 
 
 
