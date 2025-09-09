@@ -1661,7 +1661,13 @@ function isPreFrame(){
 // Safety net: assicura che le coperte NON speciali restino in coppie
 function fixParityHiddenNonSpecial(){
   const cards = getHiddenNonSpecialCards(); // già esiste
-  // Raggruppa per simbolo
+  // NON sistemare la parità se esiste anche solo una normale rivelata
+const anyOpenNormal = getActiveCards().some(c =>
+  c.getAttribute('data-state') === 'revealed' &&
+  c.dataset.symbol !== RED && c.dataset.symbol !== YELLOW
+);
+if (anyOpenNormal) return;
+// Raggruppa per simbolo
   const groups = new Map();
   for (const c of cards){
     const s = c.dataset.symbol;
@@ -1707,6 +1713,37 @@ function fixParityHiddenNonSpecial(){
     }
   }
 }
+// === Parity hard guard (ACTIVE normals) ===============================
+// Conta quante carte NORMALI ATTIVE (non placeholder, non matched) ci sono per simbolo
+function countActiveNormalBySymbol(){
+  const m = new Map();
+  getActiveCards().forEach(c => {
+    if (!c || !c.isConnected) return;
+    if (c.classList.contains('placeholder')) return;           // esclude buchi
+    if (c.getAttribute('data-state') === 'matched') return;    // esclude coppie già chiuse
+    const s = c.dataset.symbol;
+    if (s === '💀' || s === '⚡') return;                       // esclude speciali
+    m.set(s, 1 + (m.get(s) || 0));
+  });
+  return m;
+}
+
+/* Verifica l'invariante: ogni simbolo normale ATTIVO deve comparire in numero pari.
+   Se trova disparità, prova a riparare chiamando fixParityHiddenNonSpecial(). */
+function assertEvenActiveNormals(tag=''){
+  const m = countActiveNormalBySymbol();
+  const odd = [...m.entries()].filter(([, n]) => (n & 1) === 1);
+  if (odd.length){
+    console.warn('[Parity FAIL]', tag, odd);
+    try { fixParityHiddenNonSpecial(); } catch(_){}
+
+    // ricontrollo opzionale
+    const m2 = countActiveNormalBySymbol();
+    const odd2 = [...m2.entries()].filter(([, n]) => (n & 1) === 1);
+    if (odd2.length) console.warn('[Parity STILL ODD after fix]', odd2);
+  }
+  return odd.length === 0;
+}
 
 function chaosSkullPenalty(card){
   // Chiudi eventuali normali aperte e gestisci suoni/UX
@@ -1717,7 +1754,10 @@ function chaosSkullPenalty(card){
   const pivot = state?.pivot;
   if (isValidPivotEl(pivot)) scheduleHide(pivot, MISMATCH_HOLD_MS);
   state.pivot = null;
-
+// 🔒 micro-lock per rendere atomiche le mutazioni del teschio
+const prevLock = state.lock;
+state.lock = true;
+tapBuffer = [];
   // 1) Pulisci riferimenti ai buchi non più nel DOM e leggi i buchi attuali
   state.holesEls = (state.holesEls || []).filter(h => h && h.isConnected && h.classList.contains('hole'));
   const holes = state.holesEls.slice();
@@ -1756,7 +1796,7 @@ function chaosSkullPenalty(card){
   }
 
   // 3) Se abbiamo almeno DUE buchi → crea la coppia direttamente nei buchi
-  if (holes.length >= 4){
+  if (holes.length >= 2){
     const i1 = (Math.random()*holes.length | 0);
     let   i2 = (Math.random()*holes.length | 0);
     if (i2 === i1) i2 = (i2 + 1) % holes.length;
@@ -1779,22 +1819,51 @@ setTimeout(() => {
 
 // richiudi il teschio
 scheduleHide(card, MISMATCH_HOLD_MS);
+// ✅ sblocca input ora che lo spawn è avvenuto
+state.lock = prevLock;
+drainTapBuffer();
 return;
   }
 
 // 4) Fallback: niente nuova coppia; solo reshuffle
 flashMessage('💀 🔀');
-try { reshuffleHiddenNonSpecial(); } catch(_) {}
-try { fixParityHiddenNonSpecial(); } catch(_) {}   // 👈 AGGIUNGI QUESTA
+
+// Chiudi il teschio ora.
 scheduleHide(card, MISMATCH_HOLD_MS);
+
+// .e SOLO dopo che tutte le normali si sono richiuse, rimescola e FISSA parità
+setTimeout(() => {
+  try { reshuffleHiddenNonSpecial(); } catch(_) {}
+  try { fixParityHiddenNonSpecial(); } catch(_) {}
+  bumpEpoch(); // la board è cambiata → invalida tap precedenti
+assertEvenActiveNormals('after skull-fallback');
+
+  // ✅ sblocco qui: l’operazione è terminata davvero
+  state.lock = prevLock;
+  drainTapBuffer();
+}, MISMATCH_HOLD_MS + 8);
+
 return;
 
-
-// 5) Ultimo fallback: non c’è spazio → rimescola
+// 5) Ultimo fallback: non c’è spazio… → rimescola
 flashMessage('💀 Not enough space… 🔀');
-reshuffleHiddenNonSpecial();
-try { fixParityHiddenNonSpecial(); } catch(_) {}   // 👈 AGGIUNGI QUESTA
+
+// Chiudi il teschio ora.
 scheduleHide(card, MISMATCH_HOLD_MS);
+
+// …e SOLO dopo che tutte le normali si sono richiuse, rimescola e fissa la parità
+setTimeout(() => {
+  try { reshuffleHiddenNonSpecial(); } catch(_) {}
+  try { fixParityHiddenNonSpecial(); } catch(_) {}
+  bumpEpoch(); // la board è cambiata → invalida tap precedenti
+assertEvenActiveNormals('after skull-fallback');
+
+  // ✅ sblocco (se hai messo il micro-lock all’inizio)
+  state.lock = prevLock;
+  drainTapBuffer();
+}, MISMATCH_HOLD_MS + 8);
+
+return;
 
 }
 
@@ -2214,24 +2283,25 @@ if (sym === YELLOW){
     return;
   }
 
-  // --- Arcade / Zen (comportamento attuale, che è già ok) ---
-// --- Arcade / Zen — always reshuffle, no arm/disarm ---
   // --- Arcade / Zen — rimescola sempre le coperte non speciali
-  flip(card, true);
-  flashMessage('Shuffle!');
-  reshuffleHiddenNonSpecial();
+// --- ZEN: rimescola solo dopo che le normali si sono richiuse ---
+flip(card, true);
+flashMessage('Shuffle!');
 
-  // ⬇️ SOLO ZEN: dopo l'attivazione il fulmine si sposta, poi si richiude
-  if (state.isZen){
-    flashOnce('tip_tp_yellow', '⚡ moved!');
-    teleportAfterReveal(card, { kind: 'yellow' });
-    return;
-  }
+// --- ZEN: prima teleporta (come il teschio), poi rimescola con piccolo ritardo
+if (state.isZen){
+  flashOnce('tip_tp_yellow', '⚡ moved!');
+  teleportAfterReveal(card, { kind: 'yellow' }); // swap immediato
 
-  // altre modalità: comportamento invariato
-  scheduleHide(card, MISMATCH_HOLD_MS);
+  // rimescola DOPO che si sono richiuse le eventuali normali aperte
+  setTimeout(() => { try { reshuffleHiddenNonSpecial(); } catch(_) {} }, MISMATCH_HOLD_MS + 24);
   return;
+}
 
+// --- ARCADE: comportamento invariato (shuffle subito + hide programmato)
+reshuffleHiddenNonSpecial();
+scheduleHide(card, MISMATCH_HOLD_MS);
+return;
 }
 
 
@@ -2285,13 +2355,29 @@ if (sym === YELLOW){
 
   // --- Divergenza per modalità ---
   if (state.isChaos){
-    // CHAOS: mostra ✨ e poi trasforma entrambe in buchi (come in "Chaos ok")
+    // CHAOS: mostra ✨ e poi trasforma entrambe in buchi (ATOMICO con micro-lock)
     spawnMatchStars(first);
     spawnMatchStars(second);
     try { SFX.play?.('ok', { volume:.9, rate: 0.98 }); } catch(_) {}
+
+    // 🔒 micro-lock: durante la transizione a "buco" non permettere altri tocchi
+    const prevLock = state.lock;
+    state.lock = true;
+    tapBuffer = [];
+
     setTimeout(() => {
       makeHole(first);
       makeHole(second);
+
+      // sblocco + pulizia
+      state.lock = prevLock;
+      drainTapBuffer();
+
+      // Safety: dopo una mutazione massiva verifica vittoria/parità
+      if (!maybeWinBySpecials()){
+        try { fixParityHiddenNonSpecial(); } catch(_){}
+      }
+assertEvenActiveNormals('after chaos-hole'); 
     }, MATCH_HOLD_MS);
   } else {
     // Arcade / Zen: comportati come ora (restano matched)
@@ -2420,6 +2506,8 @@ function reshuffleHiddenNonSpecial(){
   bumpEpoch();
   state.lock = prevLock;
   drainTapBuffer();
+if (state?.isChaos) assertEvenActiveNormals('after reshuffle');
+
 }
 
 // --- utils ---
@@ -3954,6 +4042,7 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
 </script>
 </body>
 </html>
+
 
 
 
