@@ -4040,6 +4040,25 @@ if (window.__isPremium === true) return; // <-- NON mostrare ads se premium
     if (navigator.clipboard) { navigator.clipboard.writeText(url); }
   }
 </script>
+<script>
+  // 🔁 Interruttore: true = ANNUNCI DI TEST, false = ANNUNCI REALI
+  const USE_TEST_ADS = true;
+
+  // ID interstitial di TEST ufficiale Google
+  const TEST_INTERSTITIAL_ID = 'ca-app-pub-3940256099942544/1033173712';
+
+  // 👉 Il tuo Ad Unit ID reale (già inserito qui sotto)
+  const REAL_INTERSTITIAL_ID = 'ca-app-pub-8890697304265669/6001820340';
+
+  const INTERSTITIAL_ID = USE_TEST_ADS ? TEST_INTERSTITIAL_ID : REAL_INTERSTITIAL_ID;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.JsAds && typeof window.JsAds.setUnitId === 'function') {
+      try { window.JsAds.setUnitId(INTERSTITIAL_ID); } catch(e){}
+    }
+  });
+</script>
+
 </body>
 </html>
 
