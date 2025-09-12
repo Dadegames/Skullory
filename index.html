@@ -104,11 +104,12 @@
     gap:var(--gap); padding:18px; background:linear-gradient(180deg,var(--grid-1),var(--grid-2));
     border:1px solid var(--grid-border); border-radius:24px; box-shadow:var(--shadow);
   }
-  .card{
-    position:relative; aspect-ratio:1/1; perspective:900px;
-    cursor:pointer; border-radius:var(--radius); -webkit-tap-highlight-color:transparent; touch-action:manipulation;
-    container-type: inline-size;
-  }
+.card{
+  position:relative; aspect-ratio:1/1; perspective:900px;
+  cursor:pointer; border-radius:var(--radius); -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  container-type: inline-size;
+  will-change: transform;      /* ✨ aggiunta anti-scatto */
+}
   .face{
     position:absolute; inset:0; display:grid; place-items:center; border-radius:var(--radius); border:1px solid var(--card-border);
     backface-visibility:hidden;
@@ -131,11 +132,12 @@
       );
     opacity:.35;
   }
-  .inner{
-    position:absolute; inset:0; border-radius:var(--radius);
-    transform-style:preserve-3d; transition: transform var(--flip-ms) cubic-bezier(.2,.7,.1,1);
-    box-shadow: 0 12px 24px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03);
-  }
+.inner{
+  position:absolute; inset:0; border-radius:var(--radius);
+  transform-style:preserve-3d; transition: transform var(--flip-ms) cubic-bezier(.2,.7,.1,1);
+  box-shadow: 0 12px 24px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.03);
+  will-change: transform;      /* ✨ aggiunta anti-scatto */
+}
   .card[data-state="revealed"] .inner,
   .card[data-state="matched"] .inner{ transform:rotateY(180deg) }
   .symbol{
@@ -1512,8 +1514,15 @@ function isNormalCard(c){
             c.dataset.symbol !== RED && c.dataset.symbol !== YELLOW);
 }
 function maybeWinBySpecials(){
+  // ✅ ZEN: se non esistono più coppie possibili (≤1 carta normale attiva) → vittoria
+  if (state?.isZen){
+    const normals = getActiveCards().filter(isNormalCard);
+    if (normals.length <= 1){ win(); return true; }
+    return false;
+  }
+
+  // CHAOS: resta la regola precedente (vinci quando non restano carte normali)
   if (!state?.isChaos) return false;
-  // Se non rimane nessuna carta normale attiva → vittoria
   const haveNormals = getActiveCards().some(isNormalCard);
   if (!haveNormals){ win(); return true; }
   return false;
@@ -1815,6 +1824,7 @@ try { SFX.play?.('reshuffle', { volume:.9 }); } catch(_) {}
 setTimeout(() => {
   try { reshuffleHiddenNonSpecial(); } catch(_) {}
   bumpEpoch();  // la board è cambiata di nuovo: invalida i tap precedenti
+  assertEvenActiveNormals('after skull-holes-spawn');
 }, 30);
 
 // richiudi il teschio
@@ -2503,11 +2513,11 @@ function reshuffleHiddenNonSpecial(){
   SFX.play?.('reshuffle', { volume:.9 });
 
   // ⬆️ board cambiata → invalida i tap vecchi, sblocca e processa un tap valido
-  bumpEpoch();
-  state.lock = prevLock;
-  drainTapBuffer();
-if (state?.isChaos) assertEvenActiveNormals('after reshuffle');
-
+bumpEpoch();
+state.lock = prevLock;
+drainTapBuffer();
+assertEvenActiveNormals('after reshuffle');
+maybeWinBySpecials();                 // ✅ chiudi se sei già in endgame non accoppiabile
 }
 
 // --- utils ---
@@ -2631,6 +2641,8 @@ function teleportAfterReveal(card, { kind='yellow' } = {}){
     scheduleHide(card, MISMATCH_HOLD_MS);
     state.lock = prevLock;
     drainTapBuffer();
+assertEvenActiveNormals('after teleport');
+maybeWinBySpecials();                 // ✅ chiudi qui se restano 2 speciali + 1 normale
   });
 }
 
@@ -2669,6 +2681,8 @@ if (!state?.isChaos) return;
   state.holesEls.push(hole);
 // NEW — vittoria se restano solo speciali (Chaos)
 maybeWinBySpecials();
+assertEvenActiveNormals('after makeHole');
+
 
 }
 
@@ -2786,6 +2800,7 @@ async function zenShiftOnce(){
 
   state.lock = prevLock;
   drainTapBuffer(); // processa il primo tap valido post-catena
+assertEvenActiveNormals('after chaos-shift');
 }
 
 
@@ -3089,7 +3104,7 @@ if (xbtn) xbtn.style.display = 'none';
     if (state?.isZen){ showZenEnd(); return; }
     state.running = false;
     SFX.play?.('win', { volume:1.0 });
-try { window.maybeShowArcadeAd(); } catch(e) {}
+// try { window.maybeShowArcadeAd(); } catch(e) {}
 
 
     const secondsLeft = Math.floor(state.leftMs/1000);
