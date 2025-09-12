@@ -1722,6 +1722,85 @@ if (anyOpenNormal) return;
     }
   }
 }
+// === Zen only — Special integrity guard (versione che NON spezza coppie) ===
+// Garantisce: in Zen ci sono SEMPRE 1 💀 e 2 ⚡.
+// Se manca uno speciale, prova prima a prenderlo dalla "singola" spaiata nascosta.
+// Tocchiamo solo carte NORMALI coperte per evitare artefatti visivi.
+function ensureZenSpecialsIntegrity(tag=''){
+  if (!state?.isZen || state.isChaos) return;
+
+  const all = getActiveCards().filter(c => !c.classList.contains('placeholder'));
+  const isHiddenNormal = (c) => (
+    c.getAttribute('data-state') === 'hidden' &&
+    !isSpecialSymbol(c.dataset.symbol)
+  );
+
+  const specials = all.filter(c => c.dataset.symbol === RED || c.dataset.symbol === YELLOW);
+  let skulls = specials.filter(c => c.dataset.symbol === RED);
+  let yels   = specials.filter(c => c.dataset.symbol === YELLOW);
+
+  const TARGET_SKULLS = 1;
+  const TARGET_YELS   = 2;
+
+  const needSkulls = Math.max(0, TARGET_SKULLS - skulls.length);
+  const needYels   = Math.max(0, TARGET_YELS   - yels.length);
+
+  // Gruppi di NORMALI coperte per simbolo (ci servono le "singole" spaiate)
+  const hiddenNormals = all.filter(isHiddenNormal);
+  const groups = new Map();
+  for (const c of hiddenNormals){
+    const s = c.dataset.symbol;
+    if (!groups.has(s)) groups.set(s, []);
+    groups.get(s).push(c);
+  }
+  // Singole spaiate (odd): prendiamo 1 carta da ognuna di queste prima di tutto
+  const singles = [];
+  for (const [sym, arr] of groups){
+    if ((arr.length % 2) === 1) singles.push(arr.pop());
+  }
+
+  // Helper: prendi 1 carta normale coperta, preferendo le "singole"
+  function takeHiddenNormal(){
+    if (singles.length) return singles.pop();
+    return hiddenNormals.find(isHiddenNormal) || null;
+  }
+
+  // Promozioni: prima copriamo i mancanti usando singole spaiate se presenti
+  for (let k=0; k<needSkulls; k++){
+    const c = takeHiddenNormal(); if (!c) break;
+    c.dataset.symbol = RED;
+    const el = c.querySelector('.symbol'); if (el) el.textContent = RED;
+  }
+  for (let k=0; k<needYels; k++){
+    const c = takeHiddenNormal(); if (!c) break;
+    c.dataset.symbol = YELLOW;
+    const el = c.querySelector('.symbol'); if (el) el.textContent = YELLOW;
+  }
+
+  // Ricalcola eventuali extra (caso patologico): riportali a un simbolo normale
+  skulls = all.filter(c => c.dataset.symbol === RED);
+  yels   = all.filter(c => c.dataset.symbol === YELLOW);
+  const extraSkulls = Math.max(0, skulls.length - TARGET_SKULLS);
+  const extraYels   = Math.max(0, yels.length   - TARGET_YELS);
+
+  // Scegli un simbolo normale "donatore" esistente (per coerenza visiva)
+  const normals = all.filter(c => !isSpecialSymbol(c.dataset.symbol));
+  const donorSym = normals.length ? normals[0].dataset.symbol : (EMOJI[0] || '🍎');
+
+  function demote(list, count){
+    for (let i=0; i<count; i++){
+      const c = list[i]; if (!c) break;
+      c.dataset.symbol = donorSym;
+      const el = c.querySelector('.symbol'); if (el) el.textContent = donorSym;
+    }
+  }
+  if (extraSkulls > 0) demote(skulls, extraSkulls);
+  if (extraYels   > 0) demote(yels,   extraYels);
+
+  // Rete finale: assicura che i NORMALI restino tutti in numero pari (accoppiabili)
+  try { fixParityHiddenNonSpecial(); } catch(_){}
+}
+
 // === Parity hard guard (ACTIVE normals) ===============================
 // Conta quante carte NORMALI ATTIVE (non placeholder, non matched) ci sono per simbolo
 function countActiveNormalBySymbol(){
@@ -2147,6 +2226,7 @@ bumpEpoch(); // NEW: nuova board → invalida tap della precedente
   hideOverlay();
   updateSaveButton();
   refreshPowersUI();
+if (state.isZen) ensureZenSpecialsIntegrity('after init');
 }
 
   function startTimer(){
@@ -2518,6 +2598,7 @@ state.lock = prevLock;
 drainTapBuffer();
 assertEvenActiveNormals('after reshuffle');
 maybeWinBySpecials();                 // ✅ chiudi se sei già in endgame non accoppiabile
+if (state?.isZen) ensureZenSpecialsIntegrity('after reshuffle');
 }
 
 // --- utils ---
@@ -2643,6 +2724,7 @@ function teleportAfterReveal(card, { kind='yellow' } = {}){
     drainTapBuffer();
 assertEvenActiveNormals('after teleport');
 maybeWinBySpecials();                 // ✅ chiudi qui se restano 2 speciali + 1 normale
+ensureZenSpecialsIntegrity('after teleport');
   });
 }
 
